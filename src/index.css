@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* Ocultar scrollbar en elementos con overflow-x-auto */
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+@keyframes spin-fast {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-fast {
+  0% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+}
+
+@keyframes scan-left {
+  0% {
+    transform: translateX(-100%) scaleX(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0) scaleX(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(100%) scaleX(0);
+    opacity: 0;
+  }
+}
+
+@keyframes scan-right {
+  0% {
+    transform: translateX(100%) scaleX(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(0) scaleX(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-100%) scaleX(0);
+    opacity: 0;
+  }
+}
+
+.animate-spin-fast {
+  animation: spin-fast 1s linear infinite;
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 1.5s ease-in-out infinite;
+}
+
+.animate-scan-left {
+  animation: scan-left 2s ease-in-out infinite;
+}
+
+.animate-scan-right {
+  animation: scan-right 2s ease-in-out infinite;
+}
+
+@keyframes congrats {
+  0% { opacity: 0; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-congrats {
+  animation: congrats 0.5s ease-in-out;
+}
+
+@keyframes lift {
+  0% { transform: translateY(20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.chatbot-container {
+  animation: lift 0.3s ease-out;
+}
+
+@media (max-width: 640px) {
+  .chatbot-container {
+    bottom: 4rem; 
+  }
+}
