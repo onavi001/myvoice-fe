@@ -78,6 +78,19 @@ export default function ExerciseCard({
     setIsToggling(true);
     try {
       await handleToggleCompleted(routineId, dayIndex, exerciseIndex);
+      // Enviar notificación
+      await fetch("/api/push/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: "¡Ejercicio Completado!",
+          body: `Has marcado "${exercise.name}" como completado.`,
+        }),
+      });
+    } catch (error) {
+      console.error("Error toggling completed:", error);
     } finally {
       setIsToggling(false);
     }
