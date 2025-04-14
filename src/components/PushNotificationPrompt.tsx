@@ -46,10 +46,9 @@ export default function PushNotificationPrompt() {
       setIsSubscribed(true);
     }
   };
-
-  if (!isSupported || isSubscribed) {
-    return <></>;
-  }
+  console.log(isSubscribed);
+  console.log(isSupported);
+  
 
   return (
     <div className="bg-[#4A4A4A] p-4 rounded-md shadow-md text-center">

@@ -32,6 +32,7 @@ export async function registerPushNotifications(vapidPublicKey: string): Promise
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
+    console.log("Suscripción creada:", subscription.toJSON()); // Añade este log
     return subscription.toJSON() as PushSubscriptionData;
   } catch (error) {
     console.error("Error registering push notifications:", error);
