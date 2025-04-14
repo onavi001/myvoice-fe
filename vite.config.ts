@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { VitePWA, VitePWAOptions } from "vite-plugin-pwa";
+import { VitePWA } from "vite-plugin-pwa";
+
+// Interfaz para el manifiesto web
 export interface WebManifest {
   name: string;
   short_name: string;
@@ -16,7 +18,9 @@ export interface WebManifest {
     type: string;
   }>;
 }
-const pwaOptions: Partial<VitePWAOptions> = {
+
+// Configuración de la PWA
+const pwaOptions: Partial<import("vite-plugin-pwa").VitePWAOptions> = {
   registerType: "autoUpdate",
   includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
   manifest: {
@@ -29,22 +33,24 @@ const pwaOptions: Partial<VitePWAOptions> = {
     start_url: "/",
     icons: [
       {
-        src: "/icons/icon-192x192.png",
-        sizes: "192x192",
-        type: "image/png",
+        "src": "/android-chrome-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
       },
       {
-        src: "/icons/icon-512x512.png",
-        sizes: "512x512",
-        type: "image/png",
-      },
+        "src": "/android-chrome-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
     ],
   } satisfies WebManifest,
   workbox: {
+    // Patrones de archivos estáticos para cachear
     globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
     runtimeCaching: [
       {
-        urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith("/api"),
+        // Cachear solicitudes a la API
+        urlPattern: /\/api\/.*/, // Usar una expresión regular para coincidir con /api/*
         handler: "NetworkFirst",
         options: {
           cacheName: "api-cache",
@@ -59,10 +65,14 @@ const pwaOptions: Partial<VitePWAOptions> = {
 };
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), VitePWA(pwaOptions)],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA(pwaOptions),
+  ],
   build: {
     outDir: "dist",
-    sourcemap: false,
+    sourcemap: false, // Desactivar sourcemaps en producción
   },
   server: {
     proxy: {
