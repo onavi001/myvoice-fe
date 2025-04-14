@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { IExercise } from "../../models/Exercise";
@@ -35,17 +35,27 @@ export default function ExerciseCard({
   const { loadingVideos, handleSave, handleToggleCompleted, handleFetchVideos } = useExerciseActions();
   const [openBodyModal, setOpenBodyModal] = useState(false);
   const [musclesToShow, setMusclesToShow] = useState<string[]>([]);
+  const hasFetchedVideos = useRef(false); // Bandera para evitar fetch repetidos
+
   useEffect(() => {
-    if (isExpanded && selectedRoutineIndex !== null) {
-      handleFetchVideos(exercise.name, selectedRoutineIndex, dayIndex, exerciseIndex);
+    if (
+      isExpanded &&
+      selectedRoutineIndex !== null &&
+      !hasFetchedVideos.current && // Solo fetch si no se ha intentado antes
+      (!exercise.videos || exercise.videos.length === 0) // Solo fetch si no hay videos
+    ) {
+      handleFetchVideos(exercise.name, selectedRoutineIndex, dayIndex, exerciseIndex)
+        .then(() => {
+          hasFetchedVideos.current = true; // Marcar como intentado
+        })
+        .catch(() => {
+          hasFetchedVideos.current = true; // Incluso en error, evitar reintentos automáticos
+        });
     }
-  }, [exercise]);
+  }, [isExpanded, selectedRoutineIndex, exercise.name, dayIndex, exerciseIndex, handleFetchVideos]);
 
   const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-    if (!isExpanded && selectedRoutineIndex !== null) {
-      handleFetchVideos(exercise.name, selectedRoutineIndex, dayIndex, exerciseIndex);
-    }
+    setIsExpanded((prev) => !prev);
   };
 
   const handleInputChange = (field: keyof IExercise, value: string | number) => {
@@ -67,7 +77,7 @@ export default function ExerciseCard({
   const onToggleCompleted = async () => {
     setIsToggling(true);
     try {
-      await handleToggleCompleted(routineId.toString(), dayIndex, exerciseIndex);
+      await handleToggleCompleted(routineId, dayIndex, exerciseIndex);
     } finally {
       setIsToggling(false);
     }
@@ -80,7 +90,6 @@ export default function ExerciseCard({
     if (isNaN(sets) || sets <= 0 || isNaN(restTime) || restTime <= 0) {
       return;
     }
-
     setIsTimerActive(true);
   };
 
@@ -163,7 +172,7 @@ export default function ExerciseCard({
             {loadingVideos ? (
               <SmallLoader />
             ) : (
-              <VideoPlayer exercise={exercise} routineId={routineId.toString()} dayIndex={dayIndex} exerciseIndex={exerciseIndex} />
+              <VideoPlayer exercise={exercise} routineId={routineId} dayIndex={dayIndex} exerciseIndex={exerciseIndex} />
             )}
             <div className="grid grid-cols-3 gap-1">
               <div>

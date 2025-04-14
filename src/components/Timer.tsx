@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 interface TimerProps {
   sets: number;
   restTime: number;
-  onComplete: () => void; // Callback cuando el temporizador termina
-  onStop: () => void;     // Callback para detener manualmente
-  isActive: boolean;      // Controla si el temporizador está activo
+  onComplete: () => void;
+  onStop: () => void;
+  isActive: boolean;
 }
 
 export default function Timer({ sets, restTime, onComplete, onStop, isActive }: TimerProps) {
   const [timer, setTimer] = useState<number | null>(null);
   const [totalTime, setTotalTime] = useState<number | null>(null);
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
+  const [intervalId, setIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
   const [phase, setPhase] = useState<"start" | "sets" | "rest" | null>(null);
   const [setsLeft, setSetsLeft] = useState<number>(sets);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
       restTimeLeft -= 1;
       setTimer(restTimeLeft);
 
-      if (restTimeLeft <= 10) {
+      if (restTimeLeft === 11) {
         const beep = new Audio("/alarms/countdown.mp3");
         beep.play().catch((error) => console.error("Error al reproducir beep:", error));
       }

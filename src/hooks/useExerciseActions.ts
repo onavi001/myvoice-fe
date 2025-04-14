@@ -12,7 +12,8 @@ export default function useExerciseActions() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { routines, selectedRoutineIndex } = useSelector((state: RootState) => state.routine);
-  const { user } = useSelector((state: RootState) => state.user);
+  const { user, token } = useSelector((state: RootState) => state.user);
+  
   const [loadingVideos, setLoadingVideos] = useState(false);
 
   const handleSave = async (dayIndex: number, exerciseIndex: number, editData: Partial<IExercise>) => {
@@ -125,13 +126,18 @@ export default function useExerciseActions() {
       throw err;
     }
   };
-  
+
   const handleFetchVideos = async (exerciseName: string, routineIndex: number, dayIndex: number, exerciseIndex: number) => {
+    console.log(exerciseName, routineIndex, dayIndex, exerciseIndex);
+    if (!routines[routineIndex]?.days[dayIndex]?.exercises[exerciseIndex]) return;
+    
+    const exercise = routines[routineIndex].days[dayIndex].exercises[exerciseIndex];
+    if (exercise.videos?.length > 0) return; // No fetch si ya hay videos
+
     setLoadingVideos(true);
     try {
-      const exercise = routines[routineIndex].days[dayIndex].exercises[exerciseIndex];
-      if (exercise.videos?.length > 0) return;
-      const videos = await fetchVideos(exerciseName);
+      if (!token) throw new Error("No token provided");
+      const videos = await fetchVideos(exerciseName, token);
       await dispatch(
         setExerciseVideos({
           routineId: routines[routineIndex]._id.toString(),
@@ -142,12 +148,14 @@ export default function useExerciseActions() {
       ).unwrap();
     } catch (err) {
       const error = err as ThunkError;
-      if (error.message === "Unauthorized" && error.status === 401) navigate("/login");
+      console.error("Error fetching videos:", error);
+      if (error.message === "Unauthorized" && error.status === 401) {
+        navigate("/login");
+      }
       throw err;
-    }finally{
+    } finally {
       setLoadingVideos(false);
     }
-    
   };
 
   return {

@@ -381,7 +381,29 @@ export const setExerciseVideos = createAsyncThunk<
     }
   }
 );
-
+export const generateExerciseVideos = createAsyncThunk<
+  {exerciseName: string},
+  {exerciseName: string},
+  { rejectValue: ThunkError }
+>(
+  "routine/generateExerciseVideos",
+  async ({ exerciseName }, { rejectWithValue }) => {
+    try {
+      const response = await fetch("/api/videos", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ exerciseName }),
+      });
+      if (!response.ok) throw new Error("Error al obtener videos");
+      const videos = await response.json();
+      return videos;
+    } catch (error) {
+      return rejectWithValue({ message: (error as Error).message });
+    }
+  }
+);
 // Generar una rutina
 export const generateRoutine = createAsyncThunk<RoutineData, RoutineInput, { rejectValue: ThunkError }>(
   "routine/generateRoutine",

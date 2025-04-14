@@ -68,8 +68,8 @@ const ModelWorkoutModal: React.FC<ModelWorkoutModalProps> = ({ isOpen, onClose, 
 
   return (
     <div
-      className="fixed inset-0 bg-gray-800 bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 transition-opacity duration-300 ease-in-out"
-      onClick={handleBackdropClick} // Cierra tooltip al hacer clic fuera
+      className="fixed inset-0 bg-transparent bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 transition-opacity duration-300 ease-in-out"
+      onClick={handleBackdropClick}
     >
       <div className="bg-white rounded-lg flex flex-col shadow-lg overflow-hidden transition-all duration-300 ease-in-out">
         {/* Header */}
