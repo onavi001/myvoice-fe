@@ -44,6 +44,8 @@ const pwaOptions: Partial<import("vite-plugin-pwa").VitePWAOptions> = {
       }
     ],
   } satisfies WebManifest,
+  srcDir: "src",
+  filename: "sw.ts",
   workbox: {
     // Patrones de archivos estáticos para cachear
     globPatterns: ["**/*.{js,css,html,ico,png,svg}"],

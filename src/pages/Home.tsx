@@ -4,6 +4,7 @@ import { RootState } from "../store";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import { motion } from "framer-motion";
+import PushNotificationPrompt from "../components/PushNotificationPrompt";
 
 export default function Home() {
   const { user, token } = useSelector((state: RootState) => state.user);
@@ -39,6 +40,7 @@ export default function Home() {
       >
         ¡Bienvenido, {user?.username || "Usuario"}!
       </motion.h1>
+      <PushNotificationPrompt />
       <motion.p
         className="text-lg md:text-xl text-[#D1D1D1] mb-10 text-center max-w-3xl"
         variants={titleVariants}
