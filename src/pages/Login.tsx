@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 import gymAI from "/gymAI.png";
 
 import { Link, useNavigate } from "react-router-dom";
+import InstallPrompt from "../components/InstallPrompt";
 
 export default function Login() {
   const dispatch: AppDispatch = useDispatch();
@@ -61,6 +62,7 @@ export default function Login() {
 
   return (
     <>
+      <InstallPrompt />
       <div>
         <title>My Voice - Tu Compañero de Fitness</title>
         <meta name="description" content="Lleva tus rutinas al siguiente nivel con My Voice" />

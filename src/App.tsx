@@ -18,6 +18,7 @@ import Progress from "./pages/Progress";
 import RoutineEdit from "./pages/RoutineEdit";
 import { Helmet } from "react-helmet";
 import ExerciseVideos from "./pages/ExerciseVideos";
+import OfflineNotice from "./components/OfflineNotice";
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -130,8 +131,12 @@ function App() {
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         <link rel="manifest" href="/site.webmanifest" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <title>My Voice</title>
       </Helmet>
+      <OfflineNotice />
       <Router>
         <AppInitializer>
           <Routes>
