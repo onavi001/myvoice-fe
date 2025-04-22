@@ -126,7 +126,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
   if (!isActive) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black opacity-80 flex items-center justify-center z-50">
       <div className="text-center text-white">
         {timer !== null && totalTime !== null && (
           <div className="flex flex-col items-center">

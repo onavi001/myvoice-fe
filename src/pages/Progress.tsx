@@ -416,7 +416,7 @@ export default function Progress() {
       </div>
 
       {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+        <div className="fixed inset-0 bg-black opacity-50 flex items-center justify-center z-40">
           <Card className="bg-[#252525] border-2 border-[#4A4A4A] p-4 rounded-md max-w-md w-full">
             <h3 className="text-sm font-bold text-[#34C759] mb-2">Agregar Progreso</h3>
             <form onSubmit={handleAddSubmit} className="space-y-2">
