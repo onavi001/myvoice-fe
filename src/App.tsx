@@ -46,8 +46,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { loading, token, user } = useSelector((state: RootState) => state.user);
-  const { routines } = useSelector((state: RootState) => state.routine);
-  const selectedRoutine = useSelector((state: RootState) => state.routine.selectedRoutineIndex);
+  const selectedRoutine = useSelector((state: RootState) => state.routine.selectedRoutineId);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isRouteChanging, setIsRouteChanging] = useState(false);
 
@@ -110,9 +109,8 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
           onGenerateRoutine={() => navigate("/routine-AI")}
           onEditRoutine={
             location.pathname === "/routine" &&
-            selectedRoutine !== null &&
-            routines[selectedRoutine]
-              ? () => navigate(`/routine-edit/${routines[selectedRoutine]._id}`)
+            selectedRoutine !== null
+              ? () => navigate(`/routine-edit/${selectedRoutine}`)
               : undefined
           }
         />

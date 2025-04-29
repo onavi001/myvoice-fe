@@ -15,9 +15,9 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ onMyRoutine, onNewRoutine, onProgress, onLogout, onGenerateRoutine, onEditRoutine }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { selectedRoutineIndex, routines } = useSelector((state: RootState) => state.routine);
+  const { selectedRoutineId, routines } = useSelector((state: RootState) => state.routine);
   const { user } = useSelector((state: RootState) => state.user);
-  const hasSelectedRoutine = selectedRoutineIndex !== null && routines[selectedRoutineIndex];
+  const hasSelectedRoutine = selectedRoutineId !== null && routines.find((r) => r._id === selectedRoutineId);
   const navigate = useNavigate();
   useEffect(() => {
     setIsMenuOpen(false)

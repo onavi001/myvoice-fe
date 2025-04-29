@@ -10,6 +10,7 @@ import Loader, { SmallLoader } from "../components/Loader";
 import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { RoutineData } from "../models/Routine";
+import Textarea from "../components/Textarea";
 
 interface ExerciseFormData extends IExercise {
     isOpen: boolean;
@@ -36,7 +37,9 @@ export default function RoutineEdit() {
   const [error, setError] = useState<string | null>(null);
   const [allExpanded, setAllExpanded] = useState(false);
 
-  // Cargar las rutinas si no están disponibles
+  // Colores para circuitos
+  const circuitColors = ["#2D2D2D", "#2A2F2A", "#2F2B2A", "#2A2C2F", "#2F2F2D"];
+
   useEffect(() => {
     if (token && !routines.length && !routinesLoading) {
       dispatch(fetchRoutines());
@@ -46,7 +49,6 @@ export default function RoutineEdit() {
     }
   }, [token, routines, routinesLoading, dispatch, navigate]);
 
-  // Actualizar estado local cuando cambie la rutina inicial
   useEffect(() => {
     if (initialRoutine) {
       setRoutineName(initialRoutine.name);
@@ -258,46 +260,45 @@ export default function RoutineEdit() {
 
   if (userLoading || routinesLoading || !initialRoutine) {
     return (
-      <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col items-center justify-center space-y-4">
         <Loader />
-        <p className="text-[#D1D1D1] text-xs mt-2">Cargando rutina...</p>
+        <p className="text-[#D1D1D1] text-sm">Cargando rutina...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
-      <div className="p-4 max-w-2xl mx-auto flex-1">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-xl font-bold text-white">Editar Rutina: {routineName || "Sin nombre"}</h1>
+      <div className="p-4 sm:p-6 max-w-3xl mx-auto flex-1">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Editar Rutina: {routineName || "Sin nombre"}</h1>
           <Button
             variant="secondary"
             onClick={toggleAll}
-            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-md py-1 px-2 text-xs font-semibold border border-[#FFC107] shadow-md"
+            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-4 py-2 text-sm font-semibold border border-[#FFC107] shadow-md transition-colors"
           >
             {allExpanded ? "Colapsar Todo" : "Expandir Todo"}
           </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Card className="p-4 bg-[#252525] border-2 border-[#4A4A4A] rounded-md">
+          <Card className="p-4 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md">
             <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Nombre de la Rutina</label>
             <Input
               name="routineName"
               value={routineName}
               onChange={(e) => setRoutineName(e.target.value)}
               placeholder="Ejemplo: Rutina de Fuerza"
-              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
             />
           </Card>
 
-          {/* Resumen de días */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-6">
             {days.map((day, index) => (
               <div
                 key={index}
-                className={`text-xs font-semibold px-3 py-1 rounded-full cursor-pointer ${
-                  day.isOpen ? "bg-[#34C759] text-black" : "bg-[#4A4A4A] text-white"
+                className={`text-sm font-semibold px-4 py-2 rounded-full cursor-pointer transition-colors ${
+                  day.isOpen ? "bg-[#34C759] text-black" : "bg-[#4A4A4A] text-[#D1D1D1] hover:bg-[#5A5A5A]"
                 }`}
                 onClick={() => toggleDay(index)}
               >
@@ -306,7 +307,6 @@ export default function RoutineEdit() {
             ))}
           </div>
 
-          {/* Días */}
           {days.map((day, dayIndex) => {
             const { circuits, standalone } = groupExercisesByCircuit(day.exercises);
             const circuitIds = getCircuitIdsForDay(dayIndex);
@@ -314,87 +314,90 @@ export default function RoutineEdit() {
             return (
               <Card
                 key={dayIndex}
-                className={`p-4 bg-[#252525] border-2 border-[#4A4A4A] rounded-md transition-all ${
-                  day.isOpen ? "shadow-lg" : ""
+                className={`p-4 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md transition-all duration-300 ${
+                  day.isOpen ? "shadow-lg" : "shadow-sm"
                 }`}
               >
                 <div
-                  className="flex justify-between items-center cursor-pointer mb-2"
+                  className="flex justify-between items-center cursor-pointer mb-4"
                   onClick={() => toggleDay(dayIndex)}
                 >
-                  <h2 className="text-lg font-bold text-[#34C759]">
+                  <h2 className="text-lg sm:text-xl font-bold text-[#34C759]">
                     {day.dayName || `Día ${dayIndex + 1}`} ({day.exercises.length} ejercicios)
                   </h2>
                   <span className="text-[#D1D1D1] text-sm">{day.isOpen ? "▲" : "▼"}</span>
                 </div>
 
                 {day.isOpen && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[#D1D1D1] text-sm font-medium mb-1">Nombre del Día</label>
+                        <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Nombre del Día</label>
                         <Input
                           name={`dayName-${dayIndex}`}
                           value={day.dayName}
                           onChange={(e) => handleDayChange(dayIndex, "dayName", e.target.value)}
                           placeholder={`Día ${dayIndex + 1}`}
-                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#D1D1D1] text-sm font-medium mb-1">Músculos Trabajados</label>
+                        <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Músculos Trabajados</label>
                         <Input
                           name={`musclesWorked-${dayIndex}`}
                           value={day.musclesWorked.join(", ")}
                           onChange={(e) => handleDayChange(dayIndex, "musclesWorked", e.target.value)}
                           placeholder="Pecho, Tríceps"
-                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#D1D1D1] text-sm font-medium mb-1">
-                          Opciones de Calentamiento
-                        </label>
+                        <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Opciones de Calentamiento</label>
                         <Input
                           name={`warmupOptions-${dayIndex}`}
                           value={day.warmupOptions.join(", ")}
                           onChange={(e) => handleDayChange(dayIndex, "warmupOptions", e.target.value)}
                           placeholder="Caminadora, Estiramientos"
-                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
                         />
                       </div>
                       <div>
-                        <label className="block text-[#D1D1D1] text-sm font-medium mb-1">Explicación</label>
+                        <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Explicación</label>
                         <Input
                           name={`explanation-${dayIndex}`}
                           value={day.explanation}
                           onChange={(e) => handleDayChange(dayIndex, "explanation", e.target.value)}
                           placeholder="Notas sobre el día"
-                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+                          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
                         />
                       </div>
                     </div>
 
                     {/* Circuitos */}
-                    {Object.entries(circuits).map(([circuitId, exercises]) => (
-                      <Card key={circuitId} className="p-3 bg-[#2D2D2D] border border-[#4A4A4A] rounded-md">
-                        <h3 className="text-sm font-semibold text-[#FFD700] mb-2">Circuito: {circuitId}</h3>
-                        <div className="space-y-3">
+                    {Object.entries(circuits).map(([circuitId, exercises], circuitIndex) => (
+                      <Card
+                        key={circuitId}
+                        className={`p-4 bg-[${circuitColors[circuitIndex % circuitColors.length]}] border border-[#4A4A4A] rounded-lg shadow-sm`}
+                      >
+                        <h3 className="text-sm font-semibold text-[#FFD700] mb-3">Circuito: {circuitId}</h3>
+                        <div className="space-y-4">
                           {exercises.map((exercise, exerciseIndex) => (
                             <Card
                               key={exercise._id}
-                              className={`p-3 bg-[#252525] border border-[#4A4A4A] rounded-md ${
-                                exercise.isOpen ? "shadow-md" : ""
+                              className={`p-4 bg-${
+                                exerciseIndex % 2 === 0 ? "[#252525]" : "[#282828]"
+                              } border border-[#4A4A4A] rounded-lg transition-all duration-300 ${
+                                exercise.isOpen ? "shadow-md" : "shadow-sm"
                               }`}
                             >
                               <div
-                                className="flex justify-between items-center cursor-pointer"
+                                className="flex justify-between items-center cursor-pointer mb-2"
                                 onClick={() => toggleExercise(dayIndex, exercise._id)}
                               >
                                 <h4 className="text-sm font-semibold text-white">
                                   {exercise.name || `Ejercicio ${exerciseIndex + 1}`}
                                 </h4>
-                                <span className="text-[#D1D1D1] text-xs">{exercise.isOpen ? "▲" : "▼"}</span>
+                                <span className="text-[#D1D1D1] text-sm">{exercise.isOpen ? "▲" : "▼"}</span>
                               </div>
                               {exercise.isOpen && (
                                 <ExerciseForm
@@ -415,24 +418,26 @@ export default function RoutineEdit() {
 
                     {/* Ejercicios sin circuito */}
                     {standalone.length > 0 && (
-                      <Card className="p-3 bg-[#2D2D2D] border border-[#4A4A4A] rounded-md">
-                        <h3 className="text-sm font-semibold text-[#FFD700] mb-2">Ejercicios Individuales</h3>
-                        <div className="space-y-3">
+                      <Card className="p-4 bg-[#303030] border border-[#4A4A4A] rounded-lg shadow-sm">
+                        <h3 className="text-sm font-semibold text-[#FFD700] mb-3">Ejercicios Individuales</h3>
+                        <div className="space-y-4">
                           {standalone.map((exercise, exerciseIndex) => (
                             <Card
                               key={exercise._id}
-                              className={`p-3 bg-[#252525] border border-[#4A4A4A] rounded-md ${
-                                exercise.isOpen ? "shadow-md" : ""
+                              className={`p-4 bg-${
+                                exerciseIndex % 2 === 0 ? "[#252525]" : "[#282828]"
+                              } border border-[#4A4A4A] rounded-lg transition-all duration-300 ${
+                                exercise.isOpen ? "shadow-md" : "shadow-sm"
                               }`}
                             >
                               <div
-                                className="flex justify-between items-center cursor-pointer"
+                                className="flex justify-between items-center cursor-pointer mb-2"
                                 onClick={() => toggleExercise(dayIndex, exercise._id)}
                               >
                                 <h4 className="text-sm font-semibold text-white">
                                   {exercise.name || `Ejercicio ${exerciseIndex + 1}`}
                                 </h4>
-                                <span className="text-[#D1D1D1] text-xs">{exercise.isOpen ? "▲" : "▼"}</span>
+                                <span className="text-[#D1D1D1] text-sm">{exercise.isOpen ? "▲" : "▼"}</span>
                               </div>
                               {exercise.isOpen && (
                                 <ExerciseForm
@@ -455,7 +460,7 @@ export default function RoutineEdit() {
                       variant="secondary"
                       type="button"
                       onClick={() => handleAddExercise(dayIndex)}
-                      className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-md py-1 px-2 text-sm font-semibold border border-[#4CAF50] shadow-md"
+                      className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md transition-colors"
                     >
                       + Agregar Ejercicio
                     </Button>
@@ -464,7 +469,7 @@ export default function RoutineEdit() {
                       type="button"
                       onClick={() => handleDeleteDay(dayIndex)}
                       disabled={days.length <= 1}
-                      className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-md py-1 px-2 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F] disabled:opacity-50"
+                      className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/50 disabled:cursor-not-allowed transition-colors"
                     >
                       Eliminar Día
                     </Button>
@@ -479,18 +484,18 @@ export default function RoutineEdit() {
             type="button"
             onClick={handleAddDay}
             disabled={addingDay}
-            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-md py-2 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5] disabled:opacity-50"
+            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-3 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/50 disabled:cursor-not-allowed transition-colors"
           >
             {addingDay ? <SmallLoader /> : "+ Agregar Día"}
           </Button>
 
-          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+          {error && <p className="text-red-500 text-sm font-medium text-center">{error}</p>}
 
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Button
               type="submit"
               disabled={savingRoutine || deletingRoutine}
-              className="w-1/2 bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-md py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50] disabled:opacity-50"
+              className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-3 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/50 disabled:cursor-not-allowed transition-colors"
             >
               {savingRoutine ? <SmallLoader /> : "Guardar Rutina"}
             </Button>
@@ -498,7 +503,7 @@ export default function RoutineEdit() {
               type="button"
               onClick={handleDelete}
               disabled={savingRoutine || deletingRoutine}
-              className="w-1/2 bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-md py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F] disabled:opacity-50"
+              className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-lg py-3 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/50 disabled:cursor-not-allowed transition-colors"
             >
               {deletingRoutine ? <SmallLoader /> : "Eliminar Rutina"}
             </Button>
@@ -531,22 +536,22 @@ const ExerciseForm: React.FC<ExerciseFormProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div className="mt-3 space-y-3">
-      <div className="grid grid-cols-1 gap-3">
+    <div className="mt-4 space-y-4">
+      <div className="grid grid-cols-1 gap-4">
         <Input
           name={`exerciseName-${exercise._id}`}
           value={exercise.name}
           onChange={(e) => onChange(dayIndex, exercise._id, "name", e.target.value)}
           placeholder="Nombre del ejercicio"
-          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
         />
         <div>
-          <label className="block text-[#D1D1D1] text-xs font-medium mb-1">Circuito (opcional)</label>
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Circuito (opcional)</label>
           <select
             name={`circuitId-${exercise._id}`}
             value={exercise.circuitId || ""}
             onChange={(e) => onChange(dayIndex, exercise._id, "circuitId", e.target.value)}
-            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
           >
             <option value="">Sin Circuito</option>
             {circuitIds.map((id) => (
@@ -562,60 +567,83 @@ const ExerciseForm: React.FC<ExerciseFormProps> = ({
           value={exercise.muscleGroup.join(", ")}
           onChange={(e) => onChange(dayIndex, exercise._id, "muscleGroup", e.target.value)}
           placeholder="Músculos (ej. Pecho, Hombros)"
-          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
         />
         <Input
           name={`tips-${exercise._id}`}
           value={exercise.tips.join(", ")}
           onChange={(e) => onChange(dayIndex, exercise._id, "tips", e.target.value)}
           placeholder="Consejos (ej. Mantén la espalda recta)"
-          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+          className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
         />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-[#D1D1D1] text-xs font-medium mb-1">Series</label>
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Series</label>
           <Input
             name={`sets-${exercise._id}`}
             type="number"
             value={exercise.sets}
             onChange={(e) => onChange(dayIndex, exercise._id, "sets", Number(e.target.value))}
-            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
           />
         </div>
         <div>
-          <label className="block text-[#D1D1D1] text-xs font-medium mb-1">Reps</label>
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Repeticiones</label>
           <Input
             name={`reps-${exercise._id}`}
             type="number"
             value={exercise.reps}
             onChange={(e) => onChange(dayIndex, exercise._id, "reps", Number(e.target.value))}
-            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
           />
         </div>
         <div>
-          <label className="block text-[#D1D1D1] text-xs font-medium mb-1">Descanso (s)</label>
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Unidad Reps</label>
+          <select
+            name={`repsUnit-${exercise._id}`}
+            value={exercise.repsUnit || "count"}
+            onChange={(e) => onChange(dayIndex, exercise._id, "repsUnit", e.target.value)}
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
+          >
+            <option value="count">Unidades (U)</option>
+            <option value="seconds">Segundos (S)</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Descanso (s)</label>
           <Input
             name={`rest-${exercise._id}`}
             type="number"
             value={exercise.rest}
             onChange={(e) => onChange(dayIndex, exercise._id, "rest", e.target.value)}
-            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-md p-2 text-sm focus:ring-1 focus:ring-[#34C759] focus:border-transparent"
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Notas</label>
+          <Textarea
+            name={`notes-${exercise._id}`}
+            value={exercise.notes || ""}
+            onChange={(e) => onChange(dayIndex, exercise._id, "notes", e.target.value)}
+            className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white placeholder-[#B0B0B0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:border-transparent transition-colors h-20 resize-none"
           />
         </div>
       </div>
-      <div className="flex space-x-2">
+      <div className="flex flex-col sm:flex-row gap-4">
         <Button
           type="button"
           onClick={() => onDelete(dayIndex, exercise._id)}
-          className="w-1/2 bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-md py-1 px-2 text-sm font-semibold border border-[#D32F2F] shadow-md"
+          className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md transition-colors"
         >
           Eliminar
         </Button>
         <Button
           type="button"
           onClick={() => navigate(`/routine-edit/${routineId}/videos/${dayIndex}/${exerciseIndex}`)}
-          className="w-1/2 bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-md py-1 px-2 text-sm font-semibold border border-[#1E88E5] shadow-md"
+          className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md transition-colors"
         >
           Videos
         </Button>
