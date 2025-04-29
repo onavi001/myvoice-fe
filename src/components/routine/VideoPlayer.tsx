@@ -12,8 +12,8 @@ import { motion } from "framer-motion";
 interface VideoPlayerProps {
   exercise: IExercise;
   routineId: string;
-  dayIndex: number;
-  exerciseIndex: number;
+  dayId: string;
+  exerciseId: string;
 }
 
 // Variantes para animaciones
@@ -27,7 +27,7 @@ const iframeVariants = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } },
 };
 
-export default function VideoPlayer({ exercise, routineId, dayIndex, exerciseIndex }: VideoPlayerProps) {
+export default function VideoPlayer({ exercise, routineId, dayId, exerciseId }: VideoPlayerProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [areVideosVisible, setAreVideosVisible] = useState(true);
   const [isSwitching, setIsSwitching] = useState(false);
@@ -66,8 +66,8 @@ export default function VideoPlayer({ exercise, routineId, dayIndex, exerciseInd
       await dispatch(
         setExerciseVideos({
           routineId,
-          dayIndex,
-          exerciseIndex,
+          dayId,
+          exerciseId,
           videos: updatedVideos,
         })
       ).unwrap();

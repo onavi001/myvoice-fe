@@ -11,21 +11,42 @@ import { useNavigate } from "react-router-dom";
 export default function useExerciseActions() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { routines, selectedRoutineIndex } = useSelector((state: RootState) => state.routine);
+  const { routines, selectedRoutineId } = useSelector((state: RootState) => state.routine);
   const { user, token } = useSelector((state: RootState) => state.user);
   
   const [loadingVideos, setLoadingVideos] = useState(false);
 
-  const handleSave = async (dayIndex: number, exerciseIndex: number, editData: Partial<IExercise>) => {
-    if (!user || selectedRoutineIndex === null) return;
-    const routine = routines[selectedRoutineIndex];
-    const currentExercise = routine.days[dayIndex].exercises[exerciseIndex];
+  const handleSave = async (routineId: string, dayId: string, exerciseId: string, editData: Partial<IExercise>) => {
+    if (!user || !selectedRoutineId) return;
+    const routine = routines.find((r) => r._id === routineId);
+    if (!routine) return;
+    const day = routine.days.find((d) => d._id === dayId);
+    if (!day) return;
+    const currentExercise = day.exercises.find((e) => e._id === exerciseId);
+    if (!currentExercise) return;
+
+    const validateEditData = (data: Partial<IExercise>) => {
+      const errors: string[] = [];
+      if (data.sets !== undefined && (isNaN(Number(data.sets)) || Number(data.sets) < 0)) {
+        errors.push("Series debe ser un número válido");
+      }
+      if (data.reps !== undefined && (isNaN(Number(data.reps)) || Number(data.reps) < 0)) {
+        errors.push("Repeticiones debe ser un número válido");
+      }
+      return errors;
+    };
+
+    const errors = validateEditData(editData);
+    if (errors.length > 0) {
+      throw new Error(errors.join(", "));
+    }
+
     try {
       await dispatch(
         updateExercise({
-          routineId: routine._id,
-          dayId: routine.days[dayIndex]._id,
-          exerciseId: currentExercise._id,
+          routineId,
+          dayId,
+          exerciseId,
           exerciseData: {
             sets: Number(editData.sets ?? currentExercise.sets),
             reps: Number(editData.reps ?? currentExercise.reps),
@@ -60,12 +81,18 @@ export default function useExerciseActions() {
     }
   };
 
-  const handleToggleCompleted = async (routineId: string, dayIndex: number, exerciseIndex: number) => {
-    if (selectedRoutineIndex === null) return;
-    const currentCompleted = routines[selectedRoutineIndex].days[dayIndex].exercises[exerciseIndex].completed;
+  const handleToggleCompleted = async (routineId: string, dayId: string, exerciseId: string) => {
+    if (!selectedRoutineId) return;
+    const routine = routines.find((r) => r._id === routineId);
+    if (!routine) return;
+    const day = routine.days.find((d) => d._id === dayId);
+    if (!day) return;
+    const currentExercise = day.exercises.find((e) => e._id === exerciseId);
+    if (!currentExercise) return;
+
     try {
       await dispatch(
-        updateExerciseCompleted({ routineId, dayIndex, exerciseIndex, completed: !currentCompleted })
+        updateExerciseCompleted({ routineId, dayId, exerciseId, completed: !currentExercise.completed })
       ).unwrap();
     } catch (err) {
       const error = err as ThunkError;
@@ -74,16 +101,24 @@ export default function useExerciseActions() {
     }
   };
 
-  const handleNewExercise = async (dayIndex: number, exerciseIndex: number) => {
-    if (!user || selectedRoutineIndex === null) return null;
-    const routine = routines[selectedRoutineIndex];
-    const exercise = routine.days[dayIndex].exercises[exerciseIndex];
+  const handleNewExercise = async (routineId: string, dayId: string, exerciseId: string) => {
+    if (!user || !selectedRoutineId) return null;
+    const routine = routines.find((r) => r._id === routineId);
+    if (!routine) return null;
+    const day = routine.days.find((d) => d._id === dayId);
+    if (!day) return null;
+    const exercise = day.exercises.find((e) => e._id === exerciseId);
+    if (!exercise) return null;
+
     try {
       const response = await fetch("/api/exercises/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          dayExercises: routine.days[dayIndex].exercises,
+          dayExercises: day.exercises,
           exerciseToChangeId: exercise._id,
         }),
       });
@@ -97,18 +132,21 @@ export default function useExerciseActions() {
     }
   };
 
-  const handleSelectExercise = async (selectedExercise: Partial<IExercise & { videoUrl: string }>) => {
-    if (!user || selectedRoutineIndex === null) return;
-    const routine = routines[selectedRoutineIndex];
-    const dayIndex = routine.days.findIndex((d) => d.exercises.some((e) => e._id === selectedExercise._id));
-    const exerciseIndex = routine.days[dayIndex]?.exercises.findIndex((e) => e._id === selectedExercise._id) ?? -1;
-    if (dayIndex === -1 || exerciseIndex === -1) return;
+  const handleSelectExercise = async (routineId: string, dayId: string, selectedExercise: Partial<IExercise & { videoUrl: string }>) => {
+    if (!user || !selectedRoutineId) return;
+    const routine = routines.find((r) => r._id === routineId);
+    if (!routine) return;
+    const day = routine.days.find((d) => d._id === dayId);
+    if (!day) return;
+    const exercise = day.exercises.find((e) => e._id === selectedExercise._id);
+    if (!exercise) return;
+
     try {
       await dispatch(
         updateExercise({
-          routineId: routine._id,
-          dayId: routine.days[dayIndex]._id,
-          exerciseId: routine.days[dayIndex].exercises[exerciseIndex]._id,
+          routineId,
+          dayId,
+          exerciseId: exercise._id,
           exerciseData: {
             name: selectedExercise.name,
             sets: selectedExercise.sets,
@@ -127,22 +165,26 @@ export default function useExerciseActions() {
     }
   };
 
-  const handleFetchVideos = async (exerciseName: string, routineIndex: number, dayIndex: number, exerciseIndex: number) => {
-    console.log(exerciseName, routineIndex, dayIndex, exerciseIndex);
-    if (!routines[routineIndex]?.days[dayIndex]?.exercises[exerciseIndex]) return;
-    
-    const exercise = routines[routineIndex].days[dayIndex].exercises[exerciseIndex];
-    if (exercise.videos?.length > 0) return; // No fetch si ya hay videos
+  const handleFetchVideos = async (exerciseName: string, routineId: string, dayId: string, exerciseId: string) => {
+    const routine = routines.find((r) => r._id === routineId);
+    if (!routine) return;
+    const day = routine.days.find((d) => d._id === dayId);
+    if (!day) return;
+    const exercise = day.exercises.find((e) => e._id === exerciseId);
+    if (!exercise || exercise.videos?.length > 0) return;
 
     setLoadingVideos(true);
     try {
-      if (!token) throw new Error("No token provided");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
       const videos = await fetchVideos(exerciseName, token);
       await dispatch(
         setExerciseVideos({
-          routineId: routines[routineIndex]._id.toString(),
-          dayIndex,
-          exerciseIndex,
+          routineId,
+          dayId,
+          exerciseId,
           videos,
         })
       ).unwrap();

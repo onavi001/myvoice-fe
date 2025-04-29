@@ -16,17 +16,17 @@ import Timer from "../Timer";
 export default function ExerciseCard({
   exercise,
   routineId,
-  dayIndex,
-  exerciseIndex,
+  dayId,
+  exerciseId,
   onGenerateExercise,
 }: {
   exercise: IExercise;
   routineId: string;
-  dayIndex: number;
-  exerciseIndex: number;
-  onGenerateExercise: (dayIndex: number, exerciseIndex: number) => void;
+  dayId: string;
+  exerciseId: string;
+  onGenerateExercise: (routineId: string, dayId: string, exerciseId: string) => void;
 }) {
-  const { selectedRoutineIndex } = useSelector((state: RootState) => state.routine);
+  const { selectedRoutineId } = useSelector((state: RootState) => state.routine);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editData, setEditData] = useState<Partial<IExercise>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -35,24 +35,24 @@ export default function ExerciseCard({
   const { loadingVideos, handleSave, handleToggleCompleted, handleFetchVideos } = useExerciseActions();
   const [openBodyModal, setOpenBodyModal] = useState(false);
   const [musclesToShow, setMusclesToShow] = useState<string[]>([]);
-  const hasFetchedVideos = useRef(false); // Bandera para evitar fetch repetidos
+  const hasFetchedVideos = useRef(false);
 
   useEffect(() => {
     if (
       isExpanded &&
-      selectedRoutineIndex !== null &&
-      !hasFetchedVideos.current && // Solo fetch si no se ha intentado antes
-      (!exercise.videos || exercise.videos.length === 0) // Solo fetch si no hay videos
+      selectedRoutineId &&
+      !hasFetchedVideos.current &&
+      (!exercise.videos || exercise.videos.length === 0)
     ) {
-      handleFetchVideos(exercise.name, selectedRoutineIndex, dayIndex, exerciseIndex)
+      handleFetchVideos(exercise.name, routineId, dayId, exerciseId)
         .then(() => {
-          hasFetchedVideos.current = true; // Marcar como intentado
+          hasFetchedVideos.current = true;
         })
         .catch(() => {
-          hasFetchedVideos.current = true; // Incluso en error, evitar reintentos automáticos
+          hasFetchedVideos.current = true;
         });
     }
-  }, [isExpanded, selectedRoutineIndex, exercise.name, dayIndex, exerciseIndex, handleFetchVideos]);
+  }, [isExpanded, selectedRoutineId, exercise.name, routineId, dayId, exerciseId, handleFetchVideos]);
 
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
@@ -65,7 +65,7 @@ export default function ExerciseCard({
   const onSave = async () => {
     setIsSaving(true);
     try {
-      await handleSave(dayIndex, exerciseIndex, editData);
+      await handleSave(routineId, dayId, exerciseId, editData);
       setEditData({});
     } catch (err) {
       console.error("Error saving:", err);
@@ -77,18 +77,7 @@ export default function ExerciseCard({
   const onToggleCompleted = async () => {
     setIsToggling(true);
     try {
-      await handleToggleCompleted(routineId, dayIndex, exerciseIndex);
-      // Enviar notificación
-      await fetch("/api/push/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: "¡Ejercicio Completado!",
-          body: `Has marcado "${exercise.name}" como completado.`,
-        }),
-      });
+      await handleToggleCompleted(routineId, dayId, exerciseId);
     } catch (error) {
       console.error("Error toggling completed:", error);
     } finally {
@@ -164,7 +153,7 @@ export default function ExerciseCard({
                 </button>
                 <p className="text-[#FFFFFF]">{currentExercise.muscleGroup.join(", ")}</p>
                 <Button
-                  onClick={() => onGenerateExercise(dayIndex, exerciseIndex)}
+                  onClick={() => onGenerateExercise(routineId, dayId, exerciseId)}
                   className="my-4 flex items-center gap-1 bg-[#34C759] text-black px-2 py-1 rounded-full text-xs hover:bg-[#2ca44e]"
                 >
                   <ArrowPathIcon className="w-4 h-4" />
@@ -185,7 +174,7 @@ export default function ExerciseCard({
             {loadingVideos ? (
               <SmallLoader />
             ) : (
-              <VideoPlayer exercise={exercise} routineId={routineId} dayIndex={dayIndex} exerciseIndex={exerciseIndex} />
+              <VideoPlayer exercise={exercise} routineId={routineId} dayId={dayId} exerciseId={exerciseId} />
             )}
             <div className="grid grid-cols-3 gap-1">
               <div>

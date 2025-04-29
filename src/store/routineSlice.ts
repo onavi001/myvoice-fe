@@ -18,7 +18,7 @@ interface RoutineInput {
 
 interface RoutineState {
   routines: RoutineData[];
-  selectedRoutineIndex: number | null;
+  selectedRoutineId: string | null;
   loading: boolean;
   loadingVideos: Record<string, boolean>;
   error: string | null;
@@ -26,7 +26,7 @@ interface RoutineState {
 
 const initialState: RoutineState = {
   routines: [],
-  selectedRoutineIndex: null,
+  selectedRoutineId: null,
   loading: false,
   loadingVideos: {},
   error: null,
@@ -124,19 +124,16 @@ export const deleteRoutine = createAsyncThunk<string, string, { rejectValue: Thu
   }
 );
 
-// Seleccionar una rutina (no necesita manejo de 401 ya que es local)
-export const selectRoutine = createAsyncThunk<number, number, { rejectValue: ThunkError }>(
+// Seleccionar una rutina
+export const selectRoutine = createAsyncThunk<string, string, { rejectValue: ThunkError }>(
   "routine/selectRoutine",
-  async (index, { getState, rejectWithValue }) => {
+  async (routineId, { getState, rejectWithValue }) => {
     const state = getState() as { routine: RoutineState };
-    localStorage.setItem("routineIndex", index.toString());
-    console.log(state.routine.routines)
-    if (index >= 0 && index < state.routine.routines.length) {
-      return index;
-    }else{
-      return 0;
+    if (state.routine.routines.some((r) => r._id === routineId)) {
+      localStorage.setItem("routineId", routineId);
+      return routineId;
     }
-    return rejectWithValue({ message: "Índice de rutina inválido" });
+    return rejectWithValue({ message: "ID de rutina inválido" });
   }
 );
 
@@ -306,18 +303,14 @@ export const deleteExercise = createAsyncThunk<
 
 // Actualizar el estado de completado de un ejercicio
 export const updateExerciseCompleted = createAsyncThunk<
-  { routineId: string; dayIndex: number; exerciseIndex: number; completed: boolean },
-  { routineId: string; dayIndex: number; exerciseIndex: number; completed: boolean },
+  { routineId: string; dayId: string; exerciseId: string; completed: boolean },
+  { routineId: string; dayId: string; exerciseId: string; completed: boolean },
   { rejectValue: ThunkError }
 >(
   "routine/updateExerciseCompleted",
-  async ({ routineId, dayIndex, exerciseIndex, completed }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string }; routine: RoutineState };
+  async ({ routineId, dayId, exerciseId, completed }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
     const token = state.user.token;
-    const exerciseId = state.routine.routines[state.routine.selectedRoutineIndex!].days[dayIndex].exercises[
-      exerciseIndex
-    ]._id;
-
     try {
       const response = await fetch(`/api/exercises/${exerciseId}`, {
         method: "PUT",
@@ -329,7 +322,7 @@ export const updateExerciseCompleted = createAsyncThunk<
       }
       if (!response.ok) throw new Error("Error al actualizar ejercicio");
       const updatedExercise = await response.json();
-      return { routineId, dayIndex, exerciseIndex, completed: updatedExercise.completed };
+      return { routineId, dayId, exerciseId, completed: updatedExercise.completed };
     } catch (error) {
       return rejectWithValue({ message: (error as Error).message });
     }
@@ -338,16 +331,14 @@ export const updateExerciseCompleted = createAsyncThunk<
 
 // Establecer videos para un ejercicio
 export const setExerciseVideos = createAsyncThunk<
-  { routineId: string; dayIndex: number; exerciseIndex: number; videos: { _id: string; url: string; isCurrent: boolean }[] },
-  { routineId: string; dayIndex: number; exerciseIndex: number; videos: { url: string; isCurrent: boolean }[] },
+  { routineId: string; dayId: string; exerciseId: string; videos: { _id: string; url: string; isCurrent: boolean }[] },
+  { routineId: string; dayId: string; exerciseId: string; videos: { url: string; isCurrent: boolean }[] },
   { rejectValue: ThunkError }
 >(
   "routine/setExerciseVideos",
-  async ({ routineId, dayIndex, exerciseIndex, videos }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string }; routine: RoutineState };
+  async ({ routineId, dayId, exerciseId, videos }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
     const token = state.user.token;
-    const exerciseId = state.routine.routines[state.routine.selectedRoutineIndex!].days[dayIndex].exercises[exerciseIndex]._id;
-
     try {
       const videoIds = [];
       for (const video of videos) {
@@ -374,52 +365,63 @@ export const setExerciseVideos = createAsyncThunk<
       }
       if (!response.ok) throw new Error("Error al actualizar videos del ejercicio");
       const updatedExercise = await response.json();
-
-      return { routineId, dayIndex, exerciseIndex, videos: updatedExercise.videos };
+      return { routineId, dayId, exerciseId, videos: updatedExercise.videos };
     } catch (error) {
       return rejectWithValue({ message: (error as Error).message });
     }
   }
 );
+
+// Generar videos para un ejercicio
 export const generateExerciseVideos = createAsyncThunk<
-  {exerciseName: string},
-  {exerciseName: string},
+  { url: string; isCurrent: boolean }[],
+  { exerciseName: string },
   { rejectValue: ThunkError }
 >(
   "routine/generateExerciseVideos",
-  async ({ exerciseName }, { rejectWithValue }) => {
+  async ({ exerciseName }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
     try {
-      const response = await fetch("/api/videos", {
+      const response = await fetch(`/api/videos?exerciseName=${encodeURIComponent(exerciseName)}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ exerciseName }),
       });
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
       if (!response.ok) throw new Error("Error al obtener videos");
       const videos = await response.json();
-      return videos;
+      return videos as { url: string; isCurrent: boolean }[];
     } catch (error) {
       return rejectWithValue({ message: (error as Error).message });
     }
   }
 );
+
 // Generar una rutina
 export const generateRoutine = createAsyncThunk<RoutineData, RoutineInput, { rejectValue: ThunkError }>(
   "routine/generateRoutine",
-  async (input, { rejectWithValue }) => {
+  async (input, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
     try {
       const response = await fetch("/api/routines/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(input),
       });
-      if (!response.ok){
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      if (!response.ok) {
         return rejectWithValue({ message: response.statusText, status: response.status });
       }
-      if (!response.ok) throw new Error("Error al actualizar videos del ejercicio");
       const routine: RoutineData = await response.json();
       return routine;
     } catch (error) {
@@ -442,7 +444,7 @@ const routineSlice = createSlice({
       .addCase(fetchRoutines.fulfilled, (state, action: PayloadAction<RoutineData[]>) => {
         state.loading = false;
         state.routines = action.payload;
-        state.selectedRoutineIndex = action.payload.length > 0 ? 0 : null;
+        state.selectedRoutineId = action.payload.length > 0 ? action.payload[0]._id : null;
       })
       .addCase(fetchRoutines.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.loading = false;
@@ -451,7 +453,7 @@ const routineSlice = createSlice({
       // Create Routine
       .addCase(createRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         state.routines.push(action.payload);
-        state.selectedRoutineIndex = state.routines.length - 1;
+        state.selectedRoutineId = action.payload._id;
       })
       .addCase(createRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.error = action.payload?.message ?? "Error desconocido";
@@ -469,23 +471,23 @@ const routineSlice = createSlice({
       // Delete Routine
       .addCase(deleteRoutine.fulfilled, (state, action: PayloadAction<string>) => {
         state.routines = state.routines.filter((r) => r._id !== action.payload);
-        state.selectedRoutineIndex = state.routines.length > 0 ? 0 : null;
+        state.selectedRoutineId = state.routines.length > 0 ? state.routines[0]._id : null;
       })
       .addCase(deleteRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Select Routine
-      .addCase(selectRoutine.fulfilled, (state, action: PayloadAction<number>) => {
-        state.selectedRoutineIndex = action.payload;
+      .addCase(selectRoutine.fulfilled, (state, action: PayloadAction<string>) => {
+        state.selectedRoutineId = action.payload;
       })
       .addCase(selectRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Create Day
       .addCase(createDay.fulfilled, (state, action: PayloadAction<{ routineId: string; day: RoutineData["days"][number] }>) => {
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          state.routines[routineIndex].days.push(action.payload.day);
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          routine.days.push(action.payload.day);
         }
       })
       .addCase(createDay.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
@@ -493,11 +495,11 @@ const routineSlice = createSlice({
       })
       // Update Day
       .addCase(updateDay.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; dayName: string }>) => {
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          const dayIndex = state.routines[routineIndex].days.findIndex((d) => d._id === action.payload.dayId);
-          if (dayIndex !== -1) {
-            state.routines[routineIndex].days[dayIndex].dayName = action.payload.dayName;
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          if (day) {
+            day.dayName = action.payload.dayName;
           }
         }
       })
@@ -506,9 +508,9 @@ const routineSlice = createSlice({
       })
       // Delete Day
       .addCase(deleteDay.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string }>) => {
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          state.routines[routineIndex].days = state.routines[routineIndex].days.filter((d) => d._id !== action.payload.dayId);
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          routine.days = routine.days.filter((d) => d._id !== action.payload.dayId);
         }
       })
       .addCase(deleteDay.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
@@ -516,11 +518,11 @@ const routineSlice = createSlice({
       })
       // Create Exercise
       .addCase(createExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exercise: RoutineData["days"][number]["exercises"][number] }>) => {
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          const dayIndex = state.routines[routineIndex].days.findIndex((d) => d._id === action.payload.dayId);
-          if (dayIndex !== -1) {
-            state.routines[routineIndex].days[dayIndex].exercises.push(action.payload.exercise);
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          if (day) {
+            day.exercises.push(action.payload.exercise);
           }
         }
       })
@@ -534,13 +536,13 @@ const routineSlice = createSlice({
       })
       .addCase(updateExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; exercise: RoutineData["days"][number]["exercises"][number] }>) => {
         state.loading = false;
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          const dayIndex = state.routines[routineIndex].days.findIndex((d) => d._id === action.payload.dayId);
-          if (dayIndex !== -1) {
-            const exerciseIndex = state.routines[routineIndex].days[dayIndex].exercises.findIndex((e) => e._id === action.payload.exerciseId);
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          if (day) {
+            const exerciseIndex = day.exercises.findIndex((e) => e._id === action.payload.exerciseId);
             if (exerciseIndex !== -1) {
-              state.routines[routineIndex].days[dayIndex].exercises[exerciseIndex] = action.payload.exercise;
+              day.exercises[exerciseIndex] = action.payload.exercise;
             }
           }
         }
@@ -550,13 +552,12 @@ const routineSlice = createSlice({
       })
       // Delete Exercise
       .addCase(deleteExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string }>) => {
-        const routineIndex = state.routines.findIndex((r) => r._id === action.payload.routineId);
-        if (routineIndex !== -1) {
-          const dayIndex = state.routines[routineIndex].days.findIndex((d) => d._id === action.payload.dayId);
-          if (dayIndex !== -1) {
-            state.routines[routineIndex].days[dayIndex].exercises = state.routines[routineIndex].days[dayIndex].exercises.filter(
-              (e) => e._id !== action.payload.exerciseId
-            );
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          if (day) {
+            day.exercises = day.exercises.filter((e) => e._id !== action.payload.exerciseId);
+            delete state.loadingVideos[`${action.payload.routineId}-${action.payload.dayId}-${action.payload.exerciseId}`];
           }
         }
       })
@@ -564,10 +565,17 @@ const routineSlice = createSlice({
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Update Exercise Completed
-      .addCase(updateExerciseCompleted.fulfilled, (state, action: PayloadAction<{ routineId: string; dayIndex: number; exerciseIndex: number; completed: boolean }>) => {
-        const { dayIndex, exerciseIndex, completed } = action.payload;
-        if (state.selectedRoutineIndex !== null) {
-          state.routines[state.selectedRoutineIndex].days[dayIndex].exercises[exerciseIndex].completed = completed;
+      .addCase(updateExerciseCompleted.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; completed: boolean }>) => {
+        const { routineId, dayId, exerciseId, completed } = action.payload;
+        const routine = state.routines.find((r) => r._id === routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === dayId);
+          if (day) {
+            const exercise = day.exercises.find((e) => e._id === exerciseId);
+            if (exercise) {
+              exercise.completed = completed;
+            }
+          }
         }
       })
       .addCase(updateExerciseCompleted.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
@@ -575,22 +583,38 @@ const routineSlice = createSlice({
       })
       // Set Exercise Videos
       .addCase(setExerciseVideos.pending, (state, action) => {
-        const { routineId, dayIndex, exerciseIndex } = action.meta.arg;
-        state.loadingVideos[`${routineId}-${dayIndex}-${exerciseIndex}`] = true;
+        const { routineId, dayId, exerciseId } = action.meta.arg;
+        state.loadingVideos[`${routineId}-${dayId}-${exerciseId}`] = true;
       })
-      .addCase(setExerciseVideos.fulfilled, (state, action: PayloadAction<{ routineId: string; dayIndex: number; exerciseIndex: number; videos: { _id: string; url: string; isCurrent: boolean }[] }>) => {
-        const { routineId, dayIndex, exerciseIndex, videos } = action.payload;
-        if (state.selectedRoutineIndex !== null) {
-          state.routines[state.selectedRoutineIndex].days[dayIndex].exercises[exerciseIndex].videos = videos.map(video => ({
-            ...video,
-            _id: video._id,
-          }));
+      .addCase(setExerciseVideos.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; videos: { _id: string; url: string; isCurrent: boolean }[] }>) => {
+        const { routineId, dayId, exerciseId, videos } = action.payload;
+        const routine = state.routines.find((r) => r._id === routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === dayId);
+          if (day) {
+            const exercise = day.exercises.find((e) => e._id === exerciseId);
+            if (exercise) {
+              exercise.videos = videos;
+            }
+          }
         }
-        state.loadingVideos[`${routineId}-${dayIndex}-${exerciseIndex}`] = false;
+        state.loadingVideos[`${routineId}-${dayId}-${exerciseId}`] = false;
       })
       .addCase(setExerciseVideos.rejected, (state, action) => {
-        const { routineId, dayIndex, exerciseIndex } = action.meta.arg;
-        state.loadingVideos[`${routineId}-${dayIndex}-${exerciseIndex}`] = false;
+        const { routineId, dayId, exerciseId } = action.meta.arg;
+        state.loadingVideos[`${routineId}-${dayId}-${exerciseId}`] = false;
+        state.error = action.payload?.message ?? "Error desconocido";
+      })
+      // Generate Exercise Videos
+      .addCase(generateExerciseVideos.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(generateExerciseVideos.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(generateExerciseVideos.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.loading = false;
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Generate Routine
@@ -598,8 +622,10 @@ const routineSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(generateRoutine.fulfilled, (state) => {
+      .addCase(generateRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         state.loading = false;
+        state.routines.push(action.payload);
+        state.selectedRoutineId = action.payload._id;
       })
       .addCase(generateRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.loading = false;

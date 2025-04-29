@@ -6,25 +6,38 @@ import { RoutineData } from "../models/Routine";
 
 export default function useRoutineData(initialRoutines: RoutineData[]) {
   const dispatch = useDispatch<AppDispatch>();
-  const { routines, selectedRoutineIndex, loading, error } = useSelector((state: RootState) => state.routine);
-  const selectedRoutine = selectedRoutineIndex !== null ? routines[selectedRoutineIndex] : undefined;
-  const storedDayIndex = localStorage.getItem("dayIndex");
-  const initialDayIndex = storedDayIndex ? parseInt(storedDayIndex) : 0;
-  const [selectedDay, setSelectedDay] = useState<RoutineData["days"][number] | undefined>(selectedRoutine?.days[initialDayIndex]);
-  console.log(routines)
+  const { routines, selectedRoutineId, loading, error } = useSelector((state: RootState) => state.routine);
+  const selectedRoutine = routines.find((r) => r._id === selectedRoutineId) || undefined;
+  const storedDayId = localStorage.getItem("dayId");
+  const [selectedDay, setSelectedDay] = useState<RoutineData["days"][number] | undefined>(
+    selectedRoutine?.days.find((d) => d._id === storedDayId) || selectedRoutine?.days[0]
+  );
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(storedDayId || selectedRoutine?.days[0]?._id?.toString() || null);
+
   useEffect(() => {
     if (routines.length > 0) {
-      const routineIndex = localStorage.getItem("routineIndex");
-      const index = routineIndex ? parseInt(routineIndex) : 0;
-      if (index >= 0 && index < routines.length) {
-        dispatch(selectRoutine(index));
-        setSelectedDay(routines[index].days[initialDayIndex]);
+      const routineId = localStorage.getItem("routineId");
+      const routine = routines.find((r) => r._id === routineId) || routines[0];
+      if (routine) {
+        dispatch(selectRoutine(routine._id.toString()));
+        const day = routine.days.find((d) => d._id === storedDayId) || routine.days[0];
+        if (day) {
+          setSelectedDay(day);
+          setSelectedDayId(day._id.toString());
+          localStorage.setItem("dayId", day._id.toString());
+        } else {
+          setSelectedDay(undefined);
+          setSelectedDayId(null);
+          localStorage.removeItem("dayId");
+        }
       } else {
-        dispatch(selectRoutine(0));
-        setSelectedDay(routines[0].days[0]);
+        dispatch(selectRoutine(""));
+        setSelectedDay(undefined);
+        setSelectedDayId(null);
+        localStorage.removeItem("dayId");
       }
     }
-  }, [dispatch, routines]);
+  }, [dispatch, routines, storedDayId]);
 
   useEffect(() => {
     if (initialRoutines && routines.length === 0) {
@@ -34,10 +47,17 @@ export default function useRoutineData(initialRoutines: RoutineData[]) {
     }
   }, [dispatch, initialRoutines, routines.length]);
 
-  const setSelectedDayIndex = (index: number) => {
-    setSelectedDay(selectedRoutine?.days[index] || {} as RoutineData["days"][number]);
-    //(selectedRoutine?.days[index] || {} as RoutineData["days"][number]);
-    localStorage.setItem("dayIndex", index.toString());
+  const setSelectedDayIdHandler = (id: string | null) => {
+    if (selectedRoutine && id) {
+      const day = selectedRoutine.days.find((d) => d._id === id);
+      setSelectedDay(day || undefined);
+      setSelectedDayId(id);
+      localStorage.setItem("dayId", id || "");
+    } else {
+      setSelectedDay(undefined);
+      setSelectedDayId(null);
+      localStorage.removeItem("dayId");
+    }
   };
 
   return {
@@ -46,8 +66,8 @@ export default function useRoutineData(initialRoutines: RoutineData[]) {
     routines,
     selectedRoutine,
     selectedDay,
-    selectedDayIndex: initialDayIndex,
+    selectedDayId,
     setSelectedDay,
-    setSelectedDayIndex,
+    setSelectedDayId: setSelectedDayIdHandler,
   };
 }

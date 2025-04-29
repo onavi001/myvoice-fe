@@ -7,15 +7,15 @@ import { useState } from "react";
 import { IExercise } from "../../models/Exercise";
 
 export default function ExerciseList({
-  dayIndex,
   day,
   routineId,
+  dayId,
   onGenerateExercise,
 }: {
-  dayIndex: number;
   day: RoutineData["days"][number];
   routineId: string;
-  onGenerateExercise: (dayIndex: number, exerciseIndex: number) => void;
+  dayId: string;
+  onGenerateExercise: (routineId: string, dayId: string, exerciseId: string) => void;
 }) {
   const [openBodyModal, setOpenBodyModal] = useState(false);
   const [musclesToShow, setMusclesToShow] = useState<string[]>([]);
@@ -31,7 +31,6 @@ export default function ExerciseList({
         standalone.push(exercise);
       }
     });
-    console.log(standalone)
     return { circuits, standalone };
   };
 
@@ -73,41 +72,41 @@ export default function ExerciseList({
         </div>
       </Card>
 
-      {Object.entries(circuits).map(([circuitId, exercises]) => (
-        <div key={`circuit-${circuitId}`} className="mb-4">
-          <h3 className="text-sm font-semibold text-[#34C759] mb-2">Circuito: {circuitId}</h3>
-          <ul className="space-y-2">
-            {exercises.map((exercise, index) => (
-              <ExerciseCard
-                key={exercise._id.toString()}
-                exercise={exercise}
-                routineId={routineId}
-                dayIndex={dayIndex}
-                exerciseIndex={index}
-                onGenerateExercise={onGenerateExercise}
-              />
-            ))}
-          </ul>
-        </div>
-      ))}
-
       {standalone.length > 0 && (
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-white mb-2">Ejercicios Individuales</h3>
           <ul className="space-y-2">
-            {standalone.map((exercise, index) => (
+            {standalone.map((exercise) => (
               <ExerciseCard
                 key={exercise._id.toString()}
                 exercise={exercise}
                 routineId={routineId}
-                dayIndex={dayIndex}
-                exerciseIndex={index}
+                dayId={dayId}
+                exerciseId={exercise._id.toString()}
                 onGenerateExercise={onGenerateExercise}
               />
             ))}
           </ul>
         </div>
       )}
+      
+      {Object.entries(circuits).map(([circuitId, exercises]) => (
+        <div key={`circuit-${circuitId}`} className="mb-4">
+          <h3 className="text-sm font-semibold text-[#34C759] mb-2">Circuito: {circuitId}</h3>
+          <ul className="space-y-2">
+            {exercises.map((exercise) => (
+              <ExerciseCard
+                key={exercise._id.toString()}
+                exercise={exercise}
+                routineId={routineId}
+                dayId={dayId}
+                exerciseId={exercise._id.toString()}
+                onGenerateExercise={onGenerateExercise}
+              />
+            ))}
+          </ul>
+        </div>
+      ))}
 
       {day.explanation && (
         <p className="mt-3 text-[#B0B0B0] italic text-xs bg-[#2D2D2D] p-2 rounded shadow-sm">{day.explanation}</p>

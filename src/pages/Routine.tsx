@@ -20,7 +20,7 @@ export default function RoutinePage() {
   const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
   const { routines, loading: routinesLoading, error: routinesError } = useSelector((state: RootState) => state.routine);
 
-  const { loading, error, selectedRoutine, selectedDay, selectedDayIndex, setSelectedDay, setSelectedDayIndex } =
+  const { loading, error, selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId } =
     useRoutineData(routines);
   const { handleNewExercise, handleSelectExercise } = useExerciseActions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,10 +35,10 @@ export default function RoutinePage() {
     }
   }, [token, dispatch, navigate]);
 
-  const onGenerateExercise = async (dayIndex: number, exerciseIndex: number) => {
+  const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);
     try {
-      const exercises = await handleNewExercise(dayIndex, exerciseIndex);
+      const exercises = await handleNewExercise(routineId, dayId, exerciseId);
       if (exercises) {
         setGeneratedExercises(exercises);
         setIsModalOpen(true);
@@ -62,7 +62,7 @@ export default function RoutinePage() {
   }
 
   // Mostrar mensaje si no hay rutinas
-  if (!routines.length || !selectedRoutine || !selectedDay) {
+  if (!routines.length || !selectedRoutine || !selectedDay || !selectedDayId) {
     return <RoutineEmpty />;
   }
 
@@ -72,15 +72,15 @@ export default function RoutinePage() {
       {(userLoading || loading || routinesLoading) && <Loader />}
       <div className="p-4 max-w-full mx-auto flex-1">
         <RoutineSelector
-          selectedDayIndex={selectedDayIndex}
-          setSelectedDayIndex={setSelectedDayIndex}
+          selectedDayId={selectedDayId}
+          setSelectedDayId={setSelectedDayId}
           setSelectedDay={setSelectedDay}
         />
-        <DayProgress routine={selectedRoutine} day={selectedDay} />
+        <DayProgress routine={selectedRoutine} day={selectedDay} dayId={selectedDayId} />
         <ExerciseList
-          dayIndex={selectedRoutine.days.findIndex((d) => d._id === selectedDay._id)}
           day={selectedDay}
           routineId={selectedRoutine._id.toString()}
+          dayId={selectedDayId}
           onGenerateExercise={onGenerateExercise}
         />
       </div>
@@ -88,7 +88,7 @@ export default function RoutinePage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         exercises={generatedExercises}
-        onSelect={handleSelectExercise}
+        onSelect={(exercise) => handleSelectExercise(selectedRoutine._id.toString(), selectedDayId, exercise)}
       />
     </div>
   );
