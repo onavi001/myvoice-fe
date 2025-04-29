@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import { loginUser, registerUser } from "../store/userSlice";
@@ -10,6 +10,9 @@ import gymAI from "/gymAI.png";
 
 import { Link, useNavigate } from "react-router-dom";
 import InstallPrompt from "../components/InstallPrompt";
+import SpotifyAuth from "../components/SpotifyAuth";
+import SpotifyMiniPlayer from "../components/SpotifyMiniPlayer";
+import { WebPlaybackSDK } from "react-spotify-web-playback-sdk";
 
 export default function Login() {
   const dispatch: AppDispatch = useDispatch();
@@ -59,7 +62,18 @@ export default function Login() {
     hidden: { opacity: 0, scale: 0.9 },
     visible: { opacity: 1, scale: 1, transition: { duration: 0.8, delay: 0.4, ease: "easeOut" } },
   };
-
+  const [isExerciseStarted, setIsExerciseStarted] = useState(true);
+  const accessToken = localStorage.getItem("spotify_access_token");
+  const getOAuthToken = useCallback(
+    (callback: (token: string) => void) => {
+      if (accessToken) {
+        callback(accessToken);
+      } else {
+        console.error("No se encontró access_token");
+      }
+    },
+    [accessToken]
+  );
   return (
     <>
       <InstallPrompt />
@@ -89,7 +103,22 @@ export default function Login() {
             >
               Tu compañero perfecto para crear, seguir y optimizar tus rutinas de entrenamiento.
             </motion.p>
-
+            <SpotifyAuth />
+            {
+              accessToken &&
+              <WebPlaybackSDK
+              initialDeviceName="My Voice Mini Player"
+              getOAuthToken={getOAuthToken}
+              initialVolume={0.5}
+            >
+              <SpotifyMiniPlayer
+                accessToken={accessToken}
+                isExerciseStarted={isExerciseStarted}
+                //https://open.spotify.com/playlist/37i9dQZF1DZ06evO1WGSu8?si=12636b69d78d49ab
+                playlistUri="spotify:playlist:37i9dQZF1DZ06evO1WGSu8"
+              />
+            </WebPlaybackSDK>
+            }
             {/* Formulario */}
             <motion.form
               onSubmit={handleSubmit}

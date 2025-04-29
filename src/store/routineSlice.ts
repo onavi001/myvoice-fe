@@ -130,7 +130,6 @@ export const selectRoutine = createAsyncThunk<number, number, { rejectValue: Thu
   async (index, { getState, rejectWithValue }) => {
     const state = getState() as { routine: RoutineState };
     localStorage.setItem("routineIndex", index.toString());
-    console.log(state.routine.routines)
     if (index >= 0 && index < state.routine.routines.length) {
       return index;
     }else{

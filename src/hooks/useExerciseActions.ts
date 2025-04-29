@@ -128,7 +128,6 @@ export default function useExerciseActions() {
   };
 
   const handleFetchVideos = async (exerciseName: string, routineIndex: number, dayIndex: number, exerciseIndex: number) => {
-    console.log(exerciseName, routineIndex, dayIndex, exerciseIndex);
     if (!routines[routineIndex]?.days[dayIndex]?.exercises[exerciseIndex]) return;
     
     const exercise = routines[routineIndex].days[dayIndex].exercises[exerciseIndex];

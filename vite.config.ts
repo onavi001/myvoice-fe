@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import fs from "fs";
+import path from "path";
 
 // Interfaz para el manifiesto web
 export interface WebManifest {
@@ -77,9 +79,15 @@ export default defineConfig({
     sourcemap: false, // Desactivar sourcemaps en producción
   },
   server: {
+    https: {
+      key: fs.readFileSync(path.resolve(__dirname, "certs/localhost+2-key.pem")),
+      cert: fs.readFileSync(path.resolve(__dirname, "certs/localhost+2.pem")),
+    },
+    host: "192.168.1.238",
+    port: 5173,
     proxy: {
       "/api": {
-        target: "https://myvoice-be.vercel.app",
+        target: "http://localhost:3000",
         changeOrigin: true,
         secure: false,
       },

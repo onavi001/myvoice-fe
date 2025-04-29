@@ -19,6 +19,8 @@ import RoutineEdit from "./pages/RoutineEdit";
 import { Helmet } from "react-helmet";
 import ExerciseVideos from "./pages/ExerciseVideos";
 import OfflineNotice from "./components/OfflineNotice";
+import SpotifyCallback from "./components/SpotifyCallback";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -60,7 +62,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isInitialLoad) return;
     if (!token && location.pathname.startsWith("/")) {
-      navigate("/login", { replace: true });
+      //navigate("/login", { replace: true });
     } else if (token && location.pathname === "/login") {
       navigate("/routine", { replace: true });
     }
@@ -141,10 +143,11 @@ function App() {
         <AppInitializer>
           <Routes>
             {/* Rutas públicas */}
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<ErrorBoundary><Login /></ErrorBoundary>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             {/* Rutas protegidas */}
+            <Route path="/callback" element={<SpotifyCallback />} />
             <Route 
               path="/" 
               element={

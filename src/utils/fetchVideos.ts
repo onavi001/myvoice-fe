@@ -1,7 +1,6 @@
 import { IVideo } from "../models/Video";
 export async function fetchVideos(exerciseName: string, token: string): Promise<IVideo[]> {
   try {
-    console.log(exerciseName)
     const response = await fetch("/api/videos?exerciseName="+exerciseName, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

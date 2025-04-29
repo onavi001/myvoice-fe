@@ -90,7 +90,6 @@ export default function RoutineAI() {
     setToast(null);
     try {
       const generateRo = await dispatch(generateRoutine(formData)).unwrap();
-      console.log(generateRo);
       setCurrentRoutine(generateRo);
       setIsGenerating(false);
     } catch (err) {
@@ -105,7 +104,6 @@ export default function RoutineAI() {
       setLoadingState((prev) => ({ ...prev, generating: false }));
     }
   };
-  console.log(currentRoutine)
   const handleSaveRoutine = async () => {
     if (!currentRoutine) return;
 
@@ -123,7 +121,6 @@ export default function RoutineAI() {
 
       for (const day of currentRoutine.days) {
         const adjustedDay = validateAndAdjustDay(day);
-        console.log(adjustedDay)
         await dispatch(createDay({ routineId, dayData: adjustedDay })).unwrap();
       }
 

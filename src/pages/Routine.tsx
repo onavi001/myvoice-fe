@@ -63,7 +63,11 @@ export default function RoutinePage() {
 
   // Mostrar mensaje si no hay rutinas
   if (!routines.length || !selectedRoutine || !selectedDay) {
-    return <RoutineEmpty />;
+    if ((!loadingGenerate && userLoading && loading && routinesLoading)) {
+      return <RoutineEmpty />; 
+    }else{
+      return <Loader />; 
+    }
   }
 
   return (

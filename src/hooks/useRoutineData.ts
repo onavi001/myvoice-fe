@@ -11,7 +11,6 @@ export default function useRoutineData(initialRoutines: RoutineData[]) {
   const storedDayIndex = localStorage.getItem("dayIndex");
   const initialDayIndex = storedDayIndex ? parseInt(storedDayIndex) : 0;
   const [selectedDay, setSelectedDay] = useState<RoutineData["days"][number] | undefined>(selectedRoutine?.days[initialDayIndex]);
-  console.log(routines)
   useEffect(() => {
     if (routines.length > 0) {
       const routineIndex = localStorage.getItem("routineIndex");

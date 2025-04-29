@@ -31,7 +31,6 @@ export default function ExerciseList({
         standalone.push(exercise);
       }
     });
-    console.log(standalone)
     return { circuits, standalone };
   };
 
