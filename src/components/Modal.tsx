@@ -10,7 +10,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-[#2525258a] flex items-center justify-center z-50">
       <div className="bg-[#252525] border-2 border-[#4A4A4A] p-4 rounded-md max-w-md w-full">
         <button
           onClick={onClose}
