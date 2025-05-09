@@ -323,6 +323,45 @@ export default function RoutineForm() {
                       </div>
                     </div>
 
+                    {/* Ejercicios sin circuito */}
+                    {standalone.length > 0 && (
+                      <Card className="p-4 bg-[#303030] border border-[#4A4A4A] rounded-lg shadow-sm">
+                        <h3 className="text-sm font-semibold text-[#FFD700] mb-3">Ejercicios Individuales</h3>
+                        <div className="space-y-4">
+                          {standalone.map((exercise, exerciseIndex) => (
+                            <Card
+                              key={exercise._id}
+                              className={`p-4 bg-${
+                                exerciseIndex % 2 === 0 ? "[#252525]" : "[#282828]"
+                              } border border-[#4A4A4A] rounded-lg transition-all duration-300 ${
+                                exercise.isOpen ? "shadow-md" : "shadow-sm"
+                              }`}
+                            >
+                              <div
+                                className="flex justify-between items-center cursor-pointer mb-2"
+                                onClick={() => toggleExercise(dayIndex, exercise._id)}
+                              >
+                                <h4 className="text-sm font-semibold text-[#1e88e5]">
+                                  {exercise.name || `Ejercicio ${exerciseIndex + 1}`}
+                                </h4>
+                                <span className="text-[#D1D1D1] text-sm">{exercise.isOpen ? "▲" : "▼"}</span>
+                              </div>
+                              {exercise.isOpen && (
+                                <ExerciseForm
+                                  dayIndex={dayIndex}
+                                  exercise={exercise}
+                                  exerciseIndex={exerciseIndex}
+                                  circuitIds={circuitIds}
+                                  onChange={handleExerciseChange}
+                                  onDelete={handleDeleteExercise}
+                                />
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      </Card>
+                    )}
+
                     {/* Circuitos */}
                     {Object.entries(circuits).map(([circuitId, exercises], circuitIndex) => (
                       <Card
@@ -344,7 +383,7 @@ export default function RoutineForm() {
                                 className="flex justify-between items-center cursor-pointer mb-2"
                                 onClick={() => toggleExercise(dayIndex, exercise._id)}
                               >
-                                <h4 className="text-sm font-semibold text-white">
+                                <h4 className="text-sm font-semibold text-[#1e88e5]">
                                   {exercise.name || `Ejercicio ${exerciseIndex + 1}`}
                                 </h4>
                                 <span className="text-[#D1D1D1] text-sm">{exercise.isOpen ? "▲" : "▼"}</span>
@@ -364,45 +403,6 @@ export default function RoutineForm() {
                         </div>
                       </Card>
                     ))}
-
-                    {/* Ejercicios sin circuito */}
-                    {standalone.length > 0 && (
-                      <Card className="p-4 bg-[#303030] border border-[#4A4A4A] rounded-lg shadow-sm">
-                        <h3 className="text-sm font-semibold text-[#FFD700] mb-3">Ejercicios Individuales</h3>
-                        <div className="space-y-4">
-                          {standalone.map((exercise, exerciseIndex) => (
-                            <Card
-                              key={exercise._id}
-                              className={`p-4 bg-${
-                                exerciseIndex % 2 === 0 ? "[#252525]" : "[#282828]"
-                              } border border-[#4A4A4A] rounded-lg transition-all duration-300 ${
-                                exercise.isOpen ? "shadow-md" : "shadow-sm"
-                              }`}
-                            >
-                              <div
-                                className="flex justify-between items-center cursor-pointer mb-2"
-                                onClick={() => toggleExercise(dayIndex, exercise._id)}
-                              >
-                                <h4 className="text-sm font-semibold text-white">
-                                  {exercise.name || `Ejercicio ${exerciseIndex + 1}`}
-                                </h4>
-                                <span className="text-[#D1D1D1] text-sm">{exercise.isOpen ? "▲" : "▼"}</span>
-                              </div>
-                              {exercise.isOpen && (
-                                <ExerciseForm
-                                  dayIndex={dayIndex}
-                                  exercise={exercise}
-                                  exerciseIndex={exerciseIndex}
-                                  circuitIds={circuitIds}
-                                  onChange={handleExerciseChange}
-                                  onDelete={handleDeleteExercise}
-                                />
-                              )}
-                            </Card>
-                          ))}
-                        </div>
-                      </Card>
-                    )}
 
                     <div className="flex flex-col sm:flex-row gap-4">
                       <Button
