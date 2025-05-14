@@ -19,6 +19,7 @@ import RoutineEdit from "./pages/RoutineEdit";
 import { Helmet } from "react-helmet";
 import ExerciseVideos from "./pages/ExerciseVideos";
 import OfflineNotice from "./components/OfflineNotice";
+import CoachesDashboard from "./pages/CoachesDashboard";
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -196,6 +197,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ExerciseVideos />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coachesDashboard"
+              element={
+                <ProtectedRoute>
+                  <CoachesDashboard />
                 </ProtectedRoute>
               }
             />

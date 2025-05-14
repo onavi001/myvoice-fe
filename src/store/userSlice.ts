@@ -1,14 +1,9 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
-
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-}
+import { IUser } from "../models/Users";
 
 interface UserState {
-  user: User | null;
+  user: IUser | null;
   token: string | null;
   loading: boolean;
   error: string | null;
@@ -81,7 +76,7 @@ const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setUser(state, action: PayloadAction<{ user: User; token: string } | null>) {
+    setUser(state, action: PayloadAction<{ user: IUser; token: string } | null>) {
       if (action.payload) {
         state.user = action.payload.user;
         state.token = action.payload.token;
@@ -115,7 +110,7 @@ const userSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: User; token: string }>) => {
+      .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: IUser; token: string }>) => {
         state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
@@ -128,7 +123,7 @@ const userSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(verifyUser.fulfilled, (state, action: PayloadAction<{ user: User }>) => {
+      .addCase(verifyUser.fulfilled, (state, action: PayloadAction<{ user: IUser }>) => {
         state.loading = false;
         state.user = action.payload.user;
       })
