@@ -211,12 +211,13 @@ export const requestCoach = createAsyncThunk<void, string, { rejectValue: ThunkE
   "coach/requestCoach",
   async (coachId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/${coachId}/request`, {
+      const response = await fetch(`/api/coaches/request`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        body: JSON.stringify({ id:coachId }),
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });
@@ -266,12 +267,13 @@ export const acceptCoachRequest = createAsyncThunk<IUser, string, { rejectValue:
   "coach/acceptCoachRequest",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/requests/${userId}/accept`, {
+      const response = await fetch(`/api/coaches/accept`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        body: JSON.stringify({ id: userId }),
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });

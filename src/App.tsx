@@ -20,6 +20,7 @@ import { Helmet } from "react-helmet";
 import ExerciseVideos from "./pages/ExerciseVideos";
 import OfflineNotice from "./components/OfflineNotice";
 import CoachesDashboard from "./pages/CoachesDashboard";
+import CoachDashboard from "./pages/CoachDashboard";
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -201,10 +202,17 @@ function App() {
               }
             />
             <Route
-              path="/coachesDashboard"
+              path="/coaches/*"
               element={
                 <ProtectedRoute>
                   <CoachesDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/coach/*" 
+              element={
+                <ProtectedRoute>
+                  <CoachDashboard />
                 </ProtectedRoute>
               }
             />

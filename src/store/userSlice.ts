@@ -64,6 +64,7 @@ export const verifyUser = createAsyncThunk(
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error((await response.json()).message);
+      
       return await response.json();
     } catch (error) {
       Cookies.remove("token");
@@ -112,6 +113,7 @@ const userSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: IUser; token: string }>) => {
         state.loading = false;
+        console.log(action.payload);
         state.user = action.payload.user;
         state.token = action.payload.token;
       })
@@ -125,6 +127,7 @@ const userSlice = createSlice({
       })
       .addCase(verifyUser.fulfilled, (state, action: PayloadAction<{ user: IUser }>) => {
         state.loading = false;
+        console.log(action.payload);
         state.user = action.payload.user;
       })
       .addCase(verifyUser.rejected, (state, action) => {

@@ -17,7 +17,7 @@ export default function CoachesDashboard() {
   const {role} = user || {};
   useEffect(() => {
     if (!token) {
-      //navigate("/login");
+      navigate("/login");
     } else if (user && user.role && role !== "user") {
       navigate("/");
     } else {

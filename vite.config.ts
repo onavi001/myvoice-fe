@@ -79,7 +79,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "https://myvoice-be.vercel.app",
+        //target: "https://myvoice-be.vercel.app",
+        target: "http://localhost:3000", // Cambia esto a la URL de tu backend
         changeOrigin: true,
         secure: false,
       },
