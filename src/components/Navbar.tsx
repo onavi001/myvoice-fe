@@ -3,6 +3,16 @@ import Button from "./Button";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import { useNavigate } from "react-router-dom";
+import {
+  Bars3Icon,
+  CalendarIcon,
+  PlusIcon,
+  ChartBarIcon,
+  PencilIcon,
+  UserIcon,
+  ArrowLeftOnRectangleIcon,
+  SparklesIcon,
+} from "@heroicons/react/20/solid";
 
 interface NavbarProps {
   onMyRoutine: () => void;
@@ -13,79 +23,107 @@ interface NavbarProps {
   onEditRoutine?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onMyRoutine, onNewRoutine, onProgress, onLogout, onGenerateRoutine, onEditRoutine }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  onMyRoutine,
+  onNewRoutine,
+  onProgress,
+  onLogout,
+  onGenerateRoutine,
+  onEditRoutine,
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { selectedRoutineId, routines } = useSelector((state: RootState) => state.routine);
   const { user } = useSelector((state: RootState) => state.user);
   const hasSelectedRoutine = selectedRoutineId !== null && routines.find((r) => r._id === selectedRoutineId);
   const navigate = useNavigate();
+
   useEffect(() => {
-    setIsMenuOpen(false)
-  }, [navigate])
-  
+    setIsMenuOpen(false);
+  }, [navigate]);
+
+  const handleCoachNavigation = () => {
+    if (user?.role === "coach") {
+      navigate("/coach");
+    } else {
+      navigate("/coaches");
+    }
+  };
+
   return (
-    <div className="bg-[#1A1A1A] p-2 shadow-sm border-b border-[#4A4A4A] z-50">
+    <div className="bg-[#1A1A1A] p-2 shadow-md border-b border-[#4A4A4A] z-50">
       <div className="max-w-4xl mx-auto flex justify-between items-center space-x-2">
         {/* Logo o título */}
-        <div onClick={onMyRoutine} className="flex text-white flex items-center text-lg font-semibold">
-          <img src="/favicon.ico" alt="logo" width={40} height={40} className="w-10 h-10 mr-4"/>
+        <div onClick={onMyRoutine} className="flex text-[#E0E0E0] items-center text-lg font-semibold cursor-pointer">
+          <img src="/favicon.ico" alt="logo" width={40} height={40} className="w-10 h-10 mr-4" />
           MyVoice
         </div>
-        {user && 
+        {user && (
           <>
             {/* Botones principales */}
-            <div className="flex space-x-2">
-              <span className="max-w-auto" ><Button variant="secondary" onClick={onGenerateRoutine} className="px-4">Rutina con IA</Button></span>
+            <div className="flex space-x-2 items-center">
+              <Button
+                variant="secondary"
+                onClick={onGenerateRoutine}
+                className="bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg px-4 py-2 text-sm font-semibold border border-[#1E88E5] shadow-md transition-colors flex items-center gap-2"
+              >
+                <SparklesIcon className="w-5 h-5" /> Rutina con IA
+              </Button>
               {/* Botón de menú */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 bg-[#2D2D2D] rounded-full text-[#B0B0B0] hover:bg-[#4A4A4A] transition-colors"
+                className="p-2 bg-[#2D2D2D] rounded-full text-[#E0E0E0] hover:bg-[#4A4A4A] focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
+                <Bars3Icon className="w-5 h-5" />
               </button>
             </div>
-          
+
             {/* Menú desplegable */}
             {isMenuOpen && (
-              <div className="absolute top-12 right-4 w-48 bg-[#2D2D2D] rounded-lg shadow-lg p-2">
+              <div
+                className="absolute top-14 right-4 sm:right-6 w-56 bg-[#2D2D2D] rounded-lg shadow-lg p-3 space-y-1 transition-all duration-200 ease-in-out z-50"
+              >
                 <button
                   onClick={onMyRoutine}
-                  className="w-full text-left px-2 py-1 text-xs text-white hover:bg-[#4A4A4A] rounded transition-colors"
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
                 >
-                  Mi Rutina
+                  <CalendarIcon className="w-4 h-4" /> Mi Rutina
                 </button>
                 <button
                   onClick={onNewRoutine}
-                  className="w-full text-left px-2 py-1 text-xs text-white hover:bg-[#4A4A4A] rounded transition-colors"
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
                 >
-                  Nueva Rutina
+                  <PlusIcon className="w-4 h-4" /> Nueva Rutina
                 </button>
                 <button
                   onClick={onProgress}
-                  className="w-full text-left px-2 py-1 text-xs text-white hover:bg-[#4A4A4A] rounded transition-colors"
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
                 >
-                  Progreso
+                  <ChartBarIcon className="w-4 h-4" /> Progreso
                 </button>
                 {hasSelectedRoutine && onEditRoutine && (
                   <button
                     onClick={onEditRoutine}
-                    className="w-full text-left px-2 py-1 text-xs text-white hover:bg-[#4A4A4A] rounded transition-colors"
+                    className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
                   >
-                    Editar Rutina
+                    <PencilIcon className="w-4 h-4" /> Editar Rutina
                   </button>
                 )}
                 <button
-                  onClick={onLogout}
-                  className="w-full text-left px-2 py-1 text-xs text-red-500 hover:bg-[#4A4A4A] rounded transition-colors"
+                  onClick={handleCoachNavigation}
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
                 >
-                  Cerrar Sesión
+                  <UserIcon className="w-4 h-4" /> Coach
+                </button>
+                <button
+                  onClick={onLogout}
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#EF5350] hover:bg-[#4A4A4A] rounded transition-colors"
+                >
+                  <ArrowLeftOnRectangleIcon className="w-4 h-4" /> Cerrar Sesión
                 </button>
               </div>
             )}
           </>
-        }
+        )}
       </div>
     </div>
   );
