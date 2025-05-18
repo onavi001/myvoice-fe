@@ -151,12 +151,12 @@ export const assignRoutine = createAsyncThunk<RoutineData, { clientId: string; r
   }
 );
 
-export const updateClientData = createAsyncThunk<IUser, { clientId: string; goals?: string[]; notes?: string }, { rejectValue: ThunkError }>(
+export const updateClientData = createAsyncThunk<IUser, { clientId: string; goals?: string; notes?: string }, { rejectValue: ThunkError }>(
   "coach/updateClientData",
   async ({ clientId, goals, notes }, { rejectWithValue }) => {
     try {
       const response = await fetch(`/api/clients/${clientId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
