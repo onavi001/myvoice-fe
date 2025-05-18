@@ -1,10 +1,9 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
-import { fetchClients, fetchCoachRequests } from "../store/coachSlice";
+import { fetchClients, fetchCoachRequests, clearClientData } from "../store/coachSlice";
 import ClientList from "../components/CoachDashboard/ClientList";
-import ClientProfile from "../components/CoachDashboard/ClientProfile";
 import CoachRequests from "../components/CoachDashboard/CoachRequests";
 import Loader from "../components/Loader";
 
@@ -13,8 +12,7 @@ export default function CoachDashboard() {
   const navigate = useNavigate();
   const { token, user, loading: userLoading } = useSelector((state: RootState) => state.user);
   const { loading: coachLoading } = useSelector((state: RootState) => state.coach);
-  const {role} = user || {};
-  console.log(user)
+  const { role } = user || {};
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -24,8 +22,13 @@ export default function CoachDashboard() {
       dispatch(fetchClients());
       dispatch(fetchCoachRequests());
     }
+    console.log("useEffect");
+    return () => {
+      dispatch(clearClientData());
+    };
+    
   }, [token, role, dispatch, navigate]);
-
+  
   if (userLoading || coachLoading) {
     return (
       <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col items-center justify-center">
@@ -39,7 +42,6 @@ export default function CoachDashboard() {
     <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
       <Routes>
         <Route path="/" element={<ClientList />} />
-        <Route path="/client/:clientId" element={<ClientProfile />} />
         <Route path="/requests" element={<CoachRequests />} />
       </Routes>
     </div>

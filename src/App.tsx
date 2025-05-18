@@ -21,6 +21,7 @@ import ExerciseVideos from "./pages/ExerciseVideos";
 import OfflineNotice from "./components/OfflineNotice";
 import CoachesDashboard from "./pages/CoachesDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
+import ClientProfile from "./pages/ClientProfile";
 
 // Componente para rutas protegidas
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -213,6 +214,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CoachDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coach/client/:clientId"
+              element={
+                <ProtectedRoute>
+                  <ClientProfile />
                 </ProtectedRoute>
               }
             />

@@ -1,6 +1,7 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { IUser } from "../models/Users";
 import { RoutineData } from "../models/Routine";
+import { RootState } from ".";
 
 export interface ThunkError {
   message: string;
@@ -95,6 +96,7 @@ export const fetchClientRoutines = createAsyncThunk<RoutineData[], string, { rej
   "coach/fetchClientRoutines",
   async (clientId, { rejectWithValue }) => {
     try {
+      console.log("Fetching routines for clientId:", clientId);
       const response = await fetch(`/api/clients/${clientId}/routines`, {
         method: "GET",
         headers: {
@@ -321,6 +323,17 @@ export const rejectCoachRequest = createAsyncThunk<ICoachRequest, string, { reje
     }
   }
 );
+const selectCoachState = (state: RootState) => state.coach;
+
+export const selectSelectedClient = createSelector(
+  [selectCoachState],
+  (coach) => coach.selectedClient
+);
+
+export const selectClientRoutines = createSelector(
+  [selectCoachState],
+  (coach) => coach.clientRoutines
+);
 
 const coachSlice = createSlice({
   name: "coach",
@@ -328,6 +341,10 @@ const coachSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    clearClientData: (state) => {
+      state.selectedClient = null;
+      state.clientRoutines = [];
     },
   },
   extraReducers: (builder) => {
@@ -349,7 +366,13 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchClientProfile.fulfilled, (state, action) => {
-        state.selectedClient = action.payload;
+        // Evitar actualización si los datos son idénticos
+        if (
+          !state.selectedClient ||
+          JSON.stringify(state.selectedClient) !== JSON.stringify(action.payload)
+        ) {
+          state.selectedClient = action.payload;
+        }
         state.loading = false;
       })
       .addCase(fetchClientProfile.rejected, (state, action) => {
@@ -361,7 +384,12 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchClientRoutines.fulfilled, (state, action) => {
-        state.clientRoutines = action.payload;
+        // Evitar actualización si los datos son idénticos
+        if (
+          JSON.stringify(state.clientRoutines) !== JSON.stringify(action.payload)
+        ) {
+          state.clientRoutines = action.payload;
+        }
         state.loading = false;
       })
       .addCase(fetchClientRoutines.rejected, (state, action) => {
@@ -385,7 +413,13 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(updateClientData.fulfilled, (state, action) => {
-        state.selectedClient = action.payload;
+        // Evitar actualización si los datos son idénticos
+        if (
+          !state.selectedClient ||
+          JSON.stringify(state.selectedClient) !== JSON.stringify(action.payload)
+        ) {
+          state.selectedClient = action.payload;
+        }
         state.loading = false;
       })
       .addCase(updateClientData.rejected, (state, action) => {
@@ -455,5 +489,5 @@ const coachSlice = createSlice({
   },
 });
 
-export const { clearError } = coachSlice.actions;
+export const { clearError, clearClientData } = coachSlice.actions;
 export default coachSlice.reducer;

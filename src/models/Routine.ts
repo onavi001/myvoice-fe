@@ -13,6 +13,7 @@ export interface IRoutine {
 export interface RoutineData {
   _id: string;
   userId: string;
+  couchId?: string;
   name: string;
   days: {
     _id: string;

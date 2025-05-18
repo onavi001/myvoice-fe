@@ -1,25 +1,25 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppDispatch, RootState } from "../../store";
+import { AppDispatch, RootState } from "../store";
 import {
+  assignRoutine,
   fetchClientProfile,
   fetchClientRoutines,
-  assignRoutine,
   updateClientData,
-  clearError,
-} from "../../store/coachSlice";
-import { fetchRoutines } from "../../store/routineSlice";
-import Card from "../Card";
-import Button from "../Button";
-import Input from "../Input";
-import Textarea from "../Textarea";
-import { SmallLoader } from "../Loader";
+} from "../store/coachSlice";
+import { fetchRoutines } from "../store/routineSlice";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Input from "../components/Input";
+import Textarea from "../components/Textarea";
+import { SmallLoader } from "../components/Loader";
 
 export default function ClientProfile() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
+  console.log(clientId)
   const { selectedClient, clientRoutines, loading, error } = useSelector((state: RootState) => state.coach);
   const { routines } = useSelector((state: RootState) => state.routine);
   const [notes, setNotes] = useState("");
@@ -27,20 +27,19 @@ export default function ClientProfile() {
   const [selectedRoutineId, setSelectedRoutineId] = useState("");
   const [assigning, setAssigning] = useState(false);
   const [savingData, setSavingData] = useState(false);
-
+  
   useEffect(() => {
-    if (clientId) {
-      dispatch(fetchClientProfile(clientId));
-      dispatch(fetchClientRoutines(clientId));
-      dispatch(fetchRoutines());
-    }
-    return () => {
-      dispatch(clearError());
-    };
-  }, [clientId, dispatch]);
+    if (!clientId) return;
+
+    dispatch(fetchClientProfile(clientId));
+    dispatch(fetchClientRoutines(clientId));
+    dispatch(fetchRoutines());
+
+  }, []);
 
   useEffect(() => {
     if (selectedClient) {
+      console.log("Updating local state from selectedClient");
       setNotes(selectedClient.notes || "");
       setGoals(selectedClient.goals?.join(", ") || "");
     }
@@ -48,10 +47,14 @@ export default function ClientProfile() {
 
   const handleAssignRoutine = async () => {
     if (!selectedRoutineId || !clientId) return;
+    const routine = routines.find((r) => r._id === selectedRoutineId);
+    if (!routine) return;
     setAssigning(true);
     try {
       await dispatch(assignRoutine({ clientId, routineId: selectedRoutineId })).unwrap();
-      dispatch(fetchClientRoutines(clientId));
+      
+      
+      await dispatch(fetchClientRoutines(clientId)).unwrap();
       setSelectedRoutineId("");
     } catch (err) {
       console.error(err);
@@ -81,7 +84,7 @@ export default function ClientProfile() {
       </div>
     );
   }
-
+  console.log("Selected clientRoutines:", clientRoutines);
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto flex-1">
       <Button
@@ -108,21 +111,21 @@ export default function ClientProfile() {
           <div>
             <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Objetivos</label>
             <Input
+              name="goals"
               value={goals}
               onChange={(e) => setGoals(e.target.value)}
               placeholder="Fuerza, Resistencia, etc."
-              className="w-full" 
-              name={"goals"}
-              />
+              className="w-full"
+            />
           </div>
           <div>
             <label className="block text-[#D1D1D1] text-sm font-medium mb-2">Notas del Coach</label>
             <Textarea
+              name="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Añade notas sobre el cliente..."
-              className="w-full" 
-              name={"notes"}
+              className="w-full"
             />
           </div>
           <Button
@@ -169,7 +172,7 @@ export default function ClientProfile() {
 
       <Card className="p-4 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md">
         <h2 className="text-lg font-semibold text-[#FFD700] mb-4">Rutinas Asignadas</h2>
-        {clientRoutines.length === 0 ? (
+        {clientRoutines && clientRoutines.length === 0 ? (
           <p className="text-[#D1D1D1] text-sm">No hay rutinas asignadas.</p>
         ) : (
           <div className="space-y-4">
@@ -185,6 +188,7 @@ export default function ClientProfile() {
                     onClick={() => navigate(`/routine-edit/${routine._id}`)}
                     className="bg-[#FFD700] text-black hover:bg-[#FFC107] border-[#FFC107]"
                   >
+                    {routine._id}
                     Ver/Editar
                   </Button>
                 </div>
