@@ -1,7 +1,15 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 import { IUser } from "../models/Users";
-
+export interface ProfileUpdateData {
+  username: string;
+  email: string;
+  password?: string;
+  oldPassword?: string;
+  bio?: string;
+  goals?: string;
+  notes?: string;
+}
 interface UserState {
   user: IUser | null;
   token: string | null;
@@ -73,6 +81,37 @@ export const verifyUser = createAsyncThunk(
   }
 );
 
+export const updateProfile = createAsyncThunk(
+  "user/updateProfile",
+  async (userData: {
+    username: string;
+    email: string;
+    password?: string;
+    oldPassword?: string;
+    bio?: string;
+    goals?: string;
+    notes?: string;
+  }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
+    try {
+      const response = await fetch(`/api/user`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      if (!response.ok) throw new Error("Error al actualizar rutina");
+      const data = await response.json();
+      return data as IUser;
+    } catch (error) {
+      return rejectWithValue({ message: (error as Error).message });
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "user",
   initialState,
@@ -96,6 +135,18 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = { ...state.user, ...action.payload };
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Error al actualizar el perfil";
+      })
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
