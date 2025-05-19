@@ -12,6 +12,7 @@ import {
   UserIcon,
   ArrowLeftOnRectangleIcon,
   SparklesIcon,
+  UserCircleIcon,
 } from "@heroicons/react/20/solid";
 
 interface NavbarProps {
@@ -82,6 +83,12 @@ const Navbar: React.FC<NavbarProps> = ({
               <div
                 className="absolute top-14 right-4 sm:right-6 w-56 bg-[#2D2D2D] rounded-lg shadow-lg p-3 space-y-1 transition-all duration-200 ease-in-out z-50"
               >
+                <button
+                  onClick={() => navigate("/profile/edit")}
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
+                >
+                  <UserCircleIcon className="w-4 h-4" /> Editar Perfil
+                </button>
                 <button
                   onClick={onMyRoutine}
                   className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
