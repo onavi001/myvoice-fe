@@ -2,17 +2,10 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppDispatch, RootState } from "../store";
-import {
-  assignRoutine,
-  fetchClientProfile,
-  fetchClientRoutines,
-  updateClientData,
-} from "../store/coachSlice";
+import { assignRoutine, fetchClientProfile, fetchClientRoutines } from "../store/coachSlice";
 import { fetchRoutines } from "../store/routineSlice";
 import Card from "../components/Card";
 import Button from "../components/Button";
-import Input from "../components/Input";
-import Textarea from "../components/Textarea";
 import { SmallLoader } from "../components/Loader";
 import { ArrowLeftIcon, PlusIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
 
@@ -22,12 +15,8 @@ export default function ClientProfile() {
   const { clientId } = useParams<{ clientId: string }>();
   const { selectedClient, clientRoutines, loading } = useSelector((state: RootState) => state.coach);
   const { routines } = useSelector((state: RootState) => state.routine);
-  const [notes, setNotes] = useState("");
-  const [goals, setGoals] = useState("");
-  const [selectedRoutineId, setSelectedRoutineId] = useState("");
-  const [assigning, setAssigning] = useState(false);
-  const [savingData, setSavingData] = useState(false);
-  const [errors, setErrors] = useState<{ goals?: string; notes?: string }>({});
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string>("");
+  const [assigning, setAssigning] = useState<boolean>(false);
 
   useEffect(() => {
     if (!clientId) return;
@@ -36,13 +25,6 @@ export default function ClientProfile() {
     dispatch(fetchClientRoutines(clientId));
     dispatch(fetchRoutines());
   }, [clientId, dispatch]);
-
-  useEffect(() => {
-    if (selectedClient) {
-      setNotes(selectedClient.notes || "");
-      setGoals(selectedClient.goals?.join(", ") || "");
-    }
-  }, [selectedClient]);
 
   const handleAssignRoutine = async () => {
     if (!selectedRoutineId || !clientId) return;
@@ -53,34 +35,10 @@ export default function ClientProfile() {
       await dispatch(assignRoutine({ clientId, routineId: selectedRoutineId })).unwrap();
       await dispatch(fetchClientRoutines(clientId)).unwrap();
       setSelectedRoutineId("");
-    } catch (err) {
-      console.error(err);
-      setErrors({ notes: "Error al asignar la rutina" });
+    } catch (err: unknown) {
+      console.error("Error al asignar la rutina:", err);
     } finally {
       setAssigning(false);
-    }
-  };
-
-  const handleSaveData = async () => {
-    if (!clientId) return;
-    const newErrors: { goals?: string; notes?: string } = {};
-    if (!goals.trim()) newErrors.goals = "Los objetivos son obligatorios";
-    if (!notes.trim()) newErrors.notes = "Las notas son obligatorias";
-
-    if (Object.keys(newErrors).length) {
-      setErrors(newErrors);
-      return;
-    }
-
-    setSavingData(true);
-    setErrors({});
-    try {
-      await dispatch(updateClientData({ clientId, goals, notes })).unwrap();
-    } catch (err) {
-      console.error(err);
-      setErrors({ notes: "Error al guardar los datos" });
-    } finally {
-      setSavingData(false);
     }
   };
 
@@ -105,46 +63,23 @@ export default function ClientProfile() {
         </Button>
         <h1 className="text-3xl sm:text-4xl font-bold mb-6">Perfil de {selectedClient.username}</h1>
 
-        <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#FFD700] mb-4">Información del Cliente</h2>
-          <div className="space-y-4">
+        <Card className="p-2 sm:p-4 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
+          <h2 className="text-base sm:text-lg font-semibold text-[#FFD700] mb-2">Información del Cliente</h2>
+          <div className="space-y-2">
             <div>
               <label className="block text-[#E0E0E0] text-base font-medium mb-1">Nombre</label>
-              <p className="text-[#E0E0E0] text-base">{selectedClient.username}</p>
-            </div>
-            <div>
-              <label className="block text-[#E0E0E0] text-base font-medium mb-1">Email</label>
-              <p className="text-[#E0E0E0] text-base">{selectedClient.email}</p>
+              <p className="text-[#E0E0E0] text-sm">{selectedClient.username}</p>
             </div>
             <div>
               <label className="block text-[#E0E0E0] text-base font-medium mb-1">Objetivos</label>
-              <Input
-                name="goals"
-                value={goals}
-                onChange={(e) => setGoals(e.target.value)}
-                placeholder="Fuerza, Resistencia, etc."
-                className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-4 text-base focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors"
-              />
-              {errors.goals && <p className="text-red-500 text-sm mt-1">{errors.goals}</p>}
+              <p className="text-[#E0E0E0] text-sm">
+                {selectedClient.goals?.length ? selectedClient.goals.join(", ") : "Sin objetivos"}
+              </p>
             </div>
             <div>
               <label className="block text-[#E0E0E0] text-base font-medium mb-1">Notas del Cliente</label>
-              <Textarea
-                name="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Añade notas sobre el cliente..."
-                className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-4 text-base focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors h-28 resize-none"
-              />
-              {errors.notes && <p className="text-red-500 text-sm mt-1">{errors.notes}</p>}
+              <p className="text-[#E0E0E0] text-sm break-words">{selectedClient.notes || "Sin notas"}</p>
             </div>
-            <Button
-              onClick={handleSaveData}
-              disabled={savingData}
-              className="w-full bg-[#66BB6A] text-black active:bg-[#4CAF50]/80 rounded-lg py-3 px-5 text-base font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/90 disabled:opacity-80 disabled:cursor-not-allowed transition-colors min-h-12"
-            >
-              {savingData ? <SmallLoader /> : "Guardar Cambios"}
-            </Button>
           </div>
         </Card>
 
