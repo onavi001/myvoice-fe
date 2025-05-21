@@ -54,6 +54,28 @@ export const fetchRoutines = createAsyncThunk<RoutineData[], void, { rejectValue
   }
 );
 
+export const fetchRoutineById = createAsyncThunk<RoutineData, string, { rejectValue: ThunkError }>(
+  "routine/fetchRoutineById",
+  async (routineId, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
+    try {
+      const response = await fetch(`/api/routines/${routineId}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      if (!response.ok) throw new Error("Error al eliminar rutina");
+      const data = await response.json();
+      return data as RoutineData;
+    } catch (error) {
+      return rejectWithValue({ message: (error as Error).message });
+    }
+  }
+);
+
 // Crear una nueva rutina
 export const createRoutine = createAsyncThunk<RoutineData, IRoutine, { rejectValue: ThunkError }>(
   "routine/createRoutine",
@@ -436,6 +458,23 @@ const routineSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch Routine by ID
+      .addCase(fetchRoutineById.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+        console.log("Rutina obtenida:", action.payload);
+        const index = state.routines.findIndex((r) => r._id === action.payload._id);
+        if (index !== -1) {
+          state.routines[index] = action.payload;
+        } else {
+          state.routines.push(action.payload);
+        }
+        state.selectedRoutineId = action.payload._id;
+        
+      }
+      )
+      .addCase(fetchRoutineById.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.error = action.payload?.message ?? "Error desconocido";
+        //state.loading = false;
+      })
       // Fetch Routines
       .addCase(fetchRoutines.pending, (state) => {
         state.loading = true;

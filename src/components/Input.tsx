@@ -10,9 +10,12 @@ interface InputProps {
   ref?: React.Ref<HTMLInputElement>
   required?: boolean;
   disabled?: boolean;
+  min?: string | number;
+  max?: string | number;
+  step?: string | number;
 }
 
-const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, onChange, className, ref, required, disabled }) => {
+const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, onChange, className, ref, required, disabled, min, max, step}) => {
   return (
     <input
       name={name}
@@ -24,6 +27,9 @@ const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, 
       ref={ref}
       required={required}
       disabled={disabled}
+      min={min}
+      max={max}
+      step={step}
     />
   );
 };

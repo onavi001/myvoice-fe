@@ -28,9 +28,10 @@ export default function RoutinePage() {
   const [loadingGenerate, setLoadingGenerate] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    console.log("Fetching routines: token=", token, "routines.length=", routines.length, "routinesLoading=", routinesLoading);
+    if (token && !routinesLoading) {
       dispatch(fetchRoutines());
-    } else {
+    } else if (!token) {
       navigate("/login");
     }
   }, [token, dispatch, navigate]);
@@ -55,7 +56,7 @@ export default function RoutinePage() {
   // Manejar errores globales
   if (routinesError || error) {
     return (
-      <div className="min-h-screen bg-[#1A1A1A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex items-center justify-center">
         Error: {routinesError || error}
       </div>
     );
@@ -67,10 +68,10 @@ export default function RoutinePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
+    <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
       {loadingGenerate && <FuturisticLoader />}
       {(userLoading || loading || routinesLoading) && <Loader />}
-      <div className="p-4 max-w-full mx-auto flex-1">
+      <div className="p-3 sm:p-6 max-w-full mx-auto flex-1">
         <RoutineSelector
           selectedDayId={selectedDayId}
           setSelectedDayId={setSelectedDayId}

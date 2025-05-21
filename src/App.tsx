@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { store, RootState, AppDispatch } from "./store";
@@ -24,63 +24,85 @@ import CoachDashboard from "./pages/CoachDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import EditProfile from "./pages/EditProfile";
 
-// Componente para rutas protegidas
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+interface AppInitializerProps {
+  children: React.ReactNode;
+}
+
+interface RouteConfig {
+  path: string;
+  element: React.ReactNode;
+  protected: boolean;
+}
+
+const ProtectedRoute = memo(function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { token, loading } = useSelector((state: RootState) => state.user);
   const location = useLocation();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col items-center justify-center">
         <Loader />
       </div>
     );
   }
 
   if (!token) {
-    // Redirigir a /login y guardar la ruta original para volver después de autenticarse
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
-}
+});
 
-function AppInitializer({ children }: { children: React.ReactNode }) {
-  const dispatch: AppDispatch = useDispatch();
+const AppInitializer = memo(function AppInitializer({ children }: AppInitializerProps) {
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
   const { loading, token, user } = useSelector((state: RootState) => state.user);
   const selectedRoutine = useSelector((state: RootState) => state.routine.selectedRoutineId);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isRouteChanging, setIsRouteChanging] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
+  const [isRouteChanging, setIsRouteChanging] = useState<boolean>(false);
 
-  // Verificar usuario al cargar la app
   useEffect(() => {
     dispatch(verifyUser()).finally(() => setIsInitialLoad(false));
   }, [dispatch]);
 
-  // Redirigir según el estado del token
   useEffect(() => {
     if (isInitialLoad) return;
-    if (!token && location.pathname.startsWith("/")) {
+    if (!token && location.pathname !== "/login") {
       navigate("/login", { replace: true });
     } else if (token && location.pathname === "/login") {
       navigate("/routine", { replace: true });
     }
   }, [token, location.pathname, isInitialLoad, navigate]);
 
-  // Detectar cambios de ruta
   useEffect(() => {
-    const handleRouteChangeStart = () => setIsRouteChanging(true);
-    const handleRouteChangeComplete = () => setIsRouteChanging(false);
-
-    handleRouteChangeStart();
-    const timer = setTimeout(handleRouteChangeComplete, 300);
+    setIsRouteChanging(true);
+    const timer = setTimeout(() => setIsRouteChanging(false), 300);
     return () => clearTimeout(timer);
   }, [location]);
 
-  const showNavbar = token && location.pathname.startsWith("/");
+  const showNavbar = token && location.pathname !== "/login";
   const isLoading = isInitialLoad || loading || isRouteChanging;
+
+  const onMyRoutine = useCallback(() => navigate("/routine"), [navigate]);
+  const onNewRoutine = useCallback(() => navigate("/routine-form"), [navigate]);
+  const onProgress = useCallback(() => navigate("/progress"), [navigate]);
+  const onLogout = useCallback(() => {
+    dispatch(logout());
+    navigate("/login");
+  }, [dispatch, navigate]);
+  const onGenerateRoutine = useCallback(() => navigate("/routine-AI"), [navigate]);
+  const onEditRoutine = useCallback(
+    () =>
+      location.pathname === "/routine" && selectedRoutine !== null
+        ? navigate(`/routine-edit/${selectedRoutine}`)
+        : undefined,
+    [navigate, location.pathname, selectedRoutine]
+  );
 
   if (isLoading) {
     return (
@@ -91,6 +113,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col items-center justify-center"
           >
             <Loader />
           </motion.div>
@@ -103,26 +126,39 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     <>
       {showNavbar && (
         <Navbar
-          onMyRoutine={() => navigate("/routine")}
-          onNewRoutine={() => navigate("/routine-form")}
-          onProgress={() => navigate("/progress")}
-          onLogout={() => {
-            dispatch(logout());
-            navigate("/login");
-          }}
-          onGenerateRoutine={() => navigate("/routine-AI")}
-          onEditRoutine={
-            location.pathname === "/routine" &&
-            selectedRoutine !== null
-              ? () => navigate(`/routine-edit/${selectedRoutine}`)
-              : undefined
-          }
+          onMyRoutine={onMyRoutine}
+          onNewRoutine={onNewRoutine}
+          onProgress={onProgress}
+          onLogout={onLogout}
+          onGenerateRoutine={onGenerateRoutine}
+          onEditRoutine={onEditRoutine}
         />
       )}
       {user ? <Layout>{children}</Layout> : children}
     </>
   );
-}
+});
+
+const routes: RouteConfig[] = [
+  { path: "/login", element: <Login />, protected: false },
+  { path: "/forgot-password", element: <ForgotPassword />, protected: false },
+  { path: "/reset-password", element: <ResetPassword />, protected: false },
+  { path: "/", element: <Home />, protected: true },
+  { path: "/routine", element: <Routine />, protected: true },
+  { path: "/routine-AI", element: <RoutineAI />, protected: true },
+  { path: "/routine-form", element: <RoutineForm />, protected: true },
+  { path: "/progress", element: <Progress />, protected: true },
+  { path: "/routine-edit/:routineId", element: <RoutineEdit />, protected: true },
+  {
+    path: "/routine-edit/:routineId/videos/:dayIndex/:exerciseIndex",
+    element: <ExerciseVideos />,
+    protected: true,
+  },
+  { path: "/coaches/*", element: <CoachesDashboard />, protected: true },
+  { path: "/coach/*", element: <CoachDashboard />, protected: true },
+  { path: "/coach/client/:clientId", element: <ClientProfile />, protected: true },
+  { path: "/profile/edit", element: <EditProfile />, protected: true },
+];
 
 function App() {
   return (
@@ -142,98 +178,13 @@ function App() {
       <Router>
         <AppInitializer>
           <Routes>
-            {/* Rutas públicas */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            {/* Rutas protegidas */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/routine"
-              element={
-                <ProtectedRoute>
-                  <Routine />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/routine-AI"
-              element={
-                <ProtectedRoute>
-                  <RoutineAI />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/routine-form"
-              element={
-                <ProtectedRoute>
-                  <RoutineForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/progress"
-              element={
-                <ProtectedRoute>
-                  <Progress />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/routine-edit/:routineId"
-              element={
-                <ProtectedRoute>
-                  <RoutineEdit />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/routine-edit/:routineId/videos/:dayIndex/:exerciseIndex"
-              element={
-                <ProtectedRoute>
-                  <ExerciseVideos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/coaches/*"
-              element={
-                <ProtectedRoute>
-                  <CoachesDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/coach/*" 
-              element={
-                <ProtectedRoute>
-                  <CoachDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/coach/client/:clientId"
-              element={
-                <ProtectedRoute>
-                  <ClientProfile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile/edit"
-              element={
-                <ProtectedRoute>
-                  <EditProfile />
-                </ProtectedRoute>
-              }
-            />
+            {routes.map(({ path, element, protected: isProtected }, index) => (
+              <Route
+                key={index}
+                path={path}
+                element={isProtected ? <ProtectedRoute>{element}</ProtectedRoute> : element}
+              />
+            ))}
           </Routes>
         </AppInitializer>
       </Router>
