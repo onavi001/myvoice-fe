@@ -154,7 +154,7 @@ const Admin: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
-      <div className="p-3 sm:p-6 max-w-full mx-auto flex-1">
+      <div className="p-3 sm:p-6 max-w-full flex-1">
         <div className="flex items-center justify-between mb-4 gap-2">
           <div className="flex items-center gap-2">
             <Button
