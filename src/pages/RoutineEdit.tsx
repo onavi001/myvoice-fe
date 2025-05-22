@@ -28,7 +28,7 @@ const RoutineEdit: React.FC = () => {
   const navigate = useNavigate();
   const { routineId } = useParams<{ routineId: string }>();
   const { routines, loading: routinesLoading, error: routinesError } = useSelector((state: RootState) => state.routine);
-  const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
+  const { token, loading: userLoading, user } = useSelector((state: RootState) => state.user);
 
   const initialRoutine = routines.find((r) => r._id === routineId);
   const [routineName, setRoutineName] = useState("");
@@ -40,6 +40,9 @@ const RoutineEdit: React.FC = () => {
   const [allExpanded, setAllExpanded] = useState(false);
   const [fetchingRoutine, setFetchingRoutine] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+
+  // Check if routine is restricted (has coachId and coachId !== user._id)
+  const isCoachRestricted:boolean = (initialRoutine?.couchId && initialRoutine.couchId !== user?._id) || false;
 
   // Brighter circuit colors for better contrast
   const circuitColors = ["#4CAF50", "#AB47BC", "#42A5F5", "#FFCA28", "#EF5350"];
@@ -86,6 +89,7 @@ const RoutineEdit: React.FC = () => {
   }, [initialRoutine, routinesLoading, fetchingRoutine, routinesError, hasFetched, navigate]);
 
   const handleAddDay = useCallback(() => {
+    if (isCoachRestricted) return;
     console.log("Adding new day");
     setAddingDay(true);
     setDays((prev) => [
@@ -101,9 +105,10 @@ const RoutineEdit: React.FC = () => {
       },
     ]);
     setAddingDay(false);
-  }, []);
+  }, [isCoachRestricted]);
 
   const handleAddExercise = useCallback((dayIndex: number) => {
+    if (isCoachRestricted) return;
     console.log("Adding exercise to day:", dayIndex);
     setDays((prev) => {
       const updatedDays = [...prev];
@@ -128,9 +133,10 @@ const RoutineEdit: React.FC = () => {
       ];
       return updatedDays;
     });
-  }, []);
+  }, [isCoachRestricted]);
 
   const handleDeleteExercise = useCallback((dayIndex: number, exerciseId: string) => {
+    if (isCoachRestricted) return;
     console.log("Deleting exercise:", exerciseId, "from day:", dayIndex);
     setDays((prev) => {
       const updatedDays = [...prev];
@@ -139,14 +145,16 @@ const RoutineEdit: React.FC = () => {
       );
       return updatedDays;
     });
-  }, []);
+  }, [isCoachRestricted]);
 
   const handleDeleteDay = useCallback((dayIndex: number) => {
+    if (isCoachRestricted) return;
     console.log("Deleting day:", dayIndex);
     setDays((prev) => prev.filter((_, index) => index !== dayIndex));
-  }, []);
+  }, [isCoachRestricted]);
 
   const handleDayChange = useCallback((dayIndex: number, field: string, value: string) => {
+    if (isCoachRestricted) return;
     console.log("Updating day:", dayIndex, "field:", field, "value:", value);
     setDays((prev) => {
       const updatedDays = [...prev];
@@ -157,10 +165,11 @@ const RoutineEdit: React.FC = () => {
       }
       return updatedDays;
     });
-  }, []);
+  }, [isCoachRestricted]);
 
   const handleExerciseChange = useCallback(
     (dayIndex: number, exerciseId: string, field: string, value: string | number) => {
+      if (isCoachRestricted) return;
       console.log("Updating exercise:", exerciseId, "field:", field, "value:", value);
       setDays((prev) => {
         const updatedDays = structuredClone(prev);
@@ -181,7 +190,7 @@ const RoutineEdit: React.FC = () => {
         return updatedDays;
       });
     },
-    []
+    [isCoachRestricted]
   );
 
   const toggleDay = useCallback((dayIndex: number) => {
@@ -252,6 +261,7 @@ const RoutineEdit: React.FC = () => {
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
+      if (isCoachRestricted) return;
       const newErrors: { routineName?: string; days?: string[] } = {};
       if (!routineName) newErrors.routineName = "El nombre de la rutina es obligatorio";
       const dayErrors = days.map((day, i) => {
@@ -303,10 +313,11 @@ const RoutineEdit: React.FC = () => {
         setSavingRoutine(false);
       }
     },
-    [routineName, days, routineId, dispatch, navigate]
+    [routineName, days, routineId, isCoachRestricted, dispatch, navigate]
   );
 
   const handleDelete = useCallback(async () => {
+    if (isCoachRestricted) return;
     console.log("Deleting routine:", routineId);
     setDeletingRoutine(true);
     setErrors({});
@@ -325,7 +336,7 @@ const RoutineEdit: React.FC = () => {
     } finally {
       setDeletingRoutine(false);
     }
-  }, [routineId, dispatch, navigate]);
+  }, [routineId, isCoachRestricted, dispatch, navigate]);
 
   if (userLoading || routinesLoading || fetchingRoutine) {
     return (
@@ -360,12 +371,22 @@ const RoutineEdit: React.FC = () => {
           <Button
             variant="secondary"
             onClick={toggleAll}
-            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-4 py-2 text-sm font-semibold border border-[#FFC107] shadow-md transition-colors flex items-center gap-2 min-h-12"
+            disabled={isCoachRestricted}
+            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-4 py-2 text-sm font-semibold border border-[#FFC107] shadow-md disabled:bg-[#FFC107]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center gap-2 min-h-12"
           >
             {allExpanded ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
             {allExpanded ? "Colapsar Todo" : "Expandir Todo"}
           </Button>
         </div>
+
+        {isCoachRestricted && (
+          <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
+            <p className="text-[#EF5350] text-sm flex items-center gap-1">
+              <ExclamationCircleIcon className="w-5 h-5" />
+              Esta rutina solo puede ser editada por el coach asignado.
+            </p>
+          </Card>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md">
@@ -375,7 +396,8 @@ const RoutineEdit: React.FC = () => {
               value={routineName}
               onChange={(e) => setRoutineName(e.target.value)}
               placeholder="Ejemplo: Rutina de Fuerza"
-              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+              disabled={isCoachRestricted}
+              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
             />
             {errors.routineName && (
               <p className="text-[#EF5350] text-xs mt-1 flex items-center gap-1">
@@ -465,7 +487,8 @@ const RoutineEdit: React.FC = () => {
                               value={day.dayName}
                               onChange={(e) => handleDayChange(dayIndex, "dayName", e.target.value)}
                               placeholder={`Día ${dayIndex + 1}`}
-                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                              disabled={isCoachRestricted}
+                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                             />
                             {errors.days?.[dayIndex]?.includes("nombre") && (
                               <p className="text-[#EF5350] text-xs mt-1 flex items-center gap-1">
@@ -485,7 +508,8 @@ const RoutineEdit: React.FC = () => {
                                 handleDayChange(dayIndex, "musclesWorked", e.target.value)
                               }
                               placeholder="Pecho, Tríceps"
-                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                              disabled={isCoachRestricted}
+                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                             />
                           </div>
                           <div>
@@ -499,7 +523,8 @@ const RoutineEdit: React.FC = () => {
                                 handleDayChange(dayIndex, "warmupOptions", e.target.value)
                               }
                               placeholder="Caminadora, Estiramientos"
-                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                              disabled={isCoachRestricted}
+                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                             />
                           </div>
                           <div>
@@ -513,7 +538,8 @@ const RoutineEdit: React.FC = () => {
                                 handleDayChange(dayIndex, "explanation", e.target.value)
                               }
                               placeholder="Notas sobre el día"
-                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                              disabled={isCoachRestricted}
+                              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                             />
                           </div>
                         </div>
@@ -535,6 +561,7 @@ const RoutineEdit: React.FC = () => {
                                   onDelete={handleDeleteExercise}
                                   onToggle={() => toggleExercise(dayIndex, exercise._id)}
                                   routineId={routineId!}
+                                  isCoachRestricted={isCoachRestricted}
                                 />
                               ))}
                             </div>
@@ -565,6 +592,7 @@ const RoutineEdit: React.FC = () => {
                                   onDelete={handleDeleteExercise}
                                   onToggle={() => toggleExercise(dayIndex, exercise._id)}
                                   routineId={routineId!}
+                                  isCoachRestricted={isCoachRestricted}
                                 />
                               ))}
                             </div>
@@ -575,7 +603,7 @@ const RoutineEdit: React.FC = () => {
                           <Button
                             type="button"
                             onClick={() => handleDeleteDay(dayIndex)}
-                            disabled={days.length <= 1}
+                            disabled={days.length <= 1 || isCoachRestricted}
                             className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                           >
                             Eliminar Día
@@ -584,7 +612,8 @@ const RoutineEdit: React.FC = () => {
                             variant="secondary"
                             type="button"
                             onClick={() => handleAddExercise(dayIndex)}
-                            className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md transition-colors flex items-center justify-center gap-2 min-h-12"
+                            disabled={isCoachRestricted}
+                            className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
                           >
                             <PlusIcon className="w-5 h-5" /> Agregar Ejercicio
                           </Button>
@@ -601,7 +630,7 @@ const RoutineEdit: React.FC = () => {
             variant="secondary"
             type="button"
             onClick={handleAddDay}
-            disabled={addingDay}
+            disabled={addingDay || isCoachRestricted}
             className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-3 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
           >
             {addingDay ? <SmallLoader /> : (
@@ -615,7 +644,7 @@ const RoutineEdit: React.FC = () => {
             <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3">
               <Button
                 type="submit"
-                disabled={savingRoutine || deletingRoutine}
+                disabled={savingRoutine || deletingRoutine || isCoachRestricted}
                 className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-3 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
               >
                 {savingRoutine ? <SmallLoader /> : "Guardar Rutina"}
@@ -623,7 +652,7 @@ const RoutineEdit: React.FC = () => {
               <Button
                 type="button"
                 onClick={handleDelete}
-                disabled={savingRoutine || deletingRoutine}
+                disabled={savingRoutine || deletingRoutine || isCoachRestricted}
                 className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-3 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
               >
                 {deletingRoutine ? <SmallLoader /> : "Eliminar Rutina"}
@@ -645,10 +674,11 @@ interface ExerciseFormProps {
   onDelete: (dayIndex: number, exerciseId: string) => void;
   onToggle: () => void;
   routineId: string;
+  isCoachRestricted: boolean;
 }
 
 const ExerciseForm = memo(
-  ({ dayIndex, exercise, exerciseIndex, circuitIds, onChange, onDelete, onToggle, routineId }: ExerciseFormProps) => {
+  ({ dayIndex, exercise, exerciseIndex, circuitIds, onChange, onDelete, onToggle, routineId, isCoachRestricted }: ExerciseFormProps) => {
     const navigate = useNavigate();
 
     return (
@@ -701,7 +731,8 @@ const ExerciseForm = memo(
                     value={exercise.name}
                     onChange={(e) => onChange(dayIndex, exercise._id, "name", e.target.value)}
                     placeholder="Nombre del ejercicio"
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
                 <div>
@@ -712,7 +743,8 @@ const ExerciseForm = memo(
                     name={`circuitId-${exercise._id}`}
                     value={exercise.circuitId || ""}
                     onChange={(e) => onChange(dayIndex, exercise._id, "circuitId", e.target.value)}
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   >
                     <option value="">Sin Circuito</option>
                     {circuitIds.map((id) => (
@@ -734,7 +766,8 @@ const ExerciseForm = memo(
                     value={exercise.muscleGroup.join(", ")}
                     onChange={(e) => onChange(dayIndex, exercise._id, "muscleGroup", e.target.value)}
                     placeholder="Músculos (ej. Pecho, Hombros)"
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
                 <div>
@@ -744,7 +777,8 @@ const ExerciseForm = memo(
                     value={exercise.tips.join(", ")}
                     onChange={(e) => onChange(dayIndex, exercise._id, "tips", e.target.value)}
                     placeholder="Consejos (ej. Mantén la espalda recta)"
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
               </div>
@@ -758,7 +792,8 @@ const ExerciseForm = memo(
                     onChange={(e) =>
                       onChange(dayIndex, exercise._id, "sets", Number(e.target.value))
                     }
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
                 <div>
@@ -770,7 +805,8 @@ const ExerciseForm = memo(
                     onChange={(e) =>
                       onChange(dayIndex, exercise._id, "reps", Number(e.target.value))
                     }
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
                 <div>
@@ -781,7 +817,8 @@ const ExerciseForm = memo(
                     name={`repsUnit-${exercise._id}`}
                     value={exercise.repsUnit || "count"}
                     onChange={(e) => onChange(dayIndex, exercise._id, "repsUnit", e.target.value)}
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   >
                     <option value="count">Unidades (U)</option>
                     <option value="seconds">Segundos (S)</option>
@@ -798,7 +835,8 @@ const ExerciseForm = memo(
                     type="number"
                     value={exercise.rest}
                     onChange={(e) => onChange(dayIndex, exercise._id, "rest", e.target.value)}
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                   />
                 </div>
                 <div className="sm:col-span-2">
@@ -807,7 +845,8 @@ const ExerciseForm = memo(
                     name={`notes-${exercise._id}`}
                     value={exercise.notes || ""}
                     onChange={(e) => onChange(dayIndex, exercise._id, "notes", e.target.value)}
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors h-20 resize-none"
+                    disabled={isCoachRestricted}
+                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] disabled:bg-[#2D2D2D]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors h-20 resize-none"
                   />
                 </div>
               </div>
@@ -815,7 +854,8 @@ const ExerciseForm = memo(
                 <Button
                   type="button"
                   onClick={() => onDelete(dayIndex, exercise._id)}
-                  className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md transition-colors min-h-12"
+                  disabled={isCoachRestricted}
+                  className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                 >
                   Eliminar
                 </Button>
@@ -824,7 +864,8 @@ const ExerciseForm = memo(
                   onClick={() =>
                     navigate(`/routine-edit/${routineId}/videos/${dayIndex}/${exerciseIndex}`)
                   }
-                  className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md transition-colors min-h-12"
+                  disabled={isCoachRestricted}
+                  className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
                 >
                   Videos
                 </Button>
@@ -849,6 +890,7 @@ const ExerciseForm = memo(
     prevProps.exercise.rest === nextProps.exercise.rest &&
     prevProps.exercise.notes === nextProps.exercise.notes &&
     prevProps.routineId === nextProps.routineId &&
+    prevProps.isCoachRestricted === nextProps.isCoachRestricted &&
     prevProps.onToggle === nextProps.onToggle
 );
 

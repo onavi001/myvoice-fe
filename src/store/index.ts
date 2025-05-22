@@ -3,6 +3,7 @@ import routineReducer from "./routineSlice";
 import progressReducer from "./progressSlice";
 import userReducer from "./userSlice";
 import coachReducer from "./coachSlice";
+import userManagementReducer from "./userManagementSlice";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     progress: progressReducer,
     user: userReducer,
     coach: coachReducer,
+    userManagement: userManagementReducer,
   },
 });
 

@@ -5,7 +5,7 @@ export interface IUser {
   username: string;
   email: string;
   password: string;
-  role: "user" | "coach";
+  role: "user" | "coach" | "admin";
   goals?: string[];
   notes?: string;
   coachId?: string; // Para usuarios: ID del coach asignado

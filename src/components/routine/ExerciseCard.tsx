@@ -26,7 +26,7 @@ export default function ExerciseCard({
   exerciseId: string;
   onGenerateExercise: (routineId: string, dayId: string, exerciseId: string) => void;
 }) {
-  const { selectedRoutineId } = useSelector((state: RootState) => state.routine);
+  const { selectedRoutineId, routines } = useSelector((state: RootState) => state.routine);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editData, setEditData] = useState<Partial<IExercise>>({});
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +36,14 @@ export default function ExerciseCard({
   const [openBodyModal, setOpenBodyModal] = useState(false);
   const [musclesToShow, setMusclesToShow] = useState<string[]>([]);
   const hasFetchedVideos = useRef(false);
-
+  const [editRoutine,setEditRoutine] = useState<boolean>(true);
+  useEffect(() => {
+    if (selectedRoutineId) {
+      const routine = routines.find((r) => r._id.toString() === selectedRoutineId);
+      setEditRoutine((routine?.couchId && routine.couchId !== routine?.userId) || false);
+    }
+  }, [routines, selectedRoutineId])
+  
   useEffect(() => {
     if (
       isExpanded &&
@@ -155,6 +162,7 @@ export default function ExerciseCard({
                 <Button
                   onClick={() => onGenerateExercise(routineId, dayId, exerciseId)}
                   className="my-4 flex items-center gap-1 bg-[#34C759] text-black px-2 py-1 rounded-full text-xs hover:bg-[#2ca44e]"
+                  disabled={editRoutine}
                 >
                   <ArrowPathIcon className="w-4 h-4" />
                   <span>Regenerar</span>

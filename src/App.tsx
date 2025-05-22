@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { Provider, useDispatch, useSelector } from "react-redux";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate, Outlet } from "react-router-dom";
 import { store, RootState, AppDispatch } from "./store";
 import { verifyUser, logout } from "./store/userSlice";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,7 @@ import CoachesDashboard from "./pages/CoachesDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import EditProfile from "./pages/EditProfile";
+import Admin from "./pages/Admin";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -37,6 +38,19 @@ interface RouteConfig {
   element: React.ReactNode;
   protected: boolean;
 }
+const ProtectedAdminRoute: React.FC = () => {
+  const { user, token } = useSelector((state: RootState) => state.user);
+
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== "admin") {
+    return <Navigate to="/routine" replace />;
+  }
+
+  return <Outlet />;
+};
 
 const ProtectedRoute = memo(function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { token, loading } = useSelector((state: RootState) => state.user);
@@ -91,6 +105,7 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
   const onMyRoutine = useCallback(() => navigate("/routine"), [navigate]);
   const onNewRoutine = useCallback(() => navigate("/routine-form"), [navigate]);
   const onProgress = useCallback(() => navigate("/progress"), [navigate]);
+  const onAdmin = useCallback(() => navigate("/admin"), [navigate]);
   const onLogout = useCallback(() => {
     dispatch(logout());
     navigate("/login");
@@ -129,6 +144,7 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
           onMyRoutine={onMyRoutine}
           onNewRoutine={onNewRoutine}
           onProgress={onProgress}
+          onAdmin={onAdmin}
           onLogout={onLogout}
           onGenerateRoutine={onGenerateRoutine}
           onEditRoutine={onEditRoutine}
@@ -185,6 +201,9 @@ function App() {
                 element={isProtected ? <ProtectedRoute>{element}</ProtectedRoute> : element}
               />
             ))}
+            <Route element={<ProtectedAdminRoute />}>
+              <Route path="/admin" element={<Admin />} />
+            </Route>
           </Routes>
         </AppInitializer>
       </Router>

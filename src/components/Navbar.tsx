@@ -13,12 +13,14 @@ import {
   ArrowLeftOnRectangleIcon,
   SparklesIcon,
   UserCircleIcon,
+  ShieldCheckIcon,
 } from "@heroicons/react/20/solid";
 
 interface NavbarProps {
   onMyRoutine: () => void;
   onNewRoutine: () => void;
   onProgress: () => void;
+  onAdmin: () => void;
   onLogout: () => void;
   onGenerateRoutine: () => void;
   onEditRoutine?: () => void;
@@ -28,6 +30,7 @@ const Navbar: React.FC<NavbarProps> = ({
   onMyRoutine,
   onNewRoutine,
   onProgress,
+  onAdmin,
   onLogout,
   onGenerateRoutine,
   onEditRoutine,
@@ -107,6 +110,16 @@ const Navbar: React.FC<NavbarProps> = ({
                 >
                   <ChartBarIcon className="w-4 h-4" /> Progreso
                 </button>
+                {user?.role === "admin" && (
+                  <button
+                  onClick={onAdmin}
+                  className="w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded transition-colors"
+                >
+                  <ShieldCheckIcon className="w-4 h-4" /> Admin
+                </button>
+                    
+                      
+                )}
                 {hasSelectedRoutine && onEditRoutine && (
                   <button
                     onClick={onEditRoutine}
