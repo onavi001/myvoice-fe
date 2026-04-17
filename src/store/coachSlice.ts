@@ -1,3 +1,9 @@
+/**
+ * Redux slice para la gestión de coaches y clientes:
+ * - Maneja solicitudes de coach
+ * - Asigna rutinas
+ * - Gestiona el estado de clientes y coaches
+ */
 import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { IUser } from "../models/Users";
 import { RoutineData } from "../models/Routine";

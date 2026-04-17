@@ -351,6 +351,58 @@ export const updateExerciseCompleted = createAsyncThunk<
   }
 );
 
+//Reset de progreso de un dia
+export const resetDayProgress = createAsyncThunk<
+  { routineId: string; dayId: string },
+  { routineId: string; dayId: string },
+  { rejectValue: ThunkError }
+>(
+  "routine/resetDayProgress",
+  async ({ routineId, dayId }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
+    try {
+      const response = await fetch(`/api/days/${dayId}/reset`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      if (!response.ok) throw new Error("Error al resetear progreso del día");
+      return { routineId, dayId };
+    } catch (error) {
+      return rejectWithValue({ message: (error as Error).message });
+    }
+  }
+);
+
+//Reset de progreso de una rutina
+export const resetRoutineProgress = createAsyncThunk<
+  { routineId: string },
+  { routineId: string },
+  { rejectValue: ThunkError }
+>(
+  "routine/resetRoutineProgress",
+  async ({ routineId }, { getState, rejectWithValue }) => {
+    const state = getState() as { user: { token: string } };
+    const token = state.user.token;
+    try {
+      const response = await fetch(`/api/routines/${routineId}/reset`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 401) {
+        return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      if (!response.ok) throw new Error("Error al resetear progreso de la rutina");
+      return { routineId };
+    } catch (error) {
+      return rejectWithValue({ message: (error as Error).message });
+    }
+  }
+);
+
 // Establecer videos para un ejercicio
 export const setExerciseVideos = createAsyncThunk<
   { routineId: string; dayId: string; exerciseId: string; videos: { _id: string; url: string; isCurrent: boolean }[] },
@@ -474,6 +526,47 @@ const routineSlice = createSlice({
       .addCase(fetchRoutineById.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.error = action.payload?.message ?? "Error desconocido";
         //state.loading = false;
+      })
+      // Reset progress of a day
+      .addCase(resetDayProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetDayProgress.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string }>) => {
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          if (day) {
+            day.exercises.forEach((exercise) => {
+              exercise.completed = false; // Reset completed status
+            });
+          }
+        }
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetDayProgress.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.error = action.payload?.message ?? "Error desconocido";
+      })
+      // Reset progress of a routine
+      .addCase(resetRoutineProgress.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetRoutineProgress.fulfilled, (state, action: PayloadAction<{ routineId: string }>) => {
+        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        if (routine) {
+          routine.days.forEach((day) => {
+            day.exercises.forEach((exercise) => {
+              exercise.completed = false; // Reset completed status
+            });
+          });
+        }
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetRoutineProgress.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.error = action.payload?.message ?? "Error desconocido";
       })
       // Fetch Routines
       .addCase(fetchRoutines.pending, (state) => {

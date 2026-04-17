@@ -1,4 +1,6 @@
+
 import React, { ButtonHTMLAttributes } from "react";
+import { ariaLabel, ariaRole } from "../utils/a11y";
 type ButtonVariant = "primary" | "secondary" | "danger";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -6,9 +8,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   disabled?: boolean;
   className?: string;
+  ariaLabel?: string;
+  ariaRole?: string;
 }
 
-const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary", disabled, className = "", ...props }) => {
+
+const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary", disabled, className = "", ariaLabel: label, ariaRole: role, ...props }) => {
   const baseStyles = " py-2 rounded text-xs font-medium transition-colors";
   const variantStyles = {
     primary: "bg-[#34C759] text-black hover:bg-[#2DBF4E]",
@@ -21,6 +26,8 @@ const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary",
       onClick={onClick}
       disabled={disabled}
       className={`${variantStyles[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className} ${baseStyles}`}
+      {...ariaLabel(label || (typeof children === "string" ? children : undefined))}
+      {...ariaRole(role || "button")}
       {...props}
     >
       {children}
@@ -28,4 +35,4 @@ const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary",
   );
 };
 
-export default Button;
+export default React.memo(Button);

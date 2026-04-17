@@ -1,3 +1,8 @@
+/**
+ * Hook personalizado para manejar la selección y persistencia de rutinas y días.
+ * - Sincroniza con localStorage
+ * - Expone rutina y día seleccionados
+ */
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";

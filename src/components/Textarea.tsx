@@ -18,8 +18,10 @@ const Textarea: React.FC<TextareaProps> = ({ name, placeholder, value, onChange,
       disabled={disabled}
       onChange={onChange}
       className={`w-full p-2 bg-[#1A1A1A] border border-[#4A4A4A] rounded text-white text-xs placeholder-[#B0B0B0] focus:outline-none focus:ring-1 focus:ring-[#34C759] ${className}`}
+      aria-label={placeholder || name}
+      role="textbox"
     />
   );
 };
 
-export default Textarea;
+export default React.memo(Textarea);

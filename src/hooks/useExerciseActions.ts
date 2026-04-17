@@ -1,3 +1,11 @@
+/**
+ * Hook personalizado para manejar acciones sobre ejercicios:
+ * - Guardar cambios
+ * - Marcar ejercicios como completados
+ * - Obtener videos relacionados
+ *
+ * Devuelve funciones para manipular ejercicios y estado de carga.
+ */
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import { updateExercise, setExerciseVideos, updateExerciseCompleted } from "../store/routineSlice";
@@ -63,7 +71,6 @@ export default function useExerciseActions() {
       if (validProgress.length > 0) {
         await dispatch(
           addProgress({
-            name: currentExercise.name,
             sets: Number(editData.sets ?? currentExercise.sets),
             reps: Number(editData.reps ?? currentExercise.reps),
             repsUnit: editData.repsUnit ?? currentExercise.repsUnit,
@@ -71,6 +78,13 @@ export default function useExerciseActions() {
             weight: editData.weight ?? currentExercise.weight ?? "",
             notes: editData.notes ?? currentExercise.notes ?? "",
             date: new Date(),
+            completed: true,
+            routineId: routineId,
+            dayId: day._id,
+            exerciseId: currentExercise._id,
+            routineName: routine.name,
+            dayName: day.dayName,
+            exerciseName: currentExercise.name,
           })
         ).unwrap();
       }
@@ -93,6 +107,24 @@ export default function useExerciseActions() {
     try {
       await dispatch(
         updateExerciseCompleted({ routineId, dayId, exerciseId, completed: !currentExercise.completed })
+      ).unwrap();
+      await dispatch(
+        addProgress({
+          sets: currentExercise.sets,
+          reps: currentExercise.reps,
+          repsUnit: currentExercise.repsUnit,
+          weightUnit: currentExercise.weightUnit,
+          weight: currentExercise.weight,
+          completed: true,
+          notes: currentExercise.notes || "",
+          routineId: routineId,
+          routineName: routine.name,
+          dayId: day._id,
+          dayName: day.dayName,
+          exerciseId: currentExercise._id,
+          exerciseName: currentExercise.name,
+          date: new Date(),
+        })
       ).unwrap();
     } catch (err) {
       const error = err as ThunkError;

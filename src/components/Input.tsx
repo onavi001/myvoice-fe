@@ -30,8 +30,10 @@ const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, 
       min={min}
       max={max}
       step={step}
+      aria-label={placeholder || name}
+      role="textbox"
     />
   );
 };
 
-export default Input;
+export default React.memo(Input);

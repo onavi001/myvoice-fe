@@ -10,11 +10,12 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#2525258a] flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-[#2525258a] flex items-center justify-center z-50" role="dialog" aria-modal="true">
       <div className="bg-[#252525] border-2 border-[#4A4A4A] p-4 rounded-md max-w-md w-full">
         <button
           onClick={onClose}
           className="float-right text-[#D1D1D1] hover:text-[#EF5350] text-lg font-bold"
+          aria-label="Cerrar modal"
         >
           ×
         </button>
@@ -24,4 +25,4 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
   );
 };
 
-export default Modal;
+export default React.memo(Modal);

@@ -27,7 +27,7 @@ export const addProgress = createAsyncThunk(
       const response = await fetch("/api/progress", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...progressData, userId, date: progressData.date.toISOString() }),
+        body: JSON.stringify({ ...progressData, userId, date: progressData.date.toString() }),
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });
@@ -72,7 +72,7 @@ export const editProgress = createAsyncThunk(
     try {
       const serializedEntry = {
         ...updatedEntry,
-        date: updatedEntry.date ? updatedEntry.date.toISOString() : undefined,
+        date: updatedEntry.date ? updatedEntry.date.toString() : undefined,
       };
       const response = await fetch(`/api/progress/${progressId}`, {
         method: "PUT",

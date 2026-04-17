@@ -13,6 +13,8 @@ import Loader, { FuturisticLoader } from "../components/Loader";
 import { ThunkError } from "../store/routineSlice";
 import { IExercise } from "../models/Exercise";
 import RoutineEmpty from "../components/routine/RoutineEmpty";
+import WeeklyExerciseChart from "../components/WeeklyExerciseChart";
+import WeeklyProgressCalendar from "../components/WeeklyProgressCalendar";
 
 export default function RoutinePage() {
   const dispatch: AppDispatch = useDispatch();
@@ -77,6 +79,8 @@ export default function RoutinePage() {
           setSelectedDayId={setSelectedDayId}
           setSelectedDay={setSelectedDay}
         />
+        <WeeklyExerciseChart />
+        <WeeklyProgressCalendar/>
         <DayProgress routine={selectedRoutine} day={selectedDay} dayId={selectedDayId} />
         <ExerciseList
           day={selectedDay}

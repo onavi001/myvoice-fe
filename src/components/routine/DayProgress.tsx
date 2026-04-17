@@ -2,7 +2,7 @@ import ProgressBar from "../ProgressBar";
 import { RoutineData } from "../../models/Routine";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store";
-import { updateExerciseCompleted } from "../../store/routineSlice";
+import { resetDayProgress, resetRoutineProgress } from "../../store/routineSlice";
 
 export default function DayProgress({ routine, day, dayId }: { routine: RoutineData; day: RoutineData["days"][number]; dayId: string }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -20,31 +20,16 @@ export default function DayProgress({ routine, day, dayId }: { routine: RoutineD
   };
 
   const handleResetDayProgress = async () => {
-    for (const exercise of day.exercises) {
-      await dispatch(
-        updateExerciseCompleted({
-          routineId: routine._id.toString(),
-          dayId: dayId,
-          exerciseId: exercise._id.toString(),
-          completed: false,
-        })
-      );
-    }
+    await dispatch(resetDayProgress({
+      routineId: routine._id.toString(),
+      dayId: dayId,
+    }));
   };
 
   const handleResetRoutineProgress = async () => {
-    for (const day of routine.days) {
-      for (const exercise of day.exercises) {
-        await dispatch(
-          updateExerciseCompleted({
-            routineId: routine._id.toString(),
-            dayId: day._id.toString(),
-            exerciseId: exercise._id.toString(),
-            completed: false,
-          })
-        );
-      }
-    }
+    await dispatch(resetRoutineProgress(
+      {routineId: routine._id}
+    ));
   };
 
   return (

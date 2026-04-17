@@ -1,8 +1,12 @@
-import { Schema, model, Model } from "mongoose";
-
 export interface IProgress {
-  userId: Schema.Types.ObjectId;
-  name: string;
+  _id: string;
+  userId: string;
+  routineId: string;
+  routineName: string;
+  dayId: string;
+  dayName: string;
+  exerciseId: string;
+  exerciseName: string;
   sets: number;
   reps: number;
   repsUnit: "count" | "seconds";
@@ -10,11 +14,17 @@ export interface IProgress {
   weight: number;
   notes: string;
   date: Date;
+  completed: boolean;
 }
 export interface ProgressData {
   _id: string;
   userId: string;
-  name: string;
+  routineId: string;
+  routineName: string;
+  dayId: string;
+  dayName: string;
+  exerciseId: string;
+  exerciseName: string;
   sets: number;
   reps: number;
   repsUnit: "count" | "seconds";
@@ -22,26 +32,5 @@ export interface ProgressData {
   weight: number;
   notes: string;
   date: Date;
+  completed: boolean;
 }
-
-const ProgressSchema: Schema = new Schema<IProgress>({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  name: { type: String, required: true },
-  sets: { type: Number, required: true },
-  reps: { type: Number, required: true },
-  repsUnit: { type: String, enum: ["count", "seconds"], default : "count" },
-  weightUnit: { type: String, enum: ["kg", "lb"], default: "kg" },
-  weight: { type: Number, default: 0 },
-  notes: { type: String, default: "" },
-  date: { type: Date, default: Date.now },
-});
-
-let ProgressModel: Model<IProgress>;
-
-try {
-  ProgressModel = model<IProgress>("Progress", ProgressSchema);
-} catch {
-  ProgressModel = model<IProgress>("Progress", ProgressSchema, undefined, { overwriteModels: true });
-}
-
-export default ProgressModel;

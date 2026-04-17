@@ -1,54 +1,45 @@
-# React + TypeScript + Vite
+# MyVoice Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend de la aplicación MyVoice, construido con React, TypeScript y Vite.
 
-Currently, two official plugins are available:
+## Scripts principales
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- `npm run dev` — Inicia el servidor de desarrollo
+- `npm run build` — Compila la app para producción
+- `npm run preview` — Previsualiza el build
+- `npm run lint` — Linting del código
 
-## Expanding the ESLint configuration
+## Estructura del proyecto
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `src/components/` — Componentes reutilizables y específicos
+- `src/pages/` — Páginas principales de la app
+- `src/hooks/` — Hooks personalizados
+- `src/store/` — Slices de Redux y gestión de estado global
+- `src/models/` — Tipos y modelos TypeScript
+- `src/utils/` — Utilidades generales (incluye helpers de accesibilidad)
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Accesibilidad
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- Todos los botones, inputs y modales incluyen roles y aria-labels para accesibilidad.
+- Usa helpers de `src/utils/a11y.ts` para roles y etiquetas.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Optimización de performance
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+- Componentes clave (Button, Input, Textarea, Modal) usan `React.memo` para evitar renders innecesarios.
+- Se recomienda usar `React.lazy` y `Suspense` para lazy loading de páginas/modales pesados.
+
+## Buenas prácticas
+
+- Mantén la lógica de negocio fuera de los componentes y centralizada en hooks/slices.
+- Usa feedback visual (loaders, mensajes) en todas las acciones asíncronas.
+- Valida formularios y entradas de usuario.
+
+## Contribución
+
+1. Haz fork y clona el repo
+2. Instala dependencias: `npm install`
+3. Usa ramas para nuevas features o fixes
+4. Haz PRs claros y documentados
+
+---
+Proyecto mantenido por el equipo MyVoice.
