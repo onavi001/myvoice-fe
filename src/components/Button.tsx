@@ -26,7 +26,7 @@ const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary",
       onClick={onClick}
       disabled={disabled}
       className={`${variantStyles[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className} ${baseStyles}`}
-      {...ariaLabel(label || (typeof children === "string" ? children : undefined))}
+      {...ariaLabel(label || (typeof children === "string" ? children : ""))}
       {...ariaRole(role || "button")}
       {...props}
     >

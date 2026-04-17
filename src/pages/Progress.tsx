@@ -91,10 +91,10 @@ const ProgressCard = React.memo(
             onClick={() => toggleExpandCard(cardKey)}
             role="button"
             aria-expanded={isExpanded}
-            aria-label={`Toggle ${currentEntry.name} details`}
+            aria-label={`Toggle ${currentEntry.exerciseName} details`}
           >
             <div className="flex-1 truncate">
-              <span className="text-base text-[#E0E0E0]">{currentEntry.name}</span>
+              <span className="text-base text-[#E0E0E0]">{currentEntry.exerciseName}</span>
               <p className="text-xs sm:text-sm text-[#B0B0B0]">
                 {new Date(currentEntry.date).toLocaleDateString()}
               </p>
@@ -261,7 +261,7 @@ export default function Progress() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [newProgress, setNewProgress] = useState<Omit<ProgressData, "_id" | "userId">>({
-    name: "",
+    exerciseName: "",
     sets: 0,
     reps: 0,
     repsUnit: "count",
@@ -269,6 +269,12 @@ export default function Progress() {
     weight: 0,
     notes: "",
     date: new Date(),
+    completed: false,
+    dayName: "",
+    routineId: "",
+    dayId: "",
+    routineName: "",
+    exerciseId: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof Omit<ProgressData, "_id" | "userId">, string>>>({});
   const [addingProgress, setAddingProgress] = useState(false);
@@ -350,7 +356,7 @@ export default function Progress() {
 
   const validateForm = (data: Omit<ProgressData, "_id" | "userId">) => {
     const errors: Partial<Record<keyof Omit<ProgressData, "_id" | "userId">, string>> = {};
-    if (!data.name) errors.name = "El nombre es obligatorio";
+    if (!data.exerciseName) errors.exerciseName = "El nombre es obligatorio";
     if (data.sets < 0) errors.sets = "Series no pueden ser negativas";
     if (data.reps < 0) errors.reps = "Reps no pueden ser negativos";
     if (data.weight < 0) errors.weight = "Peso no puede ser negativo";
@@ -382,7 +388,7 @@ export default function Progress() {
       setToast({ message: "Progreso agregado correctamente", variant: "success" });
       setShowAddForm(false);
       setNewProgress({
-        name: "",
+        exerciseName: "",
         sets: 0,
         reps: 0,
         repsUnit: "count",
@@ -390,6 +396,12 @@ export default function Progress() {
         weight: 0,
         notes: "",
         date: new Date(),
+        completed: false,
+        dayName: "",
+        routineId: "",
+        dayId: "",
+        routineName: "",
+        exerciseId: "",
       });
       setFormErrors({});
     } catch (err) {
@@ -407,7 +419,7 @@ export default function Progress() {
   const handleExport = () => {
     const csvData = progress.map((entry) => ({
       Fecha: new Date(entry.date).toLocaleDateString(),
-      Ejercicio: entry.name,
+      Ejercicio: entry.exerciseName,
       Series: entry.sets,
       Reps: entry.reps,
       "Unidad Reps": entry.repsUnit,
@@ -444,7 +456,7 @@ export default function Progress() {
   const filteredProgress = useMemo(() => {
     let result = [...progress];
     if (debouncedSearch) {
-      result = result.filter((entry) => entry.name.toLowerCase().includes(debouncedSearch.toLowerCase()));
+      result = result.filter((entry) => entry.exerciseName.toLowerCase().includes(debouncedSearch.toLowerCase()));
     }
     if (dateFilter.start) {
       result = result.filter((entry) => new Date(entry.date) >= dateFilter.start!);
@@ -456,7 +468,7 @@ export default function Progress() {
       result = result.filter((entry) =>
         routines.some((routine) =>
           routine.days?.some((day) =>
-            day.exercises?.some((ex) => ex.name === entry.name && day.musclesWorked?.includes(muscleFilter))
+            day.exercises?.some((ex) => ex.name === entry.exerciseName && day.musclesWorked?.includes(muscleFilter))
           )
         )
       );
@@ -472,7 +484,7 @@ export default function Progress() {
   }, [progress, debouncedSearch, dateFilter, muscleFilter, sortBy, sortOrder, routines]);
 
   const chartData = useMemo(() => {
-    let data = chartExercise === "all" ? filteredProgress : filteredProgress.filter((e) => e.name === chartExercise);
+    let data = chartExercise === "all" ? filteredProgress : filteredProgress.filter((e) => e.exerciseName === chartExercise);
     data = data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return {
       labels: data.map((entry) => new Date(entry.date).toLocaleDateString()),
@@ -693,9 +705,9 @@ export default function Progress() {
                   <div>
                     <label className="block text-xs sm:text-sm text-[#E0E0E0]">Ejercicio</label>
                     <select
-                      name="name"
-                      value={newProgress.name}
-                      onChange={(e) => handleAddChange("name", e.target.value)}
+                      name="exerciseName"
+                      value={newProgress.exerciseName}
+                      onChange={(e) => handleAddChange("exerciseName", e.target.value)}
                       className="w-full bg-[#2D2D2D] border border-[#3A3A3A] text-[#E0E0E0] rounded-lg p-1.5 sm:p-2 text-xs sm:text-sm h-8 sm:h-auto focus:ring-2 focus:ring-[#E0E0E0] transition-all"
                       aria-label="Select exercise"
                     >
@@ -706,8 +718,8 @@ export default function Progress() {
                         </option>
                       ))}
                     </select>
-                    {formErrors.name && (
-                      <p className="text-[#E0E0E0] text-xs mt-1">{formErrors.name}</p>
+                    {formErrors.exerciseName && (
+                      <p className="text-[#E0E0E0] text-xs mt-1">{formErrors.exerciseName}</p>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
