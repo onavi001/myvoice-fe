@@ -1,13 +1,11 @@
 import { IVideo } from "../models/Video";
-export async function fetchVideos(exerciseName: string, token: string): Promise<IVideo[]> {
+import { apiClient } from "./apiClient";
+export async function fetchVideos(exerciseName: string): Promise<IVideo[]> {
   try {
-    console.log(exerciseName)
-    const response = await fetch("/api/videos?exerciseName="+exerciseName, {
+    const videos = await apiClient<IVideo[]>(`/api/videos?exerciseName=${encodeURIComponent(exerciseName)}`, {
       method: "GET",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      auth: true,
     });
-    if (!response.ok) throw new Error("Error al obtener videos");
-    const videos = await response.json();
     return videos;
   } catch (error) {
     console.error("Error fetching YouTube video:", error);

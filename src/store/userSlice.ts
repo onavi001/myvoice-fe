@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 import { IUser } from "../models/Users";
+import { apiClient, ApiError } from "../utils/apiClient";
 export interface ProfileUpdateData {
   username: string;
   email: string;
@@ -17,6 +18,11 @@ interface UserState {
   error: string | null;
 }
 
+interface ThunkError {
+  message: string;
+  status?: number;
+}
+
 const initialState: UserState = {
   user: null,
   token: Cookies.get("token") || null,
@@ -24,90 +30,75 @@ const initialState: UserState = {
   error: null,
 };
 
-export const registerUser = createAsyncThunk(
+const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
+  const apiError = error as ApiError;
+  return {
+    message: apiError?.message || fallbackMessage,
+    status: apiError?.status,
+  };
+};
+
+export const registerUser = createAsyncThunk<unknown, { username: string; email: string; password: string }, { rejectValue: string }>(
   "user/registerUser",
   async ({ username, email, password }: { username: string; email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/users", {
+      return await apiClient<unknown>("/api/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
       });
-      if (!response.ok) throw new Error((await response.json()).message);
-      return await response.json();
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue((error as ApiError)?.message || "Error al registrar usuario");
     }
   }
 );
 
-export const loginUser = createAsyncThunk(
+export const loginUser = createAsyncThunk<
+  { user: IUser; token: string },
+  { email: string; password: string },
+  { rejectValue: string }
+>(
   "user/loginUser",
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/auth/login", {
+      const data = await apiClient<{ token: string; user: IUser }>("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
-      if (!response.ok) throw new Error((await response.json()).message);
-      const data = await response.json();
       Cookies.set("token", data.token, { expires: 1 / 24 }); // 1 hora
       return { user: data.user, token: data.token };
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue((error as ApiError)?.message || "Error en login");
     }
   }
 );
 
-export const verifyUser = createAsyncThunk(
+export const verifyUser = createAsyncThunk<{ user: IUser }, void, { rejectValue: string }>(
   "user/verifyUser",
   async (_, { rejectWithValue }) => {
     const token = Cookies.get("token");
     if (!token) throw new Error("No token found");
 
     try {
-      const response = await fetch("/api/auth/verify", {
-        headers: { Authorization: `Bearer ${token}` },
+      return await apiClient<{ user: IUser }>("/api/auth/verify", {
+        method: "GET",
       });
-      if (!response.ok) throw new Error((await response.json()).message);
-      
-      return await response.json();
     } catch (error) {
       Cookies.remove("token");
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue((error as ApiError)?.message || "Error al verificar sesión");
     }
   }
 );
 
-export const updateProfile = createAsyncThunk(
+export const updateProfile = createAsyncThunk<IUser, ProfileUpdateData, { rejectValue: ThunkError }>(
   "user/updateProfile",
-  async (userData: {
-    username: string;
-    email: string;
-    password?: string;
-    oldPassword?: string;
-    bio?: string;
-    goals?: string;
-    notes?: string;
-  }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/profile`, {
+      return await apiClient<IUser>(`/api/profile`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar rutina");
-      const data = await response.json();
-      return data as IUser;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar perfil"));
     }
   }
 );
@@ -145,7 +136,7 @@ const userSlice = createSlice({
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Error al actualizar el perfil";
+        state.error = (action.payload as ThunkError | undefined)?.message || "Error al actualizar el perfil";
       })
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
@@ -164,7 +155,6 @@ const userSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action: PayloadAction<{ user: IUser; token: string }>) => {
         state.loading = false;
-        console.log(action.payload);
         state.user = action.payload.user;
         state.token = action.payload.token;
       })
@@ -178,7 +168,6 @@ const userSlice = createSlice({
       })
       .addCase(verifyUser.fulfilled, (state, action: PayloadAction<{ user: IUser }>) => {
         state.loading = false;
-        console.log(action.payload);
         state.user = action.payload.user;
       })
       .addCase(verifyUser.rejected, (state, action) => {

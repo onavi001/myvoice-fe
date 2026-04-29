@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit";
 import { IUser } from "../models/Users";
 import { RootState } from ".";
+import { apiClient, ApiError } from "../utils/apiClient";
 
 export interface ThunkError {
   message: string;
@@ -31,30 +32,23 @@ const initialState: UserManagementState = {
   error: null,
 };
 
+const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
+  const apiError = error as ApiError;
+  return {
+    message: apiError?.message || fallbackMessage,
+    status: apiError?.status,
+  };
+};
+
 export const fetchUsers = createAsyncThunk<IUser[], void, { rejectValue: ThunkError }>(
   "userManagement/fetchUsers",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/admin/users", {
+      return await apiClient<IUser[]>("/api/admin/users", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching users",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching users" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching users"));
     }
   }
 );
@@ -67,28 +61,12 @@ export const updateUser = createAsyncThunk<
   "userManagement/updateUser",
   async ({ userId, updatedUser }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      return await apiClient<IUser>(`/api/admin/users/${userId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify(updatedUser),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error updating user",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error updating user" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error updating user"));
     }
   }
 );
@@ -97,26 +75,11 @@ export const fetchCoachRequests = createAsyncThunk<IAdminCoachRequest[], void, {
   "userManagement/fetchCoachRequests",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/admin/coach-requests", {
+      return await apiClient<IAdminCoachRequest[]>("/api/admin/coach-requests", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching requests",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching requests" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching requests"));
     }
   }
 );
@@ -125,26 +88,12 @@ export const fetchUserCoachRequest = createAsyncThunk<IAdminCoachRequest | null,
   "userManagement/fetchUserCoachRequest",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/admin/user", {
+      const data = await apiClient<IAdminCoachRequest | null>("/api/admin/user", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching user request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
       return data || null;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching user request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching user request"));
     }
   }
 );
@@ -153,28 +102,12 @@ export const createCoachRequest = createAsyncThunk<IAdminCoachRequest, { message
   "userManagement/createCoachRequest",
   async ({ message }, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/admin/coach-requests", {
+      return await apiClient<IAdminCoachRequest>("/api/admin/coach-requests", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ message }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error creating request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error creating request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error creating request"));
     }
   }
 );
@@ -183,27 +116,11 @@ export const approveCoachRequest = createAsyncThunk<IAdminCoachRequest, string, 
   "userManagement/approveCoachRequest",
   async (requestId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/admin/coach-requests/${requestId}/approve`, {
+      return await apiClient<IAdminCoachRequest>(`/api/admin/coach-requests/${requestId}/approve`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error approving request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error approving request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error approving request"));
     }
   }
 );
@@ -212,27 +129,11 @@ export const rejectCoachRequest = createAsyncThunk<IAdminCoachRequest, string, {
   "userManagement/rejectCoachRequest",
   async (requestId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/admin/coach-requests/${requestId}/reject`, {
+      return await apiClient<IAdminCoachRequest>(`/api/admin/coach-requests/${requestId}/reject`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error rejecting request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error rejecting request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error rejecting request"));
     }
   }
 );
@@ -269,9 +170,7 @@ const userManagementSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
-        if (JSON.stringify(state.users) !== JSON.stringify(action.payload)) {
-          state.users = action.payload;
-        }
+        state.users = action.payload;
         state.loading = false;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
@@ -297,9 +196,7 @@ const userManagementSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCoachRequests.fulfilled, (state, action) => {
-        if (JSON.stringify(state.requests) !== JSON.stringify(action.payload)) {
-          state.requests = action.payload;
-        }
+        state.requests = action.payload;
         state.loading = false;
       })
       .addCase(fetchCoachRequests.rejected, (state, action) => {

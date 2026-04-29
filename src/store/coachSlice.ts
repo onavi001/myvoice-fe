@@ -8,6 +8,7 @@ import { createSlice, createAsyncThunk, createSelector } from "@reduxjs/toolkit"
 import { IUser } from "../models/Users";
 import { RoutineData } from "../models/Routine";
 import { RootState } from ".";
+import { apiClient, ApiError } from "../utils/apiClient";
 
 export interface ThunkError {
   message: string;
@@ -42,30 +43,23 @@ const initialState: CoachState = {
   error: null,
 };
 
+const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
+  const apiError = error as ApiError;
+  return {
+    message: apiError?.message || fallbackMessage,
+    status: apiError?.status,
+  };
+};
+
 export const fetchClients = createAsyncThunk<IUser[], void, { rejectValue: ThunkError }>(
   "coach/fetchClients",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/clients", {
+      return await apiClient<IUser[]>("/api/clients", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching clients",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching clients" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching clients"));
     }
   }
 );
@@ -74,26 +68,11 @@ export const fetchClientProfile = createAsyncThunk<IUser, string, { rejectValue:
   "coach/fetchClientProfile",
   async (clientId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/clients/${clientId}`, {
+      return await apiClient<IUser>(`/api/clients/${clientId}`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching client profile",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching client profile" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching client profile"));
     }
   }
 );
@@ -102,27 +81,11 @@ export const fetchClientRoutines = createAsyncThunk<RoutineData[], string, { rej
   "coach/fetchClientRoutines",
   async (clientId, { rejectWithValue }) => {
     try {
-      console.log("Fetching routines for clientId:", clientId);
-      const response = await fetch(`/api/clients/${clientId}/routines`, {
+      return await apiClient<RoutineData[]>(`/api/clients/${clientId}/routines`, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching routines",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching routines" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching routines"));
     }
   }
 );
@@ -131,28 +94,12 @@ export const assignRoutine = createAsyncThunk<RoutineData, { clientId: string; r
   "coach/assignRoutine",
   async ({ clientId, routineId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/clients/${clientId}/routines`, {
+      return await apiClient<RoutineData>(`/api/clients/${clientId}/routines`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ routineId }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error assigning routine",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error assigning routine" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error assigning routine"));
     }
   }
 );
@@ -161,28 +108,12 @@ export const updateClientData = createAsyncThunk<IUser, { clientId: string; goal
   "coach/updateClientData",
   async ({ clientId, goals, notes }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/clients/${clientId}`, {
+      return await apiClient<IUser>(`/api/clients/${clientId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ goals, notes }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error updating client",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error updating client" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error updating client"));
     }
   }
 );
@@ -191,26 +122,11 @@ export const fetchCoaches = createAsyncThunk<IUser[], void, { rejectValue: Thunk
   "coach/fetchCoaches",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/coaches", {
+      return await apiClient<IUser[]>("/api/coaches", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching coaches",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching coaches" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching coaches"));
     }
   }
 );
@@ -219,26 +135,12 @@ export const requestCoach = createAsyncThunk<void, string, { rejectValue: ThunkE
   "coach/requestCoach",
   async (coachId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/requests`, {
+      await apiClient<unknown>(`/api/coaches/requests`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ id:coachId }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error requesting coach",
-          status: response.status,
-        });
-      }
-    } catch {
-      return rejectWithValue({ message: "Network error requesting coach" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error requesting coach"));
     }
   }
 );
@@ -247,26 +149,11 @@ export const fetchCoachRequests = createAsyncThunk<ICoachRequest[], void, { reje
   "coach/fetchCoachRequests",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/coaches/requests", {
+      return await apiClient<ICoachRequest[]>("/api/coaches/requests", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error fetching requests",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error fetching requests" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error fetching requests"));
     }
   }
 );
@@ -275,28 +162,12 @@ export const acceptCoachRequest = createAsyncThunk<IUser, string, { rejectValue:
   "coach/acceptCoachRequest",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/accept`, {
+      return await apiClient<IUser>(`/api/coaches/accept`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ id: userId }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error accepting request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error accepting request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error accepting request"));
     }
   }
 );
@@ -305,28 +176,12 @@ export const rejectCoachRequest = createAsyncThunk<ICoachRequest, string, { reje
   "coach/rejectCoachRequest",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/reject`, {
+      return await apiClient<ICoachRequest>(`/api/coaches/reject`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
         body: JSON.stringify({ id: userId }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        return rejectWithValue({
-          message: errorData.message || "Error rejecting request",
-          status: response.status,
-        });
-      }
-      const data = await response.json();
-      return data;
-    } catch {
-      return rejectWithValue({ message: "Network error rejecting request" });
+    } catch (error) {
+      return rejectWithValue(toThunkError(error, "Error rejecting request"));
     }
   }
 );
@@ -373,13 +228,7 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchClientProfile.fulfilled, (state, action) => {
-        // Evitar actualización si los datos son idénticos
-        if (
-          !state.selectedClient ||
-          JSON.stringify(state.selectedClient) !== JSON.stringify(action.payload)
-        ) {
-          state.selectedClient = action.payload;
-        }
+        state.selectedClient = action.payload;
         state.loading = false;
       })
       .addCase(fetchClientProfile.rejected, (state, action) => {
@@ -391,12 +240,7 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchClientRoutines.fulfilled, (state, action) => {
-        // Evitar actualización si los datos son idénticos
-        if (
-          JSON.stringify(state.clientRoutines) !== JSON.stringify(action.payload)
-        ) {
-          state.clientRoutines = action.payload;
-        }
+        state.clientRoutines = action.payload;
         state.loading = false;
       })
       .addCase(fetchClientRoutines.rejected, (state, action) => {
@@ -420,13 +264,7 @@ const coachSlice = createSlice({
         state.error = null;
       })
       .addCase(updateClientData.fulfilled, (state, action) => {
-        // Evitar actualización si los datos son idénticos
-        if (
-          !state.selectedClient ||
-          JSON.stringify(state.selectedClient) !== JSON.stringify(action.payload)
-        ) {
-          state.selectedClient = action.payload;
-        }
+        state.selectedClient = action.payload;
         state.loading = false;
       })
       .addCase(updateClientData.rejected, (state, action) => {

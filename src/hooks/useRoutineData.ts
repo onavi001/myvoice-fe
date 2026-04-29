@@ -8,11 +8,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import { fetchRoutines, selectRoutine } from "../store/routineSlice";
 import { RoutineData } from "../models/Routine";
+import { selectSelectedRoutine } from "../store/selectors";
 
 export default function useRoutineData(initialRoutines: RoutineData[]) {
   const dispatch = useDispatch<AppDispatch>();
-  const { routines, selectedRoutineId, loading, error } = useSelector((state: RootState) => state.routine);
-  const selectedRoutine = routines.find((r) => r._id === selectedRoutineId) || undefined;
+  const { routines, loading, error } = useSelector((state: RootState) => state.routine);
+  const selectedRoutine = useSelector(selectSelectedRoutine);
   const storedDayId = localStorage.getItem("dayId");
   const [selectedDay, setSelectedDay] = useState<RoutineData["days"][number] | undefined>(
     selectedRoutine?.days.find((d) => d._id === storedDayId) || selectedRoutine?.days[0]

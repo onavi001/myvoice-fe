@@ -211,7 +211,7 @@ export default function useExerciseActions() {
         navigate("/login");
         return;
       }
-      const videos = await fetchVideos(exerciseName, token);
+      const videos = await fetchVideos(exerciseName);
       await dispatch(
         setExerciseVideos({
           routineId,

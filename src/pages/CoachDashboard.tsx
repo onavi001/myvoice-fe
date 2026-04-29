@@ -22,7 +22,6 @@ export default function CoachDashboard() {
       dispatch(fetchClients());
       dispatch(fetchCoachRequests());
     }
-    console.log("useEffect");
     return () => {
       dispatch(clearClientData());
     };

@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ProgressData } from "../models/Progress";
 import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
+import { apiClient, ApiError } from "../utils/apiClient";
+
+interface ThunkError {
+  message: string;
+  status?: number;
+}
 
 interface ProgressState {
   progress: ProgressData[];
@@ -27,124 +33,93 @@ const initialState: ProgressState = {
   error: null,
 };
 
+const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
+  const apiError = error as ApiError;
+  return {
+    message: apiError?.message || fallbackMessage,
+    status: apiError?.status,
+  };
+};
+
 // Agregar una entrada de progreso
-export const addProgress = createAsyncThunk(
+export const addProgress = createAsyncThunk<ProgressData, Omit<ProgressData, "_id" | "userId">, { rejectValue: ThunkError }>(
   "progress/addProgress",
-  async (
-    progressData: Omit<ProgressData, "_id" | "userId">,
-    { getState, rejectWithValue }
-  ) => {
-    const state = getState() as { user: { token: string; user: { _id: string } } };
-    const token = state.user.token;
-    const userId = state.user.user._id;
+  async (progressData, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/progress", {
+      const data = await apiClient<ProgressData>("/api/progress", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...progressData, userId, date: normalizeProgressDate(progressData.date) }),
+        body: JSON.stringify({ ...progressData, date: normalizeProgressDate(progressData.date) }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al agregar progreso");
-      const data = await response.json();
-      return normalizeProgressEntry(data as ProgressData);
+      return normalizeProgressEntry(data);
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue(toThunkError(error, "Error al agregar progreso"));
     }
   }
 );
 
 // Obtener el progreso del usuario
-export const fetchProgress = createAsyncThunk(
+export const fetchProgress = createAsyncThunk<ProgressData[], void, { rejectValue: ThunkError }>(
   "progress/fetchProgress",
-  async (_, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/progress", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Error al obtener progreso");
-      const data = await response.json();
-      return (data as ProgressData[]).map(normalizeProgressEntry);
+      const data = await apiClient<ProgressData[]>("/api/progress", { method: "GET" });
+      return data.map(normalizeProgressEntry);
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue(toThunkError(error, "Error al obtener progreso"));
     }
   }
 );
 
 // Editar una entrada de progreso
-export const editProgress = createAsyncThunk(
+export const editProgress = createAsyncThunk<
+  ProgressData,
+  { progressId: string; updatedEntry: Partial<ProgressData> },
+  { rejectValue: ThunkError }
+>(
   "progress/editProgress",
-  async (
-    { progressId, updatedEntry }: { progressId: string; updatedEntry: Partial<ProgressData> },
-    { getState, rejectWithValue }
-  ) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ progressId, updatedEntry }, { rejectWithValue }) => {
     try {
       const serializedEntry = {
         ...updatedEntry,
         date: updatedEntry.date ? normalizeProgressDate(updatedEntry.date) : undefined,
       };
-      const response = await fetch(`/api/progress/${progressId}`, {
+      const data = await apiClient<ProgressData>(`/api/progress/${progressId}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(serializedEntry),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al editar progreso");
-      const data = await response.json();
-      return normalizeProgressEntry(data as ProgressData);
+      return normalizeProgressEntry(data);
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue(toThunkError(error, "Error al editar progreso"));
     }
   }
 );
 
 // Eliminar una entrada de progreso
-export const deleteProgress = createAsyncThunk(
+export const deleteProgress = createAsyncThunk<string, string, { rejectValue: ThunkError }>(
   "progress/deleteProgress",
-  async (progressId: string, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (progressId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/progress/${progressId}`, {
+      await apiClient<unknown>(`/api/progress/${progressId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al eliminar progreso");
       return progressId;
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue(toThunkError(error, "Error al eliminar progreso"));
     }
   }
 );
 
 // Limpiar todo el progreso del usuario
-export const clearProgress = createAsyncThunk(
+export const clearProgress = createAsyncThunk<boolean, void, { rejectValue: ThunkError }>(
   "progress/clearProgress",
-  async (_, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/progress", {
+      await apiClient<unknown>("/api/progress", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al limpiar progreso");
       return true;
     } catch (error) {
-      return rejectWithValue((error as Error).message);
+      return rejectWithValue(toThunkError(error, "Error al limpiar progreso"));
     }
   }
 );
@@ -163,7 +138,7 @@ const progressSlice = createSlice({
         state.progress.push(action.payload);
       })
       .addCase(addProgress.rejected, (state, action) => {
-        setAsyncFailed(state, action.payload as string);
+        setAsyncFailed(state, (action.payload as ThunkError | undefined)?.message ?? "Error desconocido");
       })
       .addCase(fetchProgress.pending, (state) => {
         setAsyncLoading(state);
@@ -173,7 +148,7 @@ const progressSlice = createSlice({
         state.progress = action.payload;
       })
       .addCase(fetchProgress.rejected, (state, action) => {
-        setAsyncFailed(state, action.payload as string);
+        setAsyncFailed(state, (action.payload as ThunkError | undefined)?.message ?? "Error desconocido");
       })
       .addCase(editProgress.pending, (state) => {
         setAsyncLoading(state);
@@ -184,7 +159,7 @@ const progressSlice = createSlice({
         if (index !== -1) state.progress[index] = action.payload;
       })
       .addCase(editProgress.rejected, (state, action) => {
-        setAsyncFailed(state, action.payload as string);
+        setAsyncFailed(state, (action.payload as ThunkError | undefined)?.message ?? "Error desconocido");
       })
       .addCase(deleteProgress.pending, (state) => {
         setAsyncLoading(state);
@@ -194,7 +169,7 @@ const progressSlice = createSlice({
         state.progress = state.progress.filter((entry) => entry._id !== action.payload);
       })
       .addCase(deleteProgress.rejected, (state, action) => {
-        setAsyncFailed(state, action.payload as string);
+        setAsyncFailed(state, (action.payload as ThunkError | undefined)?.message ?? "Error desconocido");
       })
       .addCase(clearProgress.pending, (state) => {
         setAsyncLoading(state);
@@ -204,7 +179,7 @@ const progressSlice = createSlice({
         state.progress = [];
       })
       .addCase(clearProgress.rejected, (state, action) => {
-        setAsyncFailed(state, action.payload as string);
+        setAsyncFailed(state, (action.payload as ThunkError | undefined)?.message ?? "Error desconocido");
       });
   },
 });

@@ -65,7 +65,7 @@ src/
   components/      # Componentes UI reutilizables y módulos de features
   pages/           # Pantallas/rutas principales
   hooks/           # Hooks de composición y lógica compartida
-  store/           # Redux store, slices y helpers de estado async
+  store/           # Redux store, slices, selectors memoizados y helpers async
   models/          # Tipos/interfaces de dominio
   utils/           # Helpers generales (a11y, utilidades)
   docs/            # Documentación interna (auditorías, notas)
@@ -78,9 +78,11 @@ src/
 
 - **Presentación:** componentes + páginas.
 - **Estado global:** slices en Redux Toolkit (`routine`, `progress`, `user`, `coach`, `userManagement`).
+- **Derivados memoizados:** selectors en `store/selectors.ts` para rutinas/progreso.
 - **Datos remotos:** `createAsyncThunk` para llamadas a backend.
 - **Navegación:** rutas protegidas por autenticación/rol.
 - **UI responsive:** base mobile-first y ajustes `sm/md/lg`.
+- **Composición por hooks:** controladores de pantalla (`useRoutinePageController`, `useProgressViewModel`, etc.) para separar UI de lógica.
 
 ## Calidad y mantenimiento
 

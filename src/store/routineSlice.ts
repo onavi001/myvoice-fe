@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { IRoutine, RoutineData } from "../models/Routine";
 import { IDay } from "../models/Day";
 import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
+import { apiClient, ApiError } from "../utils/apiClient";
 
 export interface ThunkError {
   message: string;
@@ -35,46 +36,35 @@ const initialState: RoutineState = {
   error: null,
 };
 
+const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
+  const apiError = error as ApiError;
+  return {
+    message: apiError?.message || fallbackMessage,
+    status: apiError?.status,
+  };
+};
+
 // Fetch todas las rutinas del usuario
 export const fetchRoutines = createAsyncThunk<RoutineData[], void, { rejectValue: ThunkError }>(
   "routine/fetchRoutines",
-  async (_, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/routines", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al obtener rutinas");
-      const data = await response.json();
-      return data as RoutineData[];
+      return await apiClient<RoutineData[]>("/api/routines", { method: "GET" });
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al obtener rutinas"));
     }
   }
 );
 
 export const fetchRoutineById = createAsyncThunk<RoutineData, string, { rejectValue: ThunkError }>(
   "routine/fetchRoutineById",
-  async (routineId, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (routineId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/routines/${routineId}`, {
+      return await apiClient<RoutineData>(`/api/routines/${routineId}`, {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al obtener rutina");
-      const data = await response.json();
-      return data as RoutineData;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al obtener rutina"));
     }
   }
 );
@@ -82,23 +72,14 @@ export const fetchRoutineById = createAsyncThunk<RoutineData, string, { rejectVa
 // Crear una nueva rutina
 export const createRoutine = createAsyncThunk<RoutineData, IRoutine, { rejectValue: ThunkError }>(
   "routine/createRoutine",
-  async (routineData, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (routineData, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/routines", {
+      return await apiClient<RoutineData>("/api/routines", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(routineData),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al crear rutina");
-      const data = await response.json();
-      return data as RoutineData;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al crear rutina"));
     }
   }
 );
@@ -106,23 +87,14 @@ export const createRoutine = createAsyncThunk<RoutineData, IRoutine, { rejectVal
 // Actualizar una rutina
 export const updateRoutine = createAsyncThunk<RoutineData, RoutineData, { rejectValue: ThunkError }>(
   "routine/updateRoutine",
-  async (routineData, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (routineData, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/routines/${routineData._id}`, {
+      return await apiClient<RoutineData>(`/api/routines/${routineData._id}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ routineData }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar rutina");
-      const data = await response.json();
-      return data as RoutineData;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar rutina"));
     }
   }
 );
@@ -130,25 +102,16 @@ export const updateRoutine = createAsyncThunk<RoutineData, RoutineData, { reject
 // Eliminar una rutina
 export const deleteRoutine = createAsyncThunk<string, string, { rejectValue: ThunkError }>(
   "routine/deleteRoutine",
-  async (routineId, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (routineId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/routines/${routineId}`, {
+      await apiClient<unknown>(`/api/routines/${routineId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      // Idempotent delete: if it no longer exists, treat as success.
-      if (response.status === 404) {
-        return routineId;
-      }
-      if (!response.ok) throw new Error("Error al eliminar rutina");
       return routineId;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      const apiError = error as ApiError;
+      if (apiError?.status === 404) return routineId;
+      return rejectWithValue(toThunkError(error, "Error al eliminar rutina"));
     }
   }
 );
@@ -173,23 +136,15 @@ export const createDay = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/createDay",
-  async ({ routineId, dayData }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/routines/${routineId}/days`, {
+      const data = await apiClient<RoutineData["days"][number]>(`/api/routines/${routineId}/days`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(dayData),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al crear día");
-      const data = await response.json();
       return { routineId, day: data };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al crear día"));
     }
   }
 );
@@ -201,23 +156,15 @@ export const updateDay = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/updateDay",
-  async ({ routineId, dayId, dayName }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, dayName }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/days/${dayId}`, {
+      const data = await apiClient<{ dayName: string }>(`/api/days/${dayId}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ dayName }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar día");
-      const data = await response.json();
       return { routineId, dayId, dayName: data.dayName };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar día"));
     }
   }
 );
@@ -229,21 +176,14 @@ export const deleteDay = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/deleteDay",
-  async ({ routineId, dayId }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/days/${dayId}`, {
+      await apiClient<unknown>(`/api/days/${dayId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al eliminar día");
       return { routineId, dayId };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al eliminar día"));
     }
   }
 );
@@ -255,23 +195,15 @@ export const createExercise = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/createExercise",
-  async ({ routineId, dayId, exerciseData }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, exerciseData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/days/${dayId}/exercises`, {
+      const data = await apiClient<RoutineData["days"][number]["exercises"][number]>(`/api/days/${dayId}/exercises`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(exerciseData),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al crear ejercicio");
-      const data = await response.json();
       return { routineId, dayId, exercise: data };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al crear ejercicio"));
     }
   }
 );
@@ -283,23 +215,15 @@ export const updateExercise = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/updateExercise",
-  async ({ routineId, dayId, exerciseId, exerciseData }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, exerciseId, exerciseData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/exercises/${exerciseId}`, {
+      const data = await apiClient<RoutineData["days"][number]["exercises"][number]>(`/api/exercises/${exerciseId}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify(exerciseData),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar ejercicio");
-      const data = await response.json();
       return { routineId, dayId, exerciseId, exercise: data };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar ejercicio"));
     }
   }
 );
@@ -311,21 +235,14 @@ export const deleteExercise = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/deleteExercise",
-  async ({ routineId, dayId, exerciseId }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, exerciseId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/exercises/${exerciseId}`, {
+      await apiClient<unknown>(`/api/exercises/${exerciseId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al eliminar ejercicio");
       return { routineId, dayId, exerciseId };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al eliminar ejercicio"));
     }
   }
 );
@@ -337,23 +254,15 @@ export const updateExerciseCompleted = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/updateExerciseCompleted",
-  async ({ routineId, dayId, exerciseId, completed }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, exerciseId, completed }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/exercises/${exerciseId}`, {
+      const updatedExercise = await apiClient<{ completed: boolean }>(`/api/exercises/${exerciseId}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ completed }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar ejercicio");
-      const updatedExercise = await response.json();
       return { routineId, dayId, exerciseId, completed: updatedExercise.completed };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar ejercicio"));
     }
   }
 );
@@ -365,21 +274,14 @@ export const resetDayProgress = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/resetDayProgress",
-  async ({ routineId, dayId }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/days/${dayId}/reset`, {
+      await apiClient<unknown>(`/api/days/${dayId}/reset`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al resetear progreso del día");
       return { routineId, dayId };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al resetear progreso del día"));
     }
   }
 );
@@ -391,21 +293,14 @@ export const resetRoutineProgress = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/resetRoutineProgress",
-  async ({ routineId }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/routines/${routineId}/reset`, {
+      await apiClient<unknown>(`/api/routines/${routineId}/reset`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al resetear progreso de la rutina");
       return { routineId };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al resetear progreso de la rutina"));
     }
   }
 );
@@ -417,38 +312,24 @@ export const setExerciseVideos = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/setExerciseVideos",
-  async ({ routineId, dayId, exerciseId, videos }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ routineId, dayId, exerciseId, videos }, { rejectWithValue }) => {
     try {
-      const videoIds = [];
+      const videoIds: string[] = [];
       for (const video of videos) {
-        const response = await fetch("/api/videos", {
+        const newVideo = await apiClient<{ _id: string }>("/api/videos", {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(video),
         });
-        if (response.status === 401) {
-          return rejectWithValue({ message: "Unauthorized", status: 401 });
-        }
-        if (!response.ok) throw new Error("Error al crear video");
-        const newVideo = await response.json();
         videoIds.push(newVideo._id);
       }
 
-      const response = await fetch(`/api/exercises/${exerciseId}`, {
+      const updatedExercise = await apiClient<{ videos: { _id: string; url: string; isCurrent: boolean }[] }>(`/api/exercises/${exerciseId}`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ videos: videoIds }),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al actualizar videos del ejercicio");
-      const updatedExercise = await response.json();
       return { routineId, dayId, exerciseId, videos: updatedExercise.videos };
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al actualizar videos del ejercicio"));
     }
   }
 );
@@ -460,24 +341,16 @@ export const generateExerciseVideos = createAsyncThunk<
   { rejectValue: ThunkError }
 >(
   "routine/generateExerciseVideos",
-  async ({ exerciseName }, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async ({ exerciseName }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/videos?exerciseName=${encodeURIComponent(exerciseName)}`, {
+      return await apiClient<{ url: string; isCurrent: boolean }[]>(
+        `/api/videos?exerciseName=${encodeURIComponent(exerciseName)}`,
+        {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) throw new Error("Error al obtener videos");
-      const videos = await response.json();
-      return videos as { url: string; isCurrent: boolean }[];
+        }
+      );
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al obtener videos"));
     }
   }
 );
@@ -485,28 +358,14 @@ export const generateExerciseVideos = createAsyncThunk<
 // Generar una rutina
 export const generateRoutine = createAsyncThunk<RoutineData, RoutineInput, { rejectValue: ThunkError }>(
   "routine/generateRoutine",
-  async (input, { getState, rejectWithValue }) => {
-    const state = getState() as { user: { token: string } };
-    const token = state.user.token;
+  async (input, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/routines/generate", {
+      return await apiClient<RoutineData>("/api/routines/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify(input),
       });
-      if (response.status === 401) {
-        return rejectWithValue({ message: "Unauthorized", status: 401 });
-      }
-      if (!response.ok) {
-        return rejectWithValue({ message: response.statusText, status: response.status });
-      }
-      const routine: RoutineData = await response.json();
-      return routine;
     } catch (error) {
-      return rejectWithValue({ message: (error as Error).message });
+      return rejectWithValue(toThunkError(error, "Error al generar rutina"));
     }
   }
 );
@@ -519,7 +378,6 @@ const routineSlice = createSlice({
     builder
       // Fetch Routine by ID
       .addCase(fetchRoutineById.fulfilled, (state, action: PayloadAction<RoutineData>) => {
-        console.log("Rutina obtenida:", action.payload);
         state.status = "succeeded";
         const index = state.routines.findIndex((r) => r._id === action.payload._id);
         if (index !== -1) {
