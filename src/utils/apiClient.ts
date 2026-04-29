@@ -15,9 +15,11 @@ type RequestOptions = RequestInit & {
   auth?: boolean;
 };
 
+const readToken = () => Cookies.get("token") || localStorage.getItem("token") || "";
+
 export async function apiClient<T>(url: string, options: RequestOptions = {}): Promise<T> {
   const { auth = true, headers, ...rest } = options;
-  const token = Cookies.get("token");
+  const token = readToken();
 
   const finalHeaders = new Headers(headers || {});
   if (!finalHeaders.has("Content-Type") && rest.body) {

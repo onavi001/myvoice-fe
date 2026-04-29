@@ -2,6 +2,20 @@ import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 import { IUser } from "../models/Users";
 import { apiClient, ApiError } from "../utils/apiClient";
+
+const AUTH_TOKEN_KEY = "token";
+
+const readToken = () => Cookies.get(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY) || null;
+
+const persistToken = (token: string) => {
+  Cookies.set(AUTH_TOKEN_KEY, token, { expires: 7 });
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+};
+
+const clearPersistedToken = () => {
+  Cookies.remove(AUTH_TOKEN_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+};
 export interface ProfileUpdateData {
   username: string;
   email: string;
@@ -25,7 +39,7 @@ interface ThunkError {
 
 const initialState: UserState = {
   user: null,
-  token: Cookies.get("token") || null,
+  token: readToken(),
   loading: false,
   error: null,
 };
@@ -64,7 +78,7 @@ export const loginUser = createAsyncThunk<
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      Cookies.set("token", data.token, { expires: 1 / 24 }); // 1 hora
+      persistToken(data.token);
       return { user: data.user, token: data.token };
     } catch (error) {
       return rejectWithValue((error as ApiError)?.message || "Error en login");
@@ -75,15 +89,15 @@ export const loginUser = createAsyncThunk<
 export const verifyUser = createAsyncThunk<{ user: IUser }, void, { rejectValue: string }>(
   "user/verifyUser",
   async (_, { rejectWithValue }) => {
-    const token = Cookies.get("token");
-    if (!token) throw new Error("No token found");
+    const token = readToken();
+    if (!token) return rejectWithValue("No token found");
 
     try {
       return await apiClient<{ user: IUser }>("/api/auth/verify", {
         method: "GET",
       });
     } catch (error) {
-      Cookies.remove("token");
+      clearPersistedToken();
       return rejectWithValue((error as ApiError)?.message || "Error al verificar sesión");
     }
   }
@@ -111,17 +125,17 @@ const userSlice = createSlice({
       if (action.payload) {
         state.user = action.payload.user;
         state.token = action.payload.token;
-        Cookies.set("token", action.payload.token, { expires: 1 / 24 });
+        persistToken(action.payload.token);
       } else {
         state.user = null;
         state.token = null;
-        Cookies.remove("token");
+        clearPersistedToken();
       }
     },
     logout(state) {
       state.user = null;
       state.token = null;
-      Cookies.remove("token");
+      clearPersistedToken();
     },
   },
   extraReducers: (builder) => {
@@ -175,6 +189,7 @@ const userSlice = createSlice({
         state.user = null;
         state.token = null;
         state.error = action.payload as string;
+        clearPersistedToken();
       })
   },
 });
