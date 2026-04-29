@@ -16,7 +16,7 @@ import RoutineAI from "./pages/RoutineAI";
 import RoutineForm from "./pages/RoutineForm";
 import Progress from "./pages/Progress";
 import RoutineEdit from "./pages/RoutineEdit";
-import { Helmet } from "react-helmet";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 import ExerciseVideos from "./pages/ExerciseVideos";
 import OfflineNotice from "./components/OfflineNotice";
 import CoachesDashboard from "./pages/CoachesDashboard";
@@ -159,6 +159,8 @@ const routes: RouteConfig[] = [
   { path: "/login", element: <Login />, protected: false },
   { path: "/forgot-password", element: <ForgotPassword />, protected: false },
   { path: "/reset-password", element: <ResetPassword />, protected: false },
+  { path: "/auth/forgot-password", element: <ForgotPassword />, protected: false },
+  { path: "/auth/reset-password", element: <ResetPassword />, protected: false },
   { path: "/", element: <Home />, protected: true },
   { path: "/routine", element: <Routine />, protected: true },
   { path: "/routine-AI", element: <RoutineAI />, protected: true },
@@ -176,38 +178,96 @@ const routes: RouteConfig[] = [
   { path: "/profile/edit", element: <EditProfile />, protected: true },
 ];
 
+function RouteSeo() {
+  const location = useLocation();
+
+  const seoByPath: Record<string, { title: string; description: string }> = {
+    "/login": {
+      title: "Iniciar Sesion | My Voice",
+      description: "Accede a My Voice para gestionar tus rutinas.",
+    },
+    "/routine": {
+      title: "Mis Rutinas | My Voice",
+      description: "Consulta y administra tus rutinas de entrenamiento.",
+    },
+    "/routine-AI": {
+      title: "Rutina con IA | My Voice",
+      description: "Genera rutinas personalizadas con IA en My Voice.",
+    },
+    "/routine-form": {
+      title: "Nueva Rutina | My Voice",
+      description: "Crea una rutina nueva en My Voice.",
+    },
+    "/progress": {
+      title: "Progreso | My Voice",
+      description: "Monitorea tu avance y rendimiento de entrenamiento.",
+    },
+    "/admin": {
+      title: "Admin | My Voice",
+      description: "Panel de administracion de My Voice.",
+    },
+  };
+
+  const matchedSeo =
+    seoByPath[location.pathname] ||
+    (location.pathname.startsWith("/routine-edit/")
+      ? {
+          title: "Editar Rutina | My Voice",
+          description: "Edita una rutina existente en My Voice.",
+        }
+      : location.pathname.startsWith("/coach")
+      ? {
+          title: "Coach | My Voice",
+          description: "Gestion de clientes y rutinas para coaches.",
+        }
+      : {
+          title: "My Voice",
+          description: "Plataforma de entrenamiento y seguimiento.",
+        });
+
+  return (
+    <Helmet>
+      <title>{matchedSeo.title}</title>
+      <meta name="description" content={matchedSeo.description} />
+    </Helmet>
+  );
+}
+
 function App() {
   return (
-    <Provider store={store}>
-      <Helmet>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <title>My Voice</title>
-      </Helmet>
-      <OfflineNotice />
-      <Router>
-        <AppInitializer>
-          <Routes>
-            {routes.map(({ path, element, protected: isProtected }, index) => (
-              <Route
-                key={index}
-                path={path}
-                element={isProtected ? <ProtectedRoute>{element}</ProtectedRoute> : element}
-              />
-            ))}
-            <Route element={<ProtectedAdminRoute />}>
-              <Route path="/admin" element={<Admin />} />
-            </Route>
-          </Routes>
-        </AppInitializer>
-      </Router>
-    </Provider>
+    <HelmetProvider>
+      <Provider store={store}>
+        <Helmet>
+          <link rel="icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+          <link rel="manifest" href="/site.webmanifest" />
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+          <title>My Voice</title>
+        </Helmet>
+        <OfflineNotice />
+        <Router>
+          <RouteSeo />
+          <AppInitializer>
+            <Routes>
+              {routes.map(({ path, element, protected: isProtected }, index) => (
+                <Route
+                  key={index}
+                  path={path}
+                  element={isProtected ? <ProtectedRoute>{element}</ProtectedRoute> : element}
+                />
+              ))}
+              <Route element={<ProtectedAdminRoute />}>
+                <Route path="/admin" element={<Admin />} />
+              </Route>
+            </Routes>
+          </AppInitializer>
+        </Router>
+      </Provider>
+    </HelmetProvider>
   );
 }
 

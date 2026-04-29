@@ -25,6 +25,8 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
+    // Timer flow is intentionally controlled by explicit start/stop state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   const startCountdown = (initialSets: number, rest: number) => {

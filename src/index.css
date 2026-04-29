@@ -1,5 +1,24 @@
 @import "tailwindcss";
 
+:root {
+  --bg-app: #1a1a1a;
+  --surface-0: #1a1a1a;
+  --surface-1: #252525;
+  --surface-2: #2d2d2d;
+  --border-1: #3a3a3a;
+  --text-primary: #e0e0e0;
+  --text-muted: #b0b0b0;
+  --color-accent: #34c759;
+  --color-accent-strong: #2dbf4e;
+  --color-danger: #ef5350;
+  --color-danger-strong: #d32f2f;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
 /* Ocultar scrollbar en elementos con overflow-x-auto */
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;

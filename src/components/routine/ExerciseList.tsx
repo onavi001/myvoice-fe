@@ -34,7 +34,16 @@ export default function ExerciseList({
     return { circuits, standalone };
   };
 
-  const { circuits, standalone } = groupExercisesByCircuit(day.exercises);
+  const normalizedExercises = (day.exercises || [])
+    .map((exercise) => {
+      if (!exercise || typeof exercise !== "object") return null;
+      const exerciseObj = exercise as Partial<IExercise> & { _id?: unknown };
+      if (!exerciseObj._id) return null;
+      return exerciseObj as IExercise;
+    })
+    .filter((exercise): exercise is IExercise => exercise !== null);
+
+  const { circuits, standalone } = groupExercisesByCircuit(normalizedExercises);
 
   return (
     <>
@@ -78,11 +87,11 @@ export default function ExerciseList({
           <ul className="space-y-2">
             {standalone.map((exercise) => (
               <ExerciseCard
-                key={exercise._id.toString()}
+                key={String(exercise._id)}
                 exercise={exercise}
                 routineId={routineId}
                 dayId={dayId}
-                exerciseId={exercise._id.toString()}
+                exerciseId={String(exercise._id)}
                 onGenerateExercise={onGenerateExercise}
               />
             ))}
@@ -96,11 +105,11 @@ export default function ExerciseList({
           <ul className="space-y-2">
             {exercises.map((exercise) => (
               <ExerciseCard
-                key={exercise._id.toString()}
+                key={String(exercise._id)}
                 exercise={exercise}
                 routineId={routineId}
                 dayId={dayId}
-                exerciseId={exercise._id.toString()}
+                exerciseId={String(exercise._id)}
                 onGenerateExercise={onGenerateExercise}
               />
             ))}

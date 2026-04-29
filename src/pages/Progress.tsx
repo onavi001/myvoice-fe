@@ -288,13 +288,17 @@ export default function Progress() {
 
   // Fetch data once on mount if token exists
   useEffect(() => {
-    if (token && !progressLoading && !routineLoading) {
-      dispatch(fetchRoutines());
-      dispatch(fetchProgress());
+    if (token) {
+      if (!routineLoading && routines.length === 0) {
+        dispatch(fetchRoutines());
+      }
+      if (!progressLoading && progress.length === 0) {
+        dispatch(fetchProgress());
+      }
     } else if (!token) {
       navigate("/login");
     }
-  }, [token, dispatch, navigate]);
+  }, [token, routineLoading, progressLoading, routines.length, progress.length, dispatch, navigate]);
 
   const handleCloseToast = () => setToast(null);
 
@@ -534,7 +538,7 @@ export default function Progress() {
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
-      <div className="p-3 sm:p-6 max-w-full mx-auto flex-1">
+      <div className="p-3 sm:p-6 w-full max-w-5xl mx-auto flex-1">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
           <div className="flex items-center gap-2">
             <h1 className="text-base sm:text-xl text-[#E0E0E0]">Progreso</h1>
@@ -653,7 +657,7 @@ export default function Progress() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 sm:gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as "date" | "weight" | "reps")}
@@ -815,7 +819,7 @@ export default function Progress() {
                       aria-label="Add progress date"
                     />
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       type="submit"
                       disabled={addingProgress}

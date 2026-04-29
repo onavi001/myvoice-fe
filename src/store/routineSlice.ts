@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { IRoutine, RoutineData } from "../models/Routine";
 import { IDay } from "../models/Day";
+import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
 
 export interface ThunkError {
   message: string;
@@ -20,6 +21,7 @@ interface RoutineState {
   routines: RoutineData[];
   selectedRoutineId: string | null;
   loading: boolean;
+  status: "idle" | "loading" | "succeeded" | "failed";
   loadingVideos: Record<string, boolean>;
   error: string | null;
 }
@@ -28,6 +30,7 @@ const initialState: RoutineState = {
   routines: [],
   selectedRoutineId: null,
   loading: false,
+  status: "idle",
   loadingVideos: {},
   error: null,
 };
@@ -67,7 +70,7 @@ export const fetchRoutineById = createAsyncThunk<RoutineData, string, { rejectVa
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });
       }
-      if (!response.ok) throw new Error("Error al eliminar rutina");
+      if (!response.ok) throw new Error("Error al obtener rutina");
       const data = await response.json();
       return data as RoutineData;
     } catch (error) {
@@ -137,6 +140,10 @@ export const deleteRoutine = createAsyncThunk<string, string, { rejectValue: Thu
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });
+      }
+      // Idempotent delete: if it no longer exists, treat as success.
+      if (response.status === 404) {
+        return routineId;
       }
       if (!response.ok) throw new Error("Error al eliminar rutina");
       return routineId;
@@ -513,6 +520,7 @@ const routineSlice = createSlice({
       // Fetch Routine by ID
       .addCase(fetchRoutineById.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         console.log("Rutina obtenida:", action.payload);
+        state.status = "succeeded";
         const index = state.routines.findIndex((r) => r._id === action.payload._id);
         if (index !== -1) {
           state.routines[index] = action.payload;
@@ -524,6 +532,7 @@ const routineSlice = createSlice({
       }
       )
       .addCase(fetchRoutineById.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.status = "failed";
         state.error = action.payload?.message ?? "Error desconocido";
         //state.loading = false;
       })
@@ -570,42 +579,46 @@ const routineSlice = createSlice({
       })
       // Fetch Routines
       .addCase(fetchRoutines.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(fetchRoutines.fulfilled, (state, action: PayloadAction<RoutineData[]>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.routines = action.payload;
         state.selectedRoutineId = action.payload.length > 0 ? action.payload[0]._id : null;
       })
       .addCase(fetchRoutines.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
-        state.loading = false;
-        state.error = action.payload?.message ?? "Error desconocido";
+        setAsyncFailed(state, action.payload?.message ?? "Error desconocido");
       })
       // Create Routine
       .addCase(createRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+        state.status = "succeeded";
         state.routines.push(action.payload);
         state.selectedRoutineId = action.payload._id;
       })
       .addCase(createRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.status = "failed";
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Update Routine
       .addCase(updateRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+        state.status = "succeeded";
         const index = state.routines.findIndex((r) => r._id === action.payload._id);
         if (index !== -1) {
           state.routines[index] = action.payload;
         }
       })
       .addCase(updateRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.status = "failed";
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Delete Routine
       .addCase(deleteRoutine.fulfilled, (state, action: PayloadAction<string>) => {
+        state.status = "succeeded";
         state.routines = state.routines.filter((r) => r._id !== action.payload);
         state.selectedRoutineId = state.routines.length > 0 ? state.routines[0]._id : null;
       })
       .addCase(deleteRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        state.status = "failed";
         state.error = action.payload?.message ?? "Error desconocido";
       })
       // Select Routine
@@ -751,17 +764,15 @@ const routineSlice = createSlice({
       })
       // Generate Routine
       .addCase(generateRoutine.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(generateRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.routines.push(action.payload);
         state.selectedRoutineId = action.payload._id;
       })
       .addCase(generateRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
-        state.loading = false;
-        state.error = action.payload?.message ?? "Error desconocido";
+        setAsyncFailed(state, action.payload?.message ?? "Error desconocido");
       });
   },
 });

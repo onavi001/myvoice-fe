@@ -219,7 +219,7 @@ export const requestCoach = createAsyncThunk<void, string, { rejectValue: ThunkE
   "coach/requestCoach",
   async (coachId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/request`, {
+      const response = await fetch(`/api/coaches/requests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -305,12 +305,13 @@ export const rejectCoachRequest = createAsyncThunk<ICoachRequest, string, { reje
   "coach/rejectCoachRequest",
   async (userId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/coaches/requests/${userId}/reject`, {
+      const response = await fetch(`/api/coaches/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
+        body: JSON.stringify({ id: userId }),
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });

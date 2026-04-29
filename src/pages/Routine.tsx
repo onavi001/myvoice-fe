@@ -31,12 +31,12 @@ export default function RoutinePage() {
 
   useEffect(() => {
     console.log("Fetching routines: token=", token, "routines.length=", routines.length, "routinesLoading=", routinesLoading);
-    if (token && !routinesLoading) {
+    if (token && !routinesLoading && routines.length === 0) {
       dispatch(fetchRoutines());
     } else if (!token) {
       navigate("/login");
     }
-  }, [token, dispatch, navigate]);
+  }, [token, routines.length, routinesLoading, dispatch, navigate]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);

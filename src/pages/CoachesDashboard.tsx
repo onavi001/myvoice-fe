@@ -26,7 +26,7 @@ export default function CoachesDashboard() {
     } else {
       dispatch(fetchCoaches());
     }
-  }, [token, role, dispatch, navigate]);
+  }, [token, user, role, dispatch, navigate]);
 
   useEffect(() => {
     if (notification) {

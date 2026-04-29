@@ -13,7 +13,7 @@ export interface IProgress {
   weightUnit: "kg" | "lb";
   weight: number;
   notes: string;
-  date: Date;
+  date: string | Date;
   completed: boolean;
 }
 export interface ProgressData {
@@ -31,6 +31,6 @@ export interface ProgressData {
   weightUnit: "kg" | "lb";
   weight: number;
   notes: string;
-  date: Date;
+  date: string | Date;
   completed: boolean;
 }

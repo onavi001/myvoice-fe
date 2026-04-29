@@ -14,11 +14,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 
 const Button: React.FC<ButtonProps> = ({ children, onClick, variant = "primary", disabled, className = "", ariaLabel: label, ariaRole: role, ...props }) => {
-  const baseStyles = " py-2 rounded text-xs font-medium transition-colors";
+  const baseStyles = "inline-flex items-center justify-center gap-2 min-h-11 px-3 py-2 rounded-lg text-sm font-medium transition-colors";
   const variantStyles = {
-    primary: "bg-[#34C759] text-black hover:bg-[#2DBF4E]",
-    secondary: "bg-white text-black hover:bg-[#E0E0E0]",
-    danger: "bg-red-500 text-white hover:bg-red-600",
+    primary: "bg-[var(--color-accent)] text-black hover:bg-[var(--color-accent-strong)]",
+    secondary: "bg-[var(--surface-1)] text-[var(--text-primary)] border border-[var(--border-1)] hover:bg-[var(--surface-2)]",
+    danger: "bg-[var(--color-danger)] text-white hover:bg-[var(--color-danger-strong)]",
   };
 
   return (

@@ -32,7 +32,7 @@ const ModelWorkoutModal: React.FC<ModelWorkoutModalProps> = ({ isOpen, onClose, 
     if (musclesToShow && musclesToShow.length > 0) {
       const normalizedMusclesToShow = musclesToShow.map(normalizeText);
 
-      const updatedMuscles = muscles.map((muscle) => {
+      const updatedMuscles = musclesData.map((muscle) => {
         const normalizedMuscleName = normalizeText(muscle.name);
         const normalizedMuscleNameEs = normalizeText(muscle.nameEs);
         const normalizedAliases = muscle.aliases.map(normalizeText);
@@ -46,7 +46,7 @@ const ModelWorkoutModal: React.FC<ModelWorkoutModalProps> = ({ isOpen, onClose, 
 
       setMuscles(updatedMuscles);
     } else {
-      setMuscles(muscles.map((muscle) => ({ ...muscle, active: false })));
+      setMuscles(musclesData.map((muscle) => ({ ...muscle, active: false })));
     }
   }, [musclesToShow]);
 

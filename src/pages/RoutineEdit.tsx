@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, memo } from "react";
+import React, { useEffect, useState, useCallback, memo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,8 @@ const RoutineEdit: React.FC = () => {
   const [allExpanded, setAllExpanded] = useState(false);
   const [fetchingRoutine, setFetchingRoutine] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const deleteInFlightRef = useRef(false);
+  const isDeletingRef = useRef(false);
 
   // Check if routine is restricted (has coachId and coachId !== user._id)
   const isCoachRestricted:boolean = (initialRoutine?.couchId && initialRoutine.couchId !== user?._id) || false;
@@ -54,7 +56,7 @@ const RoutineEdit: React.FC = () => {
       return;
     }
 
-    if (!initialRoutine && routineId && !routinesLoading && !fetchingRoutine && !hasFetched) {
+    if (!initialRoutine && routineId && !routinesLoading && !fetchingRoutine && !hasFetched && !isDeletingRef.current) {
       console.log("Fetching routine by ID:", routineId);
       setFetchingRoutine(true);
       dispatch(fetchRoutineById(routineId))
@@ -317,7 +319,10 @@ const RoutineEdit: React.FC = () => {
   );
 
   const handleDelete = useCallback(async () => {
-    if (isCoachRestricted) return;
+    if (isCoachRestricted || deleteInFlightRef.current) return;
+    deleteInFlightRef.current = true;
+    isDeletingRef.current = true;
+    setHasFetched(true);
     console.log("Deleting routine:", routineId);
     setDeletingRoutine(true);
     setErrors({});
@@ -325,6 +330,7 @@ const RoutineEdit: React.FC = () => {
       await dispatch(deleteRoutine(routineId!)).unwrap();
       navigate("/routine");
     } catch (err) {
+      isDeletingRef.current = false;
       const error = err as { message: string; status?: number };
       if (error.message === "Unauthorized" && error.status === 401) {
         console.log("Unauthorized, redirecting to /login");
@@ -335,6 +341,7 @@ const RoutineEdit: React.FC = () => {
       }
     } finally {
       setDeletingRoutine(false);
+      deleteInFlightRef.current = false;
     }
   }, [routineId, isCoachRestricted, dispatch, navigate]);
 
@@ -363,16 +370,16 @@ const RoutineEdit: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
-      <div className="p-3 sm:p-6 max-w-3xl mx-auto flex-1">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#FFD700]">
+      <div className="p-3 sm:p-6 w-full max-w-4xl mx-auto flex-1">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-[#FFD700]">
             Editar Rutina: {routineName || "Sin nombre"}
           </h1>
           <Button
             variant="secondary"
             onClick={toggleAll}
             disabled={isCoachRestricted}
-            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-4 py-2 text-sm font-semibold border border-[#FFC107] shadow-md disabled:bg-[#FFC107]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center gap-2 min-h-12"
+            className="w-full sm:w-auto !bg-[#2563EB] !text-white hover:!bg-[#1D4ED8] rounded-lg px-3 py-1.5 text-xs sm:text-sm font-semibold !border-[#1D4ED8] shadow-md disabled:!bg-[#1D4ED8]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-10 sm:min-h-11"
           >
             {allExpanded ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
             {allExpanded ? "Colapsar Todo" : "Expandir Todo"}
@@ -604,7 +611,7 @@ const RoutineEdit: React.FC = () => {
                             type="button"
                             onClick={() => handleDeleteDay(dayIndex)}
                             disabled={days.length <= 1 || isCoachRestricted}
-                            className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                            className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
                           >
                             Eliminar Día
                           </Button>
@@ -613,7 +620,7 @@ const RoutineEdit: React.FC = () => {
                             type="button"
                             onClick={() => handleAddExercise(dayIndex)}
                             disabled={isCoachRestricted}
-                            className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
+                            className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-10 sm:min-h-11"
                           >
                             <PlusIcon className="w-5 h-5" /> Agregar Ejercicio
                           </Button>
@@ -631,7 +638,7 @@ const RoutineEdit: React.FC = () => {
             type="button"
             onClick={handleAddDay}
             disabled={addingDay || isCoachRestricted}
-            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-3 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
+            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-10 sm:min-h-11"
           >
             {addingDay ? <SmallLoader /> : (
               <>
@@ -640,12 +647,12 @@ const RoutineEdit: React.FC = () => {
             )}
           </Button>
 
-          <div className="mt-6 p-3 sm:p-0">
-            <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3">
+          <div className="sticky bottom-0 z-20 mt-6 -mx-3 border-t border-[#3A3A3A] bg-[#1A1A1A]/95 px-3 py-2 backdrop-blur sm:static sm:mx-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:py-0">
+            <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               <Button
                 type="submit"
                 disabled={savingRoutine || deletingRoutine || isCoachRestricted}
-                className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-3 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                className="col-span-1 sm:col-span-2 w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
               >
                 {savingRoutine ? <SmallLoader /> : "Guardar Rutina"}
               </Button>
@@ -653,7 +660,7 @@ const RoutineEdit: React.FC = () => {
                 type="button"
                 onClick={handleDelete}
                 disabled={savingRoutine || deletingRoutine || isCoachRestricted}
-                className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-3 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                className="col-span-1 w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
               >
                 {deletingRoutine ? <SmallLoader /> : "Eliminar Rutina"}
               </Button>
@@ -855,7 +862,7 @@ const ExerciseForm = memo(
                   type="button"
                   onClick={() => onDelete(dayIndex, exercise._id)}
                   disabled={isCoachRestricted}
-                  className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                  className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
                 >
                   Eliminar
                 </Button>
@@ -865,7 +872,7 @@ const ExerciseForm = memo(
                     navigate(`/routine-edit/${routineId}/videos/${dayIndex}/${exerciseIndex}`)
                   }
                   disabled={isCoachRestricted}
-                  className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                  className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
                 >
                   Videos
                 </Button>

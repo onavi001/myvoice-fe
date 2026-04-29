@@ -1,15 +1,29 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { ProgressData } from "../models/Progress";
+import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
 
 interface ProgressState {
   progress: ProgressData[];
   loading: boolean;
+  status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
+
+const normalizeProgressDate = (date: string | Date | undefined): string => {
+  if (!date) return new Date().toISOString();
+  if (date instanceof Date) return date.toISOString();
+  return new Date(date).toISOString();
+};
+
+const normalizeProgressEntry = (entry: ProgressData): ProgressData => ({
+  ...entry,
+  date: normalizeProgressDate(entry.date),
+});
 
 const initialState: ProgressState = {
   progress: [],
   loading: false,
+  status: "idle",
   error: null,
 };
 
@@ -27,14 +41,14 @@ export const addProgress = createAsyncThunk(
       const response = await fetch("/api/progress", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ ...progressData, userId, date: progressData.date.toString() }),
+        body: JSON.stringify({ ...progressData, userId, date: normalizeProgressDate(progressData.date) }),
       });
       if (response.status === 401) {
         return rejectWithValue({ message: "Unauthorized", status: 401 });
       }
       if (!response.ok) throw new Error("Error al agregar progreso");
       const data = await response.json();
-      return { ...data, date: new Date(data.date).toISOString() } as ProgressData;
+      return normalizeProgressEntry(data as ProgressData);
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -53,7 +67,7 @@ export const fetchProgress = createAsyncThunk(
       });
       if (!response.ok) throw new Error("Error al obtener progreso");
       const data = await response.json();
-      return data.map((entry: ProgressData) => ({ ...entry, date: new Date(entry.date) })) as ProgressData[];
+      return (data as ProgressData[]).map(normalizeProgressEntry);
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -72,7 +86,7 @@ export const editProgress = createAsyncThunk(
     try {
       const serializedEntry = {
         ...updatedEntry,
-        date: updatedEntry.date ? updatedEntry.date.toString() : undefined,
+        date: updatedEntry.date ? normalizeProgressDate(updatedEntry.date) : undefined,
       };
       const response = await fetch(`/api/progress/${progressId}`, {
         method: "PUT",
@@ -84,7 +98,7 @@ export const editProgress = createAsyncThunk(
       }
       if (!response.ok) throw new Error("Error al editar progreso");
       const data = await response.json();
-      return { ...data, date: new Date(data.date).toISOString() } as ProgressData;
+      return normalizeProgressEntry(data as ProgressData);
     } catch (error) {
       return rejectWithValue((error as Error).message);
     }
@@ -142,65 +156,55 @@ const progressSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(addProgress.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(addProgress.fulfilled, (state, action: PayloadAction<ProgressData>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.progress.push(action.payload);
       })
       .addCase(addProgress.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        setAsyncFailed(state, action.payload as string);
       })
       .addCase(fetchProgress.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(fetchProgress.fulfilled, (state, action: PayloadAction<ProgressData[]>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.progress = action.payload;
       })
       .addCase(fetchProgress.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        setAsyncFailed(state, action.payload as string);
       })
       .addCase(editProgress.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(editProgress.fulfilled, (state, action: PayloadAction<ProgressData>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         const index = state.progress.findIndex((entry) => entry._id === action.payload._id);
         if (index !== -1) state.progress[index] = action.payload;
       })
       .addCase(editProgress.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        setAsyncFailed(state, action.payload as string);
       })
       .addCase(deleteProgress.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(deleteProgress.fulfilled, (state, action: PayloadAction<string>) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.progress = state.progress.filter((entry) => entry._id !== action.payload);
       })
       .addCase(deleteProgress.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        setAsyncFailed(state, action.payload as string);
       })
       .addCase(clearProgress.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+        setAsyncLoading(state);
       })
       .addCase(clearProgress.fulfilled, (state) => {
-        state.loading = false;
+        setAsyncSucceeded(state);
         state.progress = [];
       })
       .addCase(clearProgress.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        setAsyncFailed(state, action.payload as string);
       });
   },
 });

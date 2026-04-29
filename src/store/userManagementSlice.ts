@@ -125,7 +125,7 @@ export const fetchUserCoachRequest = createAsyncThunk<IAdminCoachRequest | null,
   "userManagement/fetchUserCoachRequest",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/admin/coach-requests/user", {
+      const response = await fetch("/api/admin/user", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

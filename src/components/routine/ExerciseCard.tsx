@@ -59,7 +59,7 @@ export default function ExerciseCard({
           hasFetchedVideos.current = true;
         });
     }
-  }, [isExpanded, selectedRoutineId, exercise.name, routineId, dayId, exerciseId, handleFetchVideos]);
+  }, [isExpanded, selectedRoutineId, exercise.name, exercise.videos, routineId, dayId, exerciseId, handleFetchVideos]);
 
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
