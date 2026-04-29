@@ -68,7 +68,7 @@ const Navbar: React.FC<NavbarProps> = ({
               <Button
                 variant="secondary"
                 onClick={onGenerateRoutine}
-                className="bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg px-4 py-2 text-sm font-semibold border border-[#1E88E5] shadow-md transition-colors flex items-center gap-2"
+                className="!bg-[#42A5F5] text-black !hover:bg-[#1E88E5] rounded-lg px-4 py-2 text-sm font-semibold border !border-[#1E88E5] shadow-md transition-colors flex items-center gap-2"
               >
                 <SparklesIcon className="w-5 h-5" /> Rutina con IA
               </Button>
