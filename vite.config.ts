@@ -49,16 +49,17 @@ const pwaOptions: Partial<import("vite-plugin-pwa").VitePWAOptions> = {
   workbox: {
     // Patrones de archivos estáticos para cachear
     globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+    // Solo cacheamos videos públicos; el resto de /api queda en red.
     runtimeCaching: [
       {
-        // Cachear solicitudes a la API
-        urlPattern: /\/api\/.*/, // Usar una expresión regular para coincidir con /api/*
-        handler: "NetworkFirst",
+        urlPattern: /\/api\/videos(\?.*)?$/,
+        handler: "StaleWhileRevalidate",
+        method: "GET",
         options: {
-          cacheName: "api-cache",
+          cacheName: "public-videos-cache",
           expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 24 * 60 * 60, // 1 día
+            maxEntries: 30,
+            maxAgeSeconds: 12 * 60 * 60, // 12h
           },
         },
       },

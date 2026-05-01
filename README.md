@@ -105,3 +105,12 @@ El frontend incluye mejoras recientes en:
 - UX mobile-first en edición de rutina,
 - metadata dinámica de SEO por ruta,
 - compatibilidad de `<Helmet>` con Strict Mode.
+
+## Validación manual (estado)
+
+Se completó una validación manual end-to-end de los flujos principales:
+
+- autenticación (`login/logout` y persistencia de sesión),
+- CRUD de rutinas/días/ejercicios,
+- CRUD de progreso,
+- flujos principales de coach/admin.
