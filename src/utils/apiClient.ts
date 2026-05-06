@@ -16,6 +16,20 @@ type RequestOptions = RequestInit & {
 };
 
 const readToken = () => Cookies.get("token") || localStorage.getItem("token") || "";
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || "";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "");
+
+const resolveApiUrl = (url: string) => {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  if (API_BASE_URL) {
+    return `${API_BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+  }
+
+  return url;
+};
 
 export async function apiClient<T>(url: string, options: RequestOptions = {}): Promise<T> {
   const { auth = true, headers, ...rest } = options;
@@ -29,7 +43,7 @@ export async function apiClient<T>(url: string, options: RequestOptions = {}): P
     finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(resolveApiUrl(url), {
     ...rest,
     headers: finalHeaders,
   });

@@ -1,0 +1,94 @@
+apply plugin: 'com.android.application'
+
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+def versionCodeProp = String.valueOf(project.findProperty("MV_VERSION_CODE") ?: "1").trim()
+def versionNameProp = String.valueOf(project.findProperty("MV_VERSION_NAME") ?: "1.0.0").trim()
+def releaseStoreFile = String.valueOf(keystoreProperties.getProperty("storeFile") ?: "").trim()
+def releaseStorePassword = String.valueOf(keystoreProperties.getProperty("storePassword") ?: "").trim()
+def releaseKeyAlias = String.valueOf(keystoreProperties.getProperty("keyAlias") ?: "").trim()
+def releaseKeyPassword = String.valueOf(keystoreProperties.getProperty("keyPassword") ?: "").trim()
+def parsedVersionCode
+try {
+    parsedVersionCode = Integer.parseInt(versionCodeProp)
+} catch (Exception ignored) {
+    throw new GradleException("MV_VERSION_CODE must be a valid integer. Current value: '${versionCodeProp}'")
+}
+
+android {
+    namespace = "com.onavi001.myvoicefit"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.onavi001.myvoicefit"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode parsedVersionCode
+        versionName versionNameProp
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            if (!releaseStoreFile || !releaseStorePassword || !releaseKeyAlias || !releaseKeyPassword) {
+                throw new GradleException("android/keystore.properties has empty fields. Fill storeFile, storePassword, keyAlias, keyPassword.")
+            }
+            release {
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+                // Paths in keystore.properties are relative to android/ (not android/app/).
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword releaseStorePassword
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                throw new GradleException("Missing android/keystore.properties for release signing.")
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

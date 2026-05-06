@@ -8,9 +8,24 @@
     "host": "vite --host",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "cap:copy": "npx cap copy",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "assets:android": "npx @capacitor/assets generate --android --iconBackgroundColor '#1A1A1A' --iconBackgroundColorDark '#1A1A1A' --splashBackgroundColor '#1A1A1A' --splashBackgroundColorDark '#1A1A1A'",
+    "mobile:build:android": "CAPACITOR=true npm run build && npx cap sync android",
+    "mobile:build:ios": "CAPACITOR=true npm run build && npx cap sync ios",
+    "mobile:bundle:android": "npm run mobile:build:android && cd android && ./gradlew bundleRelease",
+    "mobile:apk:android": "npm run mobile:build:android && cd android && ./gradlew assembleRelease",
+    "mobile:bundle:android:java21": "bash scripts/android-use-java21.sh npm run mobile:bundle:android",
+    "mobile:apk:android:java21": "bash scripts/android-use-java21.sh npm run mobile:apk:android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/ios": "^8.3.1",
     "@heroicons/react": "^2.2.0",
     "@reduxjs/toolkit": "^2.6.1",
     "@tailwindcss/vite": "^4.1.3",
@@ -33,6 +48,7 @@
     "styled-components": "^6.1.18"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.21.0",
     "@types/js-cookie": "^3.0.6",
     "@types/mongoose": "^5.11.96",

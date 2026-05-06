@@ -68,12 +68,13 @@ const pwaOptions: Partial<import("vite-plugin-pwa").VitePWAOptions> = {
 };
 
 const isCI = process.env.CI === "true";
+const isCapacitorBuild = process.env.CAPACITOR === "true";
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    ...(!isCI ? [VitePWA(pwaOptions)] : []),
+    ...(!isCI && !isCapacitorBuild ? [VitePWA(pwaOptions)] : []),
   ],
   build: {
     outDir: "dist",
