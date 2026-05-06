@@ -1,5 +1,5 @@
 import modelImg from '../../../public/maleModel.jpg';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { musclesData } from './consts';
 
 interface Muscle {
@@ -16,29 +16,57 @@ interface ModelWorkoutModalProps {
   musclesToShow?: string[];
 }
 
+const normalizeText = (text: string): string => {
+  return text
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
+const splitInputMuscle = (input: string): string[] => {
+  return input
+    .split(/[,;/|]+|\s+-\s+|\s+y\s+|\s+e\s+|\s+and\s+|&|\(|\)/i)
+    .map((part) => normalizeText(part))
+    .filter((part) => part.length > 1);
+};
+
 const ModelWorkoutModal: React.FC<ModelWorkoutModalProps> = ({ isOpen, onClose, musclesToShow = [] }) => {
   const [muscles, setMuscles] = useState<Muscle[]>(musclesData);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
-  const normalizeText = (text: string): string => {
-    return text
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-  };
+  const muscleLookup = useMemo(() => {
+    return musclesData.map((muscle) => {
+      const variants = [muscle.name, muscle.nameEs, ...muscle.aliases]
+        .map((value) => normalizeText(value))
+        .filter(Boolean);
+
+      return {
+        muscle,
+        variants: Array.from(new Set(variants)),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (musclesToShow && musclesToShow.length > 0) {
-      const normalizedMusclesToShow = musclesToShow.map(normalizeText);
+      const normalizedMusclesToShow = musclesToShow
+        .flatMap((value) => {
+          const normalizedValue = normalizeText(value);
+          return [normalizedValue, ...splitInputMuscle(value)];
+        })
+        .filter(Boolean);
 
-      const updatedMuscles = musclesData.map((muscle) => {
-        const normalizedMuscleName = normalizeText(muscle.name);
-        const normalizedMuscleNameEs = normalizeText(muscle.nameEs);
-        const normalizedAliases = muscle.aliases.map(normalizeText);
+      const uniqueRequestedMuscles = Array.from(new Set(normalizedMusclesToShow));
 
-        const isActive = normalizedMusclesToShow.some((muscleToShow) =>
-          [normalizedMuscleName, normalizedMuscleNameEs, ...normalizedAliases].includes(muscleToShow)
+      const updatedMuscles = muscleLookup.map(({ muscle, variants }) => {
+        const isActive = uniqueRequestedMuscles.some((requestedMuscle) =>
+          variants.some(
+            (variant) =>
+              variant === requestedMuscle ||
+              variant.includes(requestedMuscle) ||
+              requestedMuscle.includes(variant)
+          )
         );
 
         return { ...muscle, active: isActive };
@@ -48,7 +76,7 @@ const ModelWorkoutModal: React.FC<ModelWorkoutModalProps> = ({ isOpen, onClose, 
     } else {
       setMuscles(musclesData.map((muscle) => ({ ...muscle, active: false })));
     }
-  }, [musclesToShow]);
+  }, [musclesToShow, muscleLookup]);
 
   const handleClick = (e: React.MouseEvent<SVGPathElement>, muscleName: string) => {
     const rect = e.currentTarget.getBoundingClientRect();

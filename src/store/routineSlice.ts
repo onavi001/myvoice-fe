@@ -16,6 +16,14 @@ interface RoutineInput {
   equipment: "gym" | "casa" | "pesas";
   name?: string;
   notes?: string;
+  blockWeeks?: number;
+  sessionDurationMin?: number;
+  injuriesOrPain?: string;
+  goalMetric?: string;
+  targetDate?: string;
+  sleepHours?: number;
+  stressLevel?: "bajo" | "medio" | "alto";
+  trainingAgeMonths?: number;
 }
 
 interface RoutineState {
