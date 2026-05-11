@@ -99,6 +99,12 @@ export default function ExerciseCard({
     if (isNaN(sets) || sets <= 0 || isNaN(restTime) || restTime <= 0) {
       return;
     }
+    if (currentExercise.repsUnit === "seconds") {
+      const repsAsSeconds = Number(currentExercise.reps);
+      if (!Number.isFinite(repsAsSeconds) || repsAsSeconds <= 0) {
+        return;
+      }
+    }
     setIsTimerActive(true);
   };
 
@@ -111,6 +117,15 @@ export default function ExerciseCard({
   };
 
   const currentExercise = { ...exercise, ...editData };
+
+  const repsForTimer =
+    currentExercise.repsUnit === "seconds" ? Number(currentExercise.reps) : NaN;
+  const setDurationSeconds =
+    currentExercise.repsUnit === "seconds" &&
+    Number.isFinite(repsForTimer) &&
+    repsForTimer > 0
+      ? Math.floor(repsForTimer)
+      : undefined;
 
   return (
     <>
@@ -141,7 +156,12 @@ export default function ExerciseCard({
               <Button
                 onClick={handleStartTimer}
                 className="flex items-center bg-[#34C759] text-black rounded-full text-xs hover:bg-[#2ca44e] disabled:opacity-50"
-                disabled={isTimerActive}
+                disabled={
+                  isTimerActive ||
+                  (currentExercise.repsUnit === "seconds" &&
+                    (!Number.isFinite(Number(currentExercise.reps)) ||
+                      Number(currentExercise.reps) <= 0))
+                }
               >
                 <span className="ml-1">Iniciar ejercicio</span>
                 <PlayCircleIcon className="w-4 h-4 mx-2" />
@@ -283,6 +303,7 @@ export default function ExerciseCard({
         <Timer
           sets={parseInt(String(currentExercise.sets || 0), 10)}
           restTime={parseInt(String(currentExercise.rest || 0), 10)}
+          setDurationSeconds={setDurationSeconds}
           onComplete={handleTimerComplete}
           onStop={handleTimerStop}
           isActive={isTimerActive}

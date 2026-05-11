@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 interface TimerProps {
   sets: number;
   restTime: number;
+  /** Duración de cada serie en segundos. Si no se envía, se usan 30 s (reps por unidad). */
+  setDurationSeconds?: number;
   onComplete: () => void;
   onStop: () => void;
   isActive: boolean;
 }
 
-export default function Timer({ sets, restTime, onComplete, onStop, isActive }: TimerProps) {
+export default function Timer({
+  sets,
+  restTime,
+  setDurationSeconds,
+  onComplete,
+  onStop,
+  isActive,
+}: TimerProps) {
   const [timer, setTimer] = useState<number | null>(null);
   const [totalTime, setTotalTime] = useState<number | null>(null);
   const [intervalId, setIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
@@ -18,9 +27,12 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [showCongrats, setShowCongrats] = useState(false);
 
+  const perSetSeconds =
+    setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : 30;
+
   useEffect(() => {
     if (isActive && !intervalId) {
-      startCountdown(sets, restTime);
+      startCountdown(sets, restTime, perSetSeconds);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -29,7 +41,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
-  const startCountdown = (initialSets: number, rest: number) => {
+  const startCountdown = (initialSets: number, rest: number, workSeconds: number) => {
     let countdownTime = 10;
     setPhase("start");
     setTimer(countdownTime);
@@ -44,14 +56,14 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
       if (countdownTime <= 0) {
         clearInterval(countdownInterval);
         setAlertMessage("¡Comienza ahora!");
-        startSetPhase(initialSets, rest);
+        startSetPhase(initialSets, rest, workSeconds);
       }
     }, 1000);
     setIntervalId(countdownInterval);
   };
 
-  const startSetPhase = (remainingSets: number, rest: number) => {
-    let setTime = 30;
+  const startSetPhase = (remainingSets: number, rest: number, workSeconds: number) => {
+    let setTime = workSeconds;
     setPhase("sets");
     setTimer(setTime);
     setTotalTime(setTime);
@@ -64,7 +76,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
         setAlertMessage("¡Serie completada!");
         if (remainingSets > 1) {
           setSetsLeft(remainingSets - 1);
-          startRestPhase(remainingSets - 1, rest);
+          startRestPhase(remainingSets - 1, rest, workSeconds);
         } else {
           setTimer(null);
           setTotalTime(null);
@@ -82,7 +94,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
     setIntervalId(interval);
   };
 
-  const startRestPhase = (remainingSets: number, rest: number) => {
+  const startRestPhase = (remainingSets: number, rest: number, workSeconds: number) => {
     let restTimeLeft = rest;
     setPhase("rest");
     setTimer(restTimeLeft);
@@ -101,7 +113,7 @@ export default function Timer({ sets, restTime, onComplete, onStop, isActive }: 
         clearInterval(restInterval);
         setAlertMessage("¡Descanso terminado! Siguiente serie.");
         setSetsLeft(remainingSets);
-        startSetPhase(remainingSets, rest);
+        startSetPhase(remainingSets, rest, workSeconds);
       }
     }, 1000);
     setIntervalId(restInterval);
