@@ -58,7 +58,7 @@ const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-4xl mx-auto flex justify-between items-center space-x-2">
         {/* Logo o título */}
         <div onClick={onMyRoutine} className="flex text-[#E0E0E0] items-center text-lg font-semibold cursor-pointer">
-          <img src="/favicon.ico" alt="logo" width={40} height={40} className="w-10 h-10 mr-4" />
+          <img src="/android-chrome-192x192.png" alt="logo" width={40} height={40} className="w-10 h-10 mr-4" />
           MyVoice
         </div>
         {user && (
