@@ -13,6 +13,7 @@ import { addProgress } from "../store/progressSlice";
 import { ThunkError } from "../store/routineSlice";
 import { IExercise } from "../models/Exercise";
 import { fetchVideos } from "../utils/fetchVideos";
+import { apiClient } from "../utils/apiClient";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -143,34 +144,38 @@ export default function useExerciseActions() {
     if (!exercise) return null;
 
     try {
-      const response = await fetch("/api/exercises/generate", {
+      return await apiClient<Partial<IExercise>[]>("/api/exercises/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({
-          dayExercises: day.exercises,
-          exerciseToChangeId: exercise._id,
+          exerciseToChangeId: exerciseId,
+          dayExercises: day.exercises.map((ex) => ({
+            _id: ex._id,
+            name: ex.name,
+            muscleGroup: ex.muscleGroup,
+            sets: ex.sets,
+            reps: ex.reps,
+          })),
         }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error("Error generating exercises");
-      return data as Partial<IExercise & { videoUrl: string }>[];
     } catch (err) {
       const error = err as ThunkError;
-      if (error.message === "Unauthorized" && error.status === 401) navigate("/login");
+      if (error.status === 401) navigate("/login");
       throw err;
     }
   };
 
-  const handleSelectExercise = async (routineId: string, dayId: string, selectedExercise: Partial<IExercise & { videoUrl: string }>) => {
+  const handleSelectExercise = async (
+    routineId: string,
+    dayId: string,
+    exerciseIdToReplace: string,
+    selectedExercise: Partial<IExercise & { videoUrl?: string }>
+  ) => {
     if (!user || !selectedRoutineId) return;
     const routine = routines.find((r) => r._id === routineId);
     if (!routine) return;
     const day = routine.days.find((d) => d._id === dayId);
     if (!day) return;
-    const exercise = day.exercises.find((e) => e._id === selectedExercise._id);
+    const exercise = day.exercises.find((e) => e._id === exerciseIdToReplace);
     if (!exercise) return;
 
     try {
@@ -178,14 +183,17 @@ export default function useExerciseActions() {
         updateExercise({
           routineId,
           dayId,
-          exerciseId: exercise._id,
+          exerciseId: exerciseIdToReplace,
           exerciseData: {
-            name: selectedExercise.name,
-            sets: selectedExercise.sets,
-            reps: selectedExercise.reps,
-            repsUnit: selectedExercise.repsUnit,
-            weightUnit: selectedExercise.weightUnit,
-            weight: selectedExercise.weight,
+            name: selectedExercise.name ?? exercise.name,
+            sets: selectedExercise.sets ?? exercise.sets,
+            reps: selectedExercise.reps ?? exercise.reps,
+            repsUnit: selectedExercise.repsUnit ?? exercise.repsUnit,
+            weightUnit: selectedExercise.weightUnit ?? exercise.weightUnit,
+            weight: selectedExercise.weight ?? exercise.weight,
+            rest: selectedExercise.rest ?? exercise.rest,
+            tips: selectedExercise.tips ?? exercise.tips,
+            muscleGroup: selectedExercise.muscleGroup ?? exercise.muscleGroup,
             videos: [],
           },
         })

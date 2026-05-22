@@ -1,11 +1,10 @@
 import RoutineSelector from "../components/routine/RoutineSelector";
-import DayProgress from "../components/routine/DayProgress";
 import ExerciseList from "../components/routine/ExerciseList";
 import GenerateExerciseModal from "../components/routine/GenerateExerciseModal";
 import Loader, { FuturisticLoader } from "../components/Loader";
 import RoutineEmpty from "../components/routine/RoutineEmpty";
-import WeeklyExerciseChart from "../components/WeeklyExerciseChart";
-import WeeklyProgressCalendar from "../components/WeeklyProgressCalendar";
+import RoutineProgressSummary from "../components/routine/RoutineProgressSummary";
+import RoutineExportActions from "../components/routine/RoutineExportActions";
 import { useRoutinePageController } from "../hooks/useRoutinePageController";
 
 export default function RoutinePage() {
@@ -21,12 +20,15 @@ export default function RoutinePage() {
     selectedDayId,
     setSelectedDay,
     setSelectedDayId,
-    handleSelectExercise,
     isModalOpen,
     setIsModalOpen,
     generatedExercises,
     loadingGenerate,
+    generateError,
+    setGenerateError,
     onGenerateExercise,
+    onSelectGeneratedExercise,
+    exerciseToReplaceId,
   } = useRoutinePageController();
 
   // Manejar errores globales
@@ -38,14 +40,38 @@ export default function RoutinePage() {
     );
   }
 
+  if (routinesLoading && routines.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col items-center justify-center">
+        <Loader />
+      </div>
+    );
+  }
+
   // Mostrar mensaje si no hay rutinas
   if (!routines.length || !selectedRoutine || !selectedDay || !selectedDayId) {
     return <RoutineEmpty />;
   }
 
+  const replacingExerciseName = selectedDay.exercises.find(
+    (ex) => ex._id === exerciseToReplaceId
+  )?.name;
+
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
       {loadingGenerate && <FuturisticLoader />}
+      {generateError && (
+        <div className="mx-3 sm:mx-6 mb-3 p-3 rounded-xl bg-[#3d2a2a] border border-[#EF5350] text-sm text-[#FF8A80]">
+          {generateError}
+          <button
+            type="button"
+            className="ml-2 underline"
+            onClick={() => setGenerateError(null)}
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
       {(userLoading || loading || routinesLoading) && <Loader />}
       <div className="p-3 sm:p-6 max-w-full mx-auto flex-1">
         <RoutineSelector
@@ -53,9 +79,12 @@ export default function RoutinePage() {
           setSelectedDayId={setSelectedDayId}
           setSelectedDay={setSelectedDay}
         />
-        <WeeklyExerciseChart />
-        <WeeklyProgressCalendar/>
-        <DayProgress routine={selectedRoutine} day={selectedDay} dayId={selectedDayId} />
+        <RoutineExportActions routine={selectedRoutine} />
+        <RoutineProgressSummary
+          routine={selectedRoutine}
+          day={selectedDay}
+          dayId={selectedDayId}
+        />
         <ExerciseList
           day={selectedDay}
           routineId={selectedRoutine._id.toString()}
@@ -67,7 +96,8 @@ export default function RoutinePage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         exercises={generatedExercises}
-        onSelect={(exercise) => handleSelectExercise(selectedRoutine._id.toString(), selectedDayId, exercise)}
+        onSelect={onSelectGeneratedExercise}
+        replacingExerciseName={replacingExerciseName}
       />
     </div>
   );

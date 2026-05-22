@@ -117,8 +117,8 @@ Luego reemplaza `storePassword` y `keyPassword` con tus valores reales. El `stor
 3. Incrementa versión para cada release en `android/gradle.properties`:
 
 ```properties
-MV_VERSION_CODE=2
-MV_VERSION_NAME=1.0.1
+MV_VERSION_CODE=7
+MV_VERSION_NAME=1.1.0
 ```
 
 4. Genera bundle para Play Store (Capacitor 8 necesita JDK 21 para compilar `:capacitor-android`):

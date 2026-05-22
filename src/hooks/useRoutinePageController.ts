@@ -11,38 +11,77 @@ export function useRoutinePageController() {
   const dispatch: AppDispatch = useDispatch();
   const navigate = useNavigate();
   const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
-  const { routines, loading: routinesLoading, error: routinesError, status: routineStatus } =
-    useSelector((state: RootState) => state.routine);
-  const { loading, error, selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId } = useRoutineData(routines);
+  const {
+    routines,
+    loading: routinesLoading,
+    error: routinesError,
+    status: routineStatus,
+  } = useSelector((state: RootState) => state.routine);
+  const { loading, error, selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId } = useRoutineData();
   const { handleNewExercise, handleSelectExercise } = useExerciseActions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [generatedExercises, setGeneratedExercises] = useState<Partial<IExercise & { videoUrl: string }>[]>([]);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
+  const [exerciseToReplaceId, setExerciseToReplaceId] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
       navigate("/login");
       return;
     }
-    if (routineStatus === "idle" || routineStatus === "failed") {
+    if (routinesLoading) return;
+    const shouldFetch =
+      routineStatus === "idle" ||
+      routineStatus === "failed" ||
+      (routineStatus === "succeeded" && routines.length === 0);
+    if (shouldFetch) {
       dispatch(fetchRoutines());
     }
-  }, [token, routineStatus, dispatch, navigate]);
+  }, [token, routineStatus, routines.length, dispatch, navigate]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);
+    setGenerateError(null);
+    setExerciseToReplaceId(exerciseId);
     try {
       const exercises = await handleNewExercise(routineId, dayId, exerciseId);
-      if (exercises) {
+      if (exercises && exercises.length > 0) {
         setGeneratedExercises(exercises);
         setIsModalOpen(true);
+      } else {
+        setGenerateError("No se encontraron alternativas para este ejercicio.");
       }
     } catch (err) {
       const error = err as ThunkError;
-      if (error.message === "Unauthorized" && error.status === 401) navigate("/login");
-      throw err;
+      if (error.status === 401) {
+        navigate("/login");
+        return;
+      }
+      setGenerateError(error.message || "Error al generar alternativas");
     } finally {
       setLoadingGenerate(false);
+    }
+  };
+
+  const onSelectGeneratedExercise = async (
+    selectedExercise: Partial<IExercise & { videoUrl: string }>
+  ) => {
+    if (!selectedRoutine || !selectedDayId || !exerciseToReplaceId) return;
+    try {
+      await handleSelectExercise(
+        selectedRoutine._id.toString(),
+        selectedDayId,
+        exerciseToReplaceId,
+        selectedExercise
+      );
+      setIsModalOpen(false);
+      setGeneratedExercises([]);
+      setExerciseToReplaceId(null);
+    } catch (err) {
+      const error = err as ThunkError;
+      if (error.status === 401) navigate("/login");
+      setGenerateError(error.message || "Error al aplicar el ejercicio");
     }
   };
 
@@ -64,7 +103,11 @@ export function useRoutinePageController() {
     setIsModalOpen,
     generatedExercises,
     loadingGenerate,
+    generateError,
+    setGenerateError,
     onGenerateExercise,
+    onSelectGeneratedExercise,
+    exerciseToReplaceId,
   };
 }
 

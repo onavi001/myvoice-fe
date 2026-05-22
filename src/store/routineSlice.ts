@@ -378,6 +378,28 @@ export const generateRoutine = createAsyncThunk<RoutineData, RoutineInput, { rej
   }
 );
 
+export type RoutineImportInput = {
+  name?: string;
+  notes?: string;
+  extractedText?: string;
+  images?: string[];
+};
+
+export const generateRoutineFromImport = createAsyncThunk<
+  RoutineData,
+  RoutineImportInput,
+  { rejectValue: ThunkError }
+>("routine/generateRoutineFromImport", async (input, { rejectWithValue }) => {
+  try {
+    return await apiClient<RoutineData>("/api/routines/generate-from-import", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  } catch (error) {
+    return rejectWithValue(toThunkError(error, "Error al importar rutina"));
+  }
+});
+
 const routineSlice = createSlice({
   name: "routine",
   initialState,
@@ -639,6 +661,17 @@ const routineSlice = createSlice({
       })
       .addCase(generateRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         setAsyncFailed(state, action.payload?.message ?? "Error desconocido");
+      })
+      .addCase(generateRoutineFromImport.pending, (state) => {
+        setAsyncLoading(state);
+      })
+      .addCase(generateRoutineFromImport.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+        setAsyncSucceeded(state);
+        state.routines.push(action.payload);
+        state.selectedRoutineId = action.payload._id;
+      })
+      .addCase(generateRoutineFromImport.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
+        setAsyncFailed(state, action.payload?.message ?? "Error al importar rutina");
       });
   },
 });

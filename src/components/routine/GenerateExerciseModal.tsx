@@ -8,11 +8,13 @@ export default function GenerateExerciseModal({
   onClose,
   exercises,
   onSelect,
+  replacingExerciseName,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  exercises: Partial<IExercise & { videoUrl: string }>[];
-  onSelect: (exercise: Partial<IExercise & { videoUrl: string }>) => void;
+  exercises: Partial<IExercise & { videoUrl?: string }>[];
+  onSelect: (exercise: Partial<IExercise & { videoUrl?: string }>) => void;
+  replacingExerciseName?: string;
 }) {
   const [expandedVideos, setExpandedVideos] = useState<Record<number, boolean>>({});
 
@@ -25,9 +27,17 @@ export default function GenerateExerciseModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <h3 className="text-sm font-bold text-[#34C759] mb-2">Selecciona un nuevo ejercicio</h3>
+      <h3 className="text-sm font-bold text-[#34C759] mb-1">Alternativas para reemplazar</h3>
+      {replacingExerciseName && (
+        <p className="text-xs text-[#B0B0B0] mb-3">
+          En lugar de: <span className="text-white font-medium">{replacingExerciseName}</span>
+        </p>
+      )}
       <div className="max-h-[400px] overflow-y-auto scrollbar-hidden">
         <ul className="space-y-4">
+          {exercises.length === 0 && (
+            <li className="text-sm text-[#B0B0B0] p-2">No hay alternativas disponibles.</li>
+          )}
           {exercises.map((exercise, index) => {
             const isExpanded = expandedVideos[index] || false;
             return (
@@ -43,7 +53,7 @@ export default function GenerateExerciseModal({
                     </span>
                     <span className="text-[#D1D1D1] text-xs">{isExpanded ? "▲" : "▼"}</span>
                   </div>
-                  {isExpanded && (
+                  {isExpanded && exercise.videoUrl && (
                     <div className="mt-2">
                       <iframe
                         width="100%"
@@ -57,6 +67,11 @@ export default function GenerateExerciseModal({
                       />
                     </div>
                   )}
+                  {isExpanded && exercise.muscleGroup?.length ? (
+                    <p className="mt-2 text-xs text-[#B0B0B0]">
+                      Músculos: {exercise.muscleGroup.join(", ")}
+                    </p>
+                  ) : null}
                 </div>
                 <Button
                   onClick={() => {onSelect(exercise); onClose();}}

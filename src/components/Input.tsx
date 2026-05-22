@@ -2,23 +2,43 @@ import React from "react";
 
 interface InputProps {
   name: string;
+  id?: string;
   type?: string;
   placeholder?: string;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
-  ref?: React.Ref<HTMLInputElement>
+  ref?: React.Ref<HTMLInputElement>;
   required?: boolean;
   disabled?: boolean;
   min?: string | number;
   max?: string | number;
   step?: string | number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  autoComplete?: string;
 }
 
-const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, onChange, className, ref, required, disabled, min, max, step}) => {
+const Input: React.FC<InputProps> = ({
+  name,
+  id,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+  className,
+  ref,
+  required,
+  disabled,
+  min,
+  max,
+  step,
+  inputMode,
+  autoComplete,
+}) => {
   return (
     <input
       name={name}
+      id={id}
       type={type}
       placeholder={placeholder}
       value={value}
@@ -30,6 +50,8 @@ const Input: React.FC<InputProps> = ({ name, type = "text", placeholder, value, 
       min={min}
       max={max}
       step={step}
+      inputMode={inputMode}
+      autoComplete={autoComplete}
       aria-label={placeholder || name}
       role="textbox"
     />

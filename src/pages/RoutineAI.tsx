@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
-import { createDay, createRoutine, generateRoutine, ThunkError } from "../store/routineSlice";
+import {
+  createDay,
+  createRoutine,
+  generateRoutine,
+  generateRoutineFromImport,
+  ThunkError,
+} from "../store/routineSlice";
+import RoutineAIImportSection, {
+  RoutineImportPayload,
+} from "../components/routine/RoutineAIImportSection";
 import { IRoutine, RoutineData } from "../models/Routine";
 import Button from "../components/Button";
-import Input from "../components/Input";
 import Card from "../components/Card";
+import RoutineAIFormFields, { RoutineAIFormData } from "../components/routine/RoutineAIFormFields";
+import RoutineAIDraftEditor from "../components/routine/RoutineAIDraftEditor";
 import Toast from "../components/Toast";
 import { FuturisticLoader } from "../components/Loader";
 import { IExercise } from "../models/Exercise";
@@ -13,27 +23,12 @@ import { IDay } from "../models/Day";
 import { useNavigate } from "react-router-dom";
 import { showRoutineGeneratedInterstitial } from "../services/ads/admob";
 
-type FormData = {
-  level: "principiante" | "intermedio" | "avanzado";
-  goal: "fuerza" | "hipertrofia" | "resistencia";
-  days: number;
-  equipment: "gym" | "casa" | "pesas";
-  name: string;
-  notes: string;
-  blockWeeks: number;
-  sessionDurationMin: number;
-  injuriesOrPain: string;
-  goalMetric: string;
-  targetDate: string;
-  sleepHours: number;
-  stressLevel: "bajo" | "medio" | "alto";
-  trainingAgeMonths: number;
-};
-
 type LoadingState = {
   generating: boolean;
   saving: boolean;
 };
+
+type CreateMode = "generate" | "import";
 
 export default function RoutineAI() {
   const dispatch = useDispatch<AppDispatch>();
@@ -41,8 +36,9 @@ export default function RoutineAI() {
   const { loading } = useSelector((state: RootState) => state.routine);
   const [currentRoutine, setCurrentRoutine] = useState<RoutineData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
+  const [createMode, setCreateMode] = useState<CreateMode>("generate");
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<RoutineAIFormData>({
     level: "intermedio",
     goal: "hipertrofia",
     days: 3,
@@ -61,7 +57,7 @@ export default function RoutineAI() {
   const [loadingState, setLoadingState] = useState<LoadingState>({ generating: false, saving: false });
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const handleChange = (field: keyof FormData, value: string | number) => {
+  const handleChange = (field: keyof RoutineAIFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -103,14 +99,18 @@ export default function RoutineAI() {
     };
   };
 
+  const finishGeneration = (routine: RoutineData) => {
+    setCurrentRoutine(routine);
+    setIsGenerating(false);
+    void showRoutineGeneratedInterstitial();
+  };
+
   const handleGenerate = async () => {
     setLoadingState((prev) => ({ ...prev, generating: true }));
     setToast(null);
     try {
       const generateRo = await dispatch(generateRoutine(formData)).unwrap();
-      setCurrentRoutine(generateRo);
-      setIsGenerating(false);
-      void showRoutineGeneratedInterstitial();
+      finishGeneration(generateRo);
     } catch (err) {
       const error = err as ThunkError;
       if (error.status === 401) {
@@ -118,6 +118,34 @@ export default function RoutineAI() {
       } else {
         setToast({ message: "Error al generar la rutina", type: "error" });
         console.error("Error al generar rutina:", error.message);
+      }
+    } finally {
+      setLoadingState((prev) => ({ ...prev, generating: false }));
+    }
+  };
+
+  const handleImport = async (payload: RoutineImportPayload) => {
+    setLoadingState((prev) => ({ ...prev, generating: true }));
+    setToast(null);
+    try {
+      const imported = await dispatch(
+        generateRoutineFromImport({
+          name: payload.name,
+          notes: payload.notes,
+          extractedText: payload.extractedText,
+          images: payload.images,
+        })
+      ).unwrap();
+      finishGeneration(imported);
+    } catch (err) {
+      const error = err as ThunkError;
+      if (error.status === 401) {
+        navigate("/login");
+      } else {
+        setToast({
+          message: error.message || "No se pudo importar la rutina",
+          type: "error",
+        });
       }
     } finally {
       setLoadingState((prev) => ({ ...prev, generating: false }));
@@ -184,265 +212,123 @@ export default function RoutineAI() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-white p-4">
+    <div className="min-h-screen bg-[#1A1A1A] text-white px-4 pt-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
       <div>
         <link rel="icon" href="/favicon.ico" />
         <title>Generar Rutina - Tu Aplicación</title>
       </div>
 
-      <h1 className="text-lg font-bold text-[#34C759] mb-4">Generar Rutina con IA</h1>
+      <h1 className="text-xl font-bold text-[#34C759] mb-4 max-w-lg mx-auto">Crear rutina con IA</h1>
 
       {isGenerating ? (
-        <Card className="max-w-md mx-auto space-y-4 bg-[#252525] border-2 border-[#4A4A4A] p-4 rounded-md">
-          <div>
-            <h2 className="text-sm font-semibold text-[#34C759] mb-2">Configuración base</h2>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="w-20 text-[#D1D1D1] text-xs font-medium">Nombre:</label>
-            <Input
-              name="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="Nombre de la rutina"
-              className="flex-1 bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="w-20 text-[#D1D1D1] text-xs font-medium">Objetivo:</label>
-            <select
-              value={formData.goal}
-              onChange={(e) => handleChange("goal", e.target.value as FormData["goal"])}
-              className="flex-1 bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-            >
-              <option value="fuerza">Fuerza</option>
-              <option value="hipertrofia">Hipertrofia</option>
-              <option value="resistencia">Resistencia</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="w-20 text-[#D1D1D1] text-xs font-medium">Nivel:</label>
-            <select
-              value={formData.level}
-              onChange={(e) => handleChange("level", e.target.value as FormData["level"])}
-              className="flex-1 bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-            >
-              <option value="principiante">Principiante</option>
-              <option value="intermedio">Intermedio</option>
-              <option value="avanzado">Avanzado</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="w-20 text-[#D1D1D1] text-xs font-medium">Equipo:</label>
-            <select
-              value={formData.equipment}
-              onChange={(e) => handleChange("equipment", e.target.value as FormData["equipment"])}
-              className="flex-1 bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-            >
-              <option value="gym">Gimnasio</option>
-              <option value="casa">Casa</option>
-              <option value="pesas">Pesas</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <label className="w-20 text-[#D1D1D1] text-xs font-medium">Días (1-7):</label>
-            <Input
-              name="days"
-              type="number"
-              value={formData.days}
-              onChange={(e) => handleChange("days", Math.min(Math.max(1, Number(e.target.value)), 7))}
-              placeholder="Días"
-              className="flex-1 bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-              required
-            />
-          </div>
-          <div>
-            <label className="text-[#D1D1D1] text-xs font-medium">Notas generales:</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => handleChange("notes", e.target.value)}
-              placeholder="Notas"
-              className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs h-20 resize-none focus:ring-1 focus:ring-[#34C759]"
-            />
-          </div>
-          <div className="border border-[#3C3C3C] rounded-md p-3 space-y-3">
+        <div className="max-w-lg mx-auto space-y-4">
+          <div
+            className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[#222] border border-[#3C3C3C]"
+            role="tablist"
+            aria-label="Modo de creacion"
+          >
             <button
               type="button"
-              onClick={() => setShowAdvanced((prev) => !prev)}
-              className="w-full flex items-center justify-between text-left"
+              role="tab"
+              aria-selected={createMode === "generate"}
+              onClick={() => setCreateMode("generate")}
+              className={`min-h-12 rounded-lg text-sm font-semibold transition-colors touch-manipulation ${
+                createMode === "generate"
+                  ? "bg-[#34C759] text-black"
+                  : "text-[#E0E0E0] active:bg-[#2D2D2D]"
+              }`}
             >
-              <span className="text-xs font-semibold text-[#9ED7A7]">Contexto avanzado (opcional)</span>
-              <span className="text-xs text-[#B0B0B0]">{showAdvanced ? "Ocultar ▲" : "Mostrar ▼"}</span>
+              Desde cero
             </button>
-            {showAdvanced && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Semanas del bloque:</label>
-                    <Input
-                      name="blockWeeks"
-                      type="number"
-                      value={formData.blockWeeks}
-                      onChange={(e) => handleChange("blockWeeks", Math.min(Math.max(2, Number(e.target.value)), 12))}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Duración sesión (min):</label>
-                    <Input
-                      name="sessionDurationMin"
-                      type="number"
-                      value={formData.sessionDurationMin}
-                      onChange={(e) => handleChange("sessionDurationMin", Math.min(Math.max(25, Number(e.target.value)), 120))}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Sueño promedio (h):</label>
-                    <Input
-                      name="sleepHours"
-                      type="number"
-                      value={formData.sleepHours}
-                      onChange={(e) => handleChange("sleepHours", Math.min(Math.max(3, Number(e.target.value)), 12))}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Estrés:</label>
-                    <select
-                      value={formData.stressLevel}
-                      onChange={(e) => handleChange("stressLevel", e.target.value as FormData["stressLevel"])}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    >
-                      <option value="bajo">Bajo</option>
-                      <option value="medio">Medio</option>
-                      <option value="alto">Alto</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Experiencia (meses):</label>
-                    <Input
-                      name="trainingAgeMonths"
-                      type="number"
-                      value={formData.trainingAgeMonths}
-                      onChange={(e) => handleChange("trainingAgeMonths", Math.min(Math.max(0, Number(e.target.value)), 600))}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[#D1D1D1] text-xs font-medium">Fecha objetivo:</label>
-                    <Input
-                      name="targetDate"
-                      type="date"
-                      value={formData.targetDate}
-                      onChange={(e) => handleChange("targetDate", e.target.value)}
-                      className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[#D1D1D1] text-xs font-medium">Métrica objetivo:</label>
-                  <Input
-                    name="goalMetric"
-                    type="text"
-                    value={formData.goalMetric}
-                    onChange={(e) => handleChange("goalMetric", e.target.value)}
-                    placeholder="Ej: subir 5kg en sentadilla en 8 semanas"
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs focus:ring-1 focus:ring-[#34C759]"
-                  />
-                </div>
-                <div>
-                  <label className="text-[#D1D1D1] text-xs font-medium">Lesiones o dolor actual:</label>
-                  <textarea
-                    value={formData.injuriesOrPain}
-                    onChange={(e) => handleChange("injuriesOrPain", e.target.value)}
-                    placeholder="Ej: molestia en hombro derecho al press"
-                    className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-white p-2 rounded-md text-xs h-16 resize-none focus:ring-1 focus:ring-[#34C759]"
-                  />
-                </div>
-              </>
-            )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={createMode === "import"}
+              onClick={() => setCreateMode("import")}
+              className={`min-h-12 rounded-lg text-sm font-semibold transition-colors touch-manipulation ${
+                createMode === "import"
+                  ? "bg-[#34C759] text-black"
+                  : "text-[#E0E0E0] active:bg-[#2D2D2D]"
+              }`}
+            >
+              Desde foto / PDF
+            </button>
           </div>
-          <Button
-            onClick={handleGenerate}
-            disabled={loadingState.generating}
-            className="w-full bg-[#34C759] text-black p-2 rounded-md text-xs font-semibold hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50"
-          >
-            {loadingState.generating ? (
+
+          <Card className="bg-[#252525] border-2 border-[#4A4A4A] p-4 sm:p-5 rounded-xl shadow-md">
+            {createMode === "generate" ? (
               <>
-                <FuturisticLoader />
-                Generando...
+                <RoutineAIFormFields
+                  formData={formData}
+                  onChange={handleChange}
+                  showAdvanced={showAdvanced}
+                  onToggleAdvanced={() => setShowAdvanced((prev) => !prev)}
+                />
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loadingState.generating}
+                  className="w-full mt-6 min-h-14 text-base font-semibold bg-[#34C759] text-black rounded-xl hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50 touch-manipulation"
+                >
+                  {loadingState.generating ? (
+                    <>
+                      <FuturisticLoader />
+                      Generando...
+                    </>
+                  ) : (
+                    "Generar Rutina"
+                  )}
+                </Button>
               </>
             ) : (
-              "Generar Rutina"
+              <RoutineAIImportSection
+                disabled={loadingState.generating}
+                onImport={handleImport}
+              />
             )}
-          </Button>
-        </Card>
-      ) : (
-        <div className="mt-8 max-w-md mx-auto">
-          <div className="flex space-x-2 mt-4">
-            <Button
-              onClick={handleSaveRoutine}
-              disabled={loadingState.saving}
-              className="w-full bg-[#34C759] text-black p-2 rounded-md text-xs font-semibold hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50"
-            >
-              {loadingState.saving ? (
-                <>
-                  <FuturisticLoader />
-                  Guardando...
-                </>
-              ) : (
-                "Guardar Rutina"
-              )}
-            </Button>
-            <Button
-              onClick={handleReset}
-              className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] p-2 rounded-md text-xs font-semibold border border-[#D32F2F] shadow-md"
-            >
-              Generar Nueva
-            </Button>
-          </div>
-          {currentRoutine && (
-            <h2 className="text-xl font-semibold text-[#34C759] mb-4">{currentRoutine.name}</h2>
-          )}
-          {currentRoutine?.days.map((day) => (
-            <Card key={day._id.toString()} className="mt-4 bg-[#252525] border-2 border-[#4A4A4A] p-4 rounded-md">
-              <h3 className="text-lg font-bold">{day.dayName}</h3>
-              {day.explanation && <p className="text-[#D1D1D1] text-xs">{day.explanation}</p>}
-              <ul className="mt-2 space-y-2">
-                {day.exercises.map((ex) => (
-                  <li key={ex._id.toString()} className="text-sm text-[#B0B0B0] flex items-center justify-between">
-                    <span>
-                      {ex.name} - {ex.sets}x{ex.reps} ({ex.weight} {ex.weightUnit}) - Descanso: {ex.rest || "N/A"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))}
-          <div className="flex space-x-2 mt-4">
-            <Button
-              onClick={handleSaveRoutine}
-              disabled={loadingState.saving}
-              className="w-full bg-[#34C759] text-black p-2 rounded-md text-xs font-semibold hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50"
-            >
-              {loadingState.saving ? (
-                <>
-                  <FuturisticLoader />
-                  Guardando...
-                </>
-              ) : (
-                "Guardar Rutina"
-              )}
-            </Button>
-            <Button
-              onClick={handleReset}
-              className="w-full bg-[#EF5350] text-white hover:bg-[#D32F2F] p-2 rounded-md text-xs font-semibold border border-[#D32F2F] shadow-md"
-            >
-              Generar Nueva
-            </Button>
-          </div>
+            {loadingState.generating && createMode === "import" && (
+              <p className="mt-4 text-center text-sm text-[#9ED7A7] flex items-center justify-center gap-2">
+                <FuturisticLoader />
+                Analizando archivos con IA...
+              </p>
+            )}
+          </Card>
         </div>
+      ) : (
+        currentRoutine && (
+          <div className="max-w-lg mx-auto pb-36">
+            <RoutineAIDraftEditor
+              routine={currentRoutine}
+              onChange={setCurrentRoutine}
+            />
+
+            <div className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#1A1A1A]/95 border-t border-[#3C3C3C] backdrop-blur-sm">
+              <div className="max-w-lg mx-auto flex flex-col gap-2">
+                <Button
+                  onClick={handleSaveRoutine}
+                  disabled={loadingState.saving || !currentRoutine.name.trim()}
+                  className="w-full min-h-14 text-base font-semibold bg-[#34C759] text-black rounded-xl hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50 touch-manipulation"
+                >
+                  {loadingState.saving ? (
+                    <>
+                      <FuturisticLoader />
+                      Guardando...
+                    </>
+                  ) : (
+                    "Guardar rutina"
+                  )}
+                </Button>
+                <Button
+                  variant="outlineDanger"
+                  onClick={handleReset}
+                  disabled={loadingState.saving}
+                  className="w-full min-h-12 text-sm rounded-xl"
+                >
+                  Descartar y crear otra
+                </Button>
+              </div>
+            </div>
+          </div>
+        )
       )}
 
       {toast && (

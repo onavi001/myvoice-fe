@@ -2,10 +2,30 @@ import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import Cookies from "js-cookie";
 import { IUser } from "../models/Users";
 import { apiClient, ApiError } from "../utils/apiClient";
+import type { RootState } from "./index";
 
 const AUTH_TOKEN_KEY = "token";
+const USER_CACHE_KEY = "mv_user_session";
+export const VERIFY_RATE_LIMIT = "RATE_LIMIT";
 
 const readToken = () => Cookies.get(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY) || null;
+
+const readCachedUser = (): IUser | null => {
+  try {
+    const raw = sessionStorage.getItem(USER_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as IUser) : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistUserCache = (user: IUser | null) => {
+  if (!user) {
+    sessionStorage.removeItem(USER_CACHE_KEY);
+    return;
+  }
+  sessionStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+};
 
 const persistToken = (token: string) => {
   Cookies.set(AUTH_TOKEN_KEY, token, { expires: 7 });
@@ -16,6 +36,11 @@ const clearPersistedToken = () => {
   Cookies.remove(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_TOKEN_KEY);
 };
+
+let verifyInFlight: Promise<{ user: IUser }> | null = null;
+let lastVerifyStartedAt = 0;
+const VERIFY_DEBOUNCE_MS = 3000;
+
 export interface ProfileUpdateData {
   username: string;
   email: string;
@@ -38,7 +63,7 @@ interface ThunkError {
 }
 
 const initialState: UserState = {
-  user: null,
+  user: readCachedUser(),
   token: readToken(),
   loading: false,
   error: null,
@@ -79,6 +104,7 @@ export const loginUser = createAsyncThunk<
         body: JSON.stringify({ email, password }),
       });
       persistToken(data.token);
+      persistUserCache(data.user);
       return { user: data.user, token: data.token };
     } catch (error) {
       return rejectWithValue((error as ApiError)?.message || "Error en login");
@@ -86,20 +112,53 @@ export const loginUser = createAsyncThunk<
   }
 );
 
-export const verifyUser = createAsyncThunk<{ user: IUser }, void, { rejectValue: string }>(
+export const verifyUser = createAsyncThunk<
+  { user: IUser },
+  void,
+  { rejectValue: string; state: RootState }
+>(
   "user/verifyUser",
   async (_, { rejectWithValue }) => {
     const token = readToken();
     if (!token) return rejectWithValue("No token found");
 
-    try {
-      return await apiClient<{ user: IUser }>("/api/auth/verify", {
+    const runVerify = () =>
+      apiClient<{ user: IUser }>("/api/auth/verify", {
         method: "GET",
       });
-    } catch (error) {
-      clearPersistedToken();
-      return rejectWithValue((error as ApiError)?.message || "Error al verificar sesión");
+
+    lastVerifyStartedAt = Date.now();
+
+    if (!verifyInFlight) {
+      verifyInFlight = runVerify().finally(() => {
+        verifyInFlight = null;
+      });
     }
+
+    try {
+      const result = await verifyInFlight;
+      persistUserCache(result.user);
+      return result;
+    } catch (error) {
+      const apiError = error as ApiError;
+      if (apiError.status === 429) {
+        return rejectWithValue(VERIFY_RATE_LIMIT);
+      }
+      if (apiError.status === 401 || apiError.status === 403) {
+        clearPersistedToken();
+        persistUserCache(null);
+      }
+      return rejectWithValue(apiError?.message || "Error al verificar sesión");
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      if (!readToken()) return false;
+      if (verifyInFlight) return false;
+      if (Date.now() - lastVerifyStartedAt < VERIFY_DEBOUNCE_MS) return false;
+      if (getState().user.loading) return false;
+      return true;
+    },
   }
 );
 
@@ -126,16 +185,19 @@ const userSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.token;
         persistToken(action.payload.token);
+        persistUserCache(action.payload.user);
       } else {
         state.user = null;
         state.token = null;
         clearPersistedToken();
+        persistUserCache(null);
       }
     },
     logout(state) {
       state.user = null;
       state.token = null;
       clearPersistedToken();
+      persistUserCache(null);
     },
   },
   extraReducers: (builder) => {
@@ -146,7 +208,8 @@ const userSlice = createSlice({
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = { ...state.user, ...action.payload };
+        state.user = { ...state.user, ...action.payload } as IUser;
+        if (state.user) persistUserCache(state.user);
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
@@ -186,11 +249,24 @@ const userSlice = createSlice({
       })
       .addCase(verifyUser.rejected, (state, action) => {
         state.loading = false;
+        if (action.payload === VERIFY_RATE_LIMIT) {
+          state.error = null;
+          if (!state.user) {
+            state.user = readCachedUser();
+          }
+          return;
+        }
+        if (action.payload === "No token found") {
+          state.user = null;
+          state.token = null;
+          return;
+        }
         state.user = null;
         state.token = null;
         state.error = action.payload as string;
         clearPersistedToken();
-      })
+        persistUserCache(null);
+      });
   },
 });
 
