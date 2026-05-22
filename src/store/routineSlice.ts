@@ -3,6 +3,7 @@ import { IRoutine, RoutineData } from "../models/Routine";
 import { IDay } from "../models/Day";
 import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
 import { apiClient, ApiError } from "../utils/apiClient";
+import { toThunkError as mapThunkError } from "../utils/apiErrors";
 
 export interface ThunkError {
   message: string;
@@ -44,13 +45,10 @@ const initialState: RoutineState = {
   error: null,
 };
 
-const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
-  const apiError = error as ApiError;
-  return {
-    message: apiError?.message || fallbackMessage,
-    status: apiError?.status,
-  };
-};
+const AI_REQUEST_TIMEOUT_MS = 90_000;
+
+const toThunkError = (error: unknown, fallbackMessage: string, aiLongRunning = false): ThunkError =>
+  mapThunkError(error, fallbackMessage, { aiLongRunning });
 
 // Fetch todas las rutinas del usuario
 export const fetchRoutines = createAsyncThunk<RoutineData[], void, { rejectValue: ThunkError }>(
@@ -371,9 +369,10 @@ export const generateRoutine = createAsyncThunk<RoutineData, RoutineInput, { rej
       return await apiClient<RoutineData>("/api/routines/generate", {
         method: "POST",
         body: JSON.stringify(input),
+        timeoutMs: AI_REQUEST_TIMEOUT_MS,
       });
     } catch (error) {
-      return rejectWithValue(toThunkError(error, "Error al generar rutina"));
+      return rejectWithValue(toThunkError(error, "Error al generar rutina", true));
     }
   }
 );
@@ -394,9 +393,10 @@ export const generateRoutineFromImport = createAsyncThunk<
     return await apiClient<RoutineData>("/api/routines/generate-from-import", {
       method: "POST",
       body: JSON.stringify(input),
+      timeoutMs: AI_REQUEST_TIMEOUT_MS,
     });
   } catch (error) {
-    return rejectWithValue(toThunkError(error, "Error al importar rutina"));
+    return rejectWithValue(toThunkError(error, "Error al importar rutina", true));
   }
 });
 

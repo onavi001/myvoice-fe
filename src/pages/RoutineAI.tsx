@@ -116,8 +116,10 @@ export default function RoutineAI() {
       if (error.status === 401) {
         navigate("/login");
       } else {
-        setToast({ message: "Error al generar la rutina", type: "error" });
-        console.error("Error al generar rutina:", error.message);
+        setToast({
+          message: error.message || "Error al generar la rutina",
+          type: "error",
+        });
       }
     } finally {
       setLoadingState((prev) => ({ ...prev, generating: false }));
@@ -156,6 +158,9 @@ export default function RoutineAI() {
 
     setLoadingState((prev) => ({ ...prev, saving: true }));
     setToast(null);
+    let routineId: string | null = null;
+    let daysSaved = 0;
+    const totalDays = currentRoutine.days.length;
     try {
       const routineResult = await dispatch(
         createRoutine({
@@ -164,11 +169,12 @@ export default function RoutineAI() {
           notes: formData.notes,
         } as unknown as IRoutine)
       ).unwrap();
-      const routineId = routineResult._id;
+      routineId = routineResult._id.toString();
 
       for (const day of currentRoutine.days) {
         const adjustedDay = validateAndAdjustDay(day);
         await dispatch(createDay({ routineId, dayData: adjustedDay })).unwrap();
+        daysSaved += 1;
       }
 
       setToast({ message: "Rutina guardada correctamente", type: "success" });
@@ -177,9 +183,22 @@ export default function RoutineAI() {
       const error = err as ThunkError;
       if (error.status === 401) {
         navigate("/login");
+      } else if (routineId && daysSaved > 0 && daysSaved < totalDays) {
+        setToast({
+          message: `Se guardó la rutina con ${daysSaved} de ${totalDays} días. Completa el resto en Mis rutinas.`,
+          type: "error",
+        });
+        setTimeout(() => navigate("/routine"), 2000);
+      } else if (routineId && daysSaved === 0) {
+        setToast({
+          message: "Se creó la rutina vacía. Añade los días desde Mis rutinas o intenta guardar de nuevo.",
+          type: "error",
+        });
       } else {
-        setToast({ message: "Error al guardar la rutina", type: "error" });
-        console.error("Error al guardar rutina:", error.message);
+        setToast({
+          message: error.message || "Error al guardar la rutina",
+          type: "error",
+        });
       }
     } finally {
       setLoadingState((prev) => ({ ...prev, saving: false }));

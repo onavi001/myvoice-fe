@@ -13,7 +13,8 @@ import { addProgress } from "../store/progressSlice";
 import { ThunkError } from "../store/routineSlice";
 import { IExercise } from "../models/Exercise";
 import { fetchVideos } from "../utils/fetchVideos";
-import { apiClient } from "../utils/apiClient";
+import { apiClient, ApiError } from "../utils/apiClient";
+import { normalizeApiErrorMessage } from "../utils/apiErrors";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -156,11 +157,15 @@ export default function useExerciseActions() {
             reps: ex.reps,
           })),
         }),
+        timeoutMs: 60_000,
       });
     } catch (err) {
-      const error = err as ThunkError;
+      const error = err as ApiError;
       if (error.status === 401) navigate("/login");
-      throw err;
+      throw {
+        message: normalizeApiErrorMessage(err, "Error al generar alternativas", { aiLongRunning: true }),
+        status: error.status,
+      } satisfies ThunkError;
     }
   };
 

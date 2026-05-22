@@ -13,6 +13,8 @@ type ApiEnvelope<T> = {
 
 type RequestOptions = RequestInit & {
   auth?: boolean;
+  /** Aborta la petición tras N ms (útil para IA / importación). */
+  timeoutMs?: number;
 };
 
 const readToken = () => Cookies.get("token") || localStorage.getItem("token") || "";
@@ -32,7 +34,7 @@ const resolveApiUrl = (url: string) => {
 };
 
 export async function apiClient<T>(url: string, options: RequestOptions = {}): Promise<T> {
-  const { auth = true, headers, ...rest } = options;
+  const { auth = true, headers, timeoutMs, ...rest } = options;
   const token = readToken();
 
   const finalHeaders = new Headers(headers || {});
@@ -43,10 +45,29 @@ export async function apiClient<T>(url: string, options: RequestOptions = {}): P
     finalHeaders.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(resolveApiUrl(url), {
-    ...rest,
-    headers: finalHeaders,
-  });
+  const controller = timeoutMs != null ? new AbortController() : undefined;
+  const timeoutId =
+    timeoutMs != null
+      ? window.setTimeout(() => controller?.abort(), timeoutMs)
+      : undefined;
+
+  let response: Response;
+  try {
+    response = await fetch(resolveApiUrl(url), {
+      ...rest,
+      headers: finalHeaders,
+      signal: controller?.signal ?? rest.signal,
+    });
+  } catch (fetchError) {
+    if (timeoutId != null) window.clearTimeout(timeoutId);
+    const isAbort = fetchError instanceof DOMException && fetchError.name === "AbortError";
+    throw {
+      message: isAbort ? "La solicitud tardó demasiado tiempo" : "Failed to fetch",
+      status: isAbort ? 408 : undefined,
+    } as ApiError;
+  } finally {
+    if (timeoutId != null) window.clearTimeout(timeoutId);
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json")

@@ -38,7 +38,7 @@ export function useRoutinePageController() {
     if (shouldFetch) {
       dispatch(fetchRoutines());
     }
-  }, [token, routineStatus, routines.length, dispatch, navigate]);
+  }, [token, routineStatus, routines.length, routinesLoading, dispatch, navigate]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);
@@ -58,7 +58,9 @@ export function useRoutinePageController() {
         navigate("/login");
         return;
       }
-      setGenerateError(error.message || "Error al generar alternativas");
+      setGenerateError(
+        error.message || "Error al generar alternativas. Comprueba tu conexión e inténtalo de nuevo."
+      );
     } finally {
       setLoadingGenerate(false);
     }
