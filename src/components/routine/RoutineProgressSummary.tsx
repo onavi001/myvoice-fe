@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, FireIcon } from "@heroicons/react/24/outline";
 import { AppDispatch } from "../../store";
 import { resetDayProgress, resetRoutineProgress } from "../../store/routineSlice";
 import { RoutineData } from "../../models/Routine";
 import { calculateDayProgress, calculateWeekProgress } from "../../utils/calculateProgress";
+import {
+  countWeeklyPlanSessions,
+  getNextPlannedDayLabel,
+  loadPlanStreakState,
+  resetPlanStreak,
+} from "../../utils/planStreak";
+import { usageSummary } from "../../utils/freemium";
+import { useWorkoutReminders } from "../../hooks/useWorkoutReminders";
 import Button from "../Button";
 
 type Props = {
@@ -34,17 +42,23 @@ function ProgressMiniBar({ value, label }: { value: number; label: string }) {
 export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const [expanded, setExpanded] = useState(false);
+  const { enabled, hour, minute, native, status, toggleEnabled, updateTime } = useWorkoutReminders();
 
+  const routineId = routine._id.toString();
+  const progressKey = routine.days.map((d) => `${d._id}:${Math.round(calculateDayProgress(d))}`).join("|");
+  const streakState = useMemo(() => loadPlanStreakState(routineId), [routineId, progressKey]);
+  const weekSessions = useMemo(() => countWeeklyPlanSessions(routine), [routine, progressKey]);
   const dayPct = calculateDayProgress(day);
   const weekPct = calculateWeekProgress(routine);
   const hasProgress = dayPct > 0 || weekPct > 0;
 
   const handleResetDay = () => {
-    void dispatch(resetDayProgress({ routineId: routine._id.toString(), dayId }));
+    void dispatch(resetDayProgress({ routineId, dayId }));
   };
 
   const handleResetWeek = () => {
-    void dispatch(resetRoutineProgress({ routineId: routine._id.toString() }));
+    void dispatch(resetRoutineProgress({ routineId }));
+    resetPlanStreak(routineId);
   };
 
   return (
@@ -62,7 +76,7 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
           <span className="text-sm font-semibold text-[#34C759]">Tu progreso</span>
           {!expanded && (
             <p className="text-xs text-[#888] mt-0.5 tabular-nums">
-              Hoy {Math.round(dayPct)}% · Semana {Math.round(weekPct)}%
+              Racha {streakState.streak} · Hoy {Math.round(dayPct)}% · Semana {Math.round(weekPct)}%
             </p>
           )}
         </div>
@@ -76,10 +90,55 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-[#3C3C3C]">
-          <div className="grid grid-cols-2 gap-4 pt-3 mb-4">
-            <ProgressMiniBar value={dayPct} label="Hoy" />
-            <ProgressMiniBar value={weekPct} label="Semana" />
+          <div className="flex items-center gap-3 pt-3 mb-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#3C3C3C]">
+            <FireIcon className="w-8 h-8 text-[#FF9500] shrink-0" />
+            <div>
+              <p className="text-2xl font-bold text-white tabular-nums">{streakState.streak}</p>
+              <p className="text-xs text-[#888]">
+                sesiones seguidas según tu plan · próxima: {getNextPlannedDayLabel(routine)}
+              </p>
+              <p className="text-xs text-[#666] mt-1">
+                Esta semana: {weekSessions.done}/{weekSessions.total} sesiones del plan · 1 día de gracia/semana
+              </p>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <ProgressMiniBar value={dayPct} label="Día actual" />
+            <ProgressMiniBar value={weekPct} label="Rutina total" />
+          </div>
+
+          <div className="mb-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#3C3C3C]">
+            <label className="flex items-center gap-3 touch-manipulation cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => void toggleEnabled(e.target.checked)}
+                className="w-5 h-5 accent-[#34C759]"
+              />
+              <span className="text-sm text-[#E0E0E0]">Recordatorios Lun / Mié / Vie</span>
+            </label>
+            {enabled && (
+              <div className="flex items-center gap-2 mt-3">
+                <label className="text-xs text-[#888]">Hora</label>
+                <input
+                  type="time"
+                  value={`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`}
+                  onChange={(e) => {
+                    const [h, m] = e.target.value.split(":").map(Number);
+                    void updateTime(h, m);
+                  }}
+                  className="flex-1 min-h-10 px-2 rounded-lg bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0]"
+                />
+              </div>
+            )}
+            {status && <p className="text-xs text-[#888] mt-2">{status}</p>}
+            {!native && enabled && (
+              <p className="text-xs text-[#666] mt-1">En navegador web los recordatorios no están disponibles.</p>
+            )}
+          </div>
+
+          <p className="text-xs text-[#666] mb-3">{usageSummary()}</p>
 
           {hasProgress ? (
             <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-[#3C3C3C]">
@@ -104,7 +163,7 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
             </div>
           ) : (
             <p className="text-sm text-[#888] pt-3 border-t border-[#3C3C3C]">
-              Marca ejercicios como completados para registrar tu progreso.
+              Marca ejercicios como completados para registrar tu progreso y sumar a la racha.
             </p>
           )}
         </div>

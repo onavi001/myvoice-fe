@@ -6,7 +6,7 @@
  *
  * Devuelve funciones para manipular ejercicios y estado de carga.
  */
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch, useSelector, useStore } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import { updateExercise, setExerciseVideos, updateExerciseCompleted } from "../store/routineSlice";
 import { addProgress } from "../store/progressSlice";
@@ -15,11 +15,18 @@ import { IExercise } from "../models/Exercise";
 import { fetchVideos } from "../utils/fetchVideos";
 import { apiClient, ApiError } from "../utils/apiClient";
 import { normalizeApiErrorMessage } from "../utils/apiErrors";
+import { calculateDayProgress } from "../utils/calculateProgress";
+import {
+  SESSION_COMPLETE_THRESHOLD,
+  updatePlanStreakOnSessionComplete,
+} from "../utils/planStreak";
+import { canUseFeature, recordFeatureUsage } from "../utils/freemium";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function useExerciseActions() {
   const dispatch = useDispatch<AppDispatch>();
+  const store = useStore<RootState>();
   const navigate = useNavigate();
   const { routines, selectedRoutineId } = useSelector((state: RootState) => state.routine);
   const { user, token } = useSelector((state: RootState) => state.user);
@@ -106,28 +113,39 @@ export default function useExerciseActions() {
     const currentExercise = day.exercises.find((e) => e._id === exerciseId);
     if (!currentExercise) return;
 
+    const markingComplete = !currentExercise.completed;
+
     try {
       await dispatch(
         updateExerciseCompleted({ routineId, dayId, exerciseId, completed: !currentExercise.completed })
       ).unwrap();
-      await dispatch(
-        addProgress({
-          sets: currentExercise.sets,
-          reps: currentExercise.reps,
-          repsUnit: currentExercise.repsUnit,
-          weightUnit: currentExercise.weightUnit,
-          weight: currentExercise.weight,
-          completed: true,
-          notes: currentExercise.notes || "",
-          routineId: routineId,
-          routineName: routine.name,
-          dayId: day._id,
-          dayName: day.dayName,
-          exerciseId: currentExercise._id,
-          exerciseName: currentExercise.name,
-          date: new Date(),
-        })
-      ).unwrap();
+
+      if (markingComplete) {
+        await dispatch(
+          addProgress({
+            sets: currentExercise.sets,
+            reps: currentExercise.reps,
+            repsUnit: currentExercise.repsUnit,
+            weightUnit: currentExercise.weightUnit,
+            weight: currentExercise.weight,
+            completed: true,
+            notes: currentExercise.notes || "",
+            routineId: routineId,
+            routineName: routine.name,
+            dayId: day._id,
+            dayName: day.dayName,
+            exerciseId: currentExercise._id,
+            exerciseName: currentExercise.name,
+            date: new Date(),
+          })
+        ).unwrap();
+
+        const freshRoutine = store.getState().routine.routines.find((r) => r._id.toString() === routineId);
+        const freshDay = freshRoutine?.days.find((d) => d._id.toString() === dayId);
+        if (freshRoutine && freshDay && calculateDayProgress(freshDay) >= SESSION_COMPLETE_THRESHOLD) {
+          updatePlanStreakOnSessionComplete(freshRoutine, dayId);
+        }
+      }
     } catch (err) {
       const error = err as ThunkError;
       if (error.message === "Unauthorized" && error.status === 401) navigate("/login");
@@ -144,8 +162,15 @@ export default function useExerciseActions() {
     const exercise = day.exercises.find((e) => e._id === exerciseId);
     if (!exercise) return null;
 
+    if (!canUseFeature("aiRegenerateExercise")) {
+      throw {
+        message: "Límite mensual de regeneración con IA alcanzado.",
+        status: 402,
+      } satisfies ThunkError;
+    }
+
     try {
-      return await apiClient<Partial<IExercise>[]>("/api/exercises/generate", {
+      const result = await apiClient<Partial<IExercise>[]>("/api/exercises/generate", {
         method: "POST",
         body: JSON.stringify({
           exerciseToChangeId: exerciseId,
@@ -159,6 +184,8 @@ export default function useExerciseActions() {
         }),
         timeoutMs: 60_000,
       });
+      recordFeatureUsage("aiRegenerateExercise");
+      return result;
     } catch (err) {
       const error = err as ApiError;
       if (error.status === 401) navigate("/login");

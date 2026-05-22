@@ -12,6 +12,7 @@ import Loader, { SmallLoader } from "../Loader";
 import { ArrowPathIcon, PlayCircleIcon, EyeIcon } from "@heroicons/react/16/solid";
 import useExerciseActions from "../../hooks/useExerciseActions";
 import Timer from "../Timer";
+import { getProgressionHint } from "../../utils/progression";
 
 export default function ExerciseCard({
   exercise,
@@ -146,7 +147,14 @@ export default function ExerciseCard({
                 className="mr-2 accent-[#34C759]"
               />
             )}
-            <span className="text-sm font-semibold text-white truncate">{exercise.name}</span>
+            <div className="min-w-0">
+              <span className="text-sm font-semibold text-white truncate block">{exercise.name}</span>
+              {getProgressionHint(currentExercise) && (
+                <span className="text-[10px] text-[#888] line-clamp-1 block">
+                  {getProgressionHint(currentExercise)}
+                </span>
+              )}
+            </div>
           </div>
           <span className="text-[#B0B0B0] text-xs">{isExpanded ? "▲" : "▼"}</span>
         </button>

@@ -1,4 +1,4 @@
-# Play Store release — v1.1.1 (versionCode 8)
+# Play Store release — v1.1.2 (versionCode 9)
 
 ## Archivo AAB
 
@@ -12,8 +12,8 @@ Salida: `android/app/build/outputs/bundle/release/app-release.aab`
 
 | Campo | Valor |
 |-------|--------|
-| `MV_VERSION_CODE` | 8 |
-| `MV_VERSION_NAME` | 1.1.1 |
+| `MV_VERSION_CODE` | 9 |
+| `MV_VERSION_NAME` | 1.1.2 |
 
 Definido en `android/gradle.properties`.
 
@@ -21,23 +21,23 @@ Definido en `android/gradle.properties`.
 
 **Novedades de esta versión**
 
-- Importa rutinas desde foto o PDF con IA.
-- Formulario de rutina con IA más cómodo en móvil.
-- Exporta tu rutina a PDF o texto.
-- Regenera un ejercicio concreto con IA (con contexto del ejercicio actual).
-- Progreso de rutina simplificado y colapsable (Hoy / Semana).
-- Correcciones al iniciar sesión y al recargar la app.
-- Corrección al abrir la sección de rutinas en blanco.
+- Modo entrenamiento a pantalla completa con el mismo detalle que cada ejercicio (videos, consejos, campos y guardar).
+- Racha por sesiones planificadas y banner de qué entrenar hoy.
+- Plantillas de rutina (cuerpo completo, PPL, upper/lower).
+- Límites freemium en generar/importar/regenerar con IA (Pro simulable en desarrollo).
+- Recordatorios locales Lun/Mié/Vie en la app Android.
+- Progreso colapsable con barras Hoy/Semana y pistas de progresión.
+- Mejoras de estabilidad al iniciar sesión y al abrir rutinas.
 
 ## Checklist antes de subir
 
-- [ ] Backend en producción desplegado con los cambios de `myvoice-be` (import PDF/foto, generación de ejercicios).
-- [ ] `VITE_API_BASE_URL` en `.env.production` apunta al API correcto (incluido en repo).
-- [ ] Backend Vercel: `maxDuration` 60s, `GROQ_API_KEY`, `APP_URL` y opcional `CORS_ORIGINS` para tu dominio web.
+- [ ] Backend en producción desplegado (`myvoice-be` en Vercel).
+- [ ] `VITE_API_BASE_URL` en `.env.production` apunta al API correcto.
+- [ ] Backend Vercel: `maxDuration` 60s, `GROQ_API_KEY`, `APP_URL` y opcional `CORS_ORIGINS`.
 - [ ] `android/keystore.properties` configurado (no se sube al repo).
-- [ ] Probar login, listado de rutinas, importar rutina, exportar PDF y marcar ejercicios completados en dispositivo real.
+- [ ] Probar modo entrenamiento, marcar ejercicios, plantillas y login en dispositivo real.
 - [ ] Generar AAB con el comando de arriba.
-- [ ] En Play Console: crear release → subir `app-release.aab` → versionCode **8** → notas de versión.
+- [ ] En Play Console: crear release → subir `app-release.aab` → versionCode **9** → notas de versión.
 
 ## Backend
 

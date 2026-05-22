@@ -18,6 +18,8 @@ type Props = {
 };
 
 export default function RoutineAIDraftEditor({ routine, onChange }: Props) {
+  const totalExercises = routine.days.reduce((n, d) => n + (d.exercises?.length ?? 0), 0);
+
   const [openDays, setOpenDays] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     routine.days.forEach((d, i) => {
@@ -97,7 +99,11 @@ export default function RoutineAIDraftEditor({ routine, onChange }: Props) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-[#9ED7A7] leading-relaxed">
-        Revisa y corrige la rutina antes de guardar. Los cambios se aplican al pulsar Guardar.
+        Revisa y corrige la rutina antes de guardar:{" "}
+        <strong className="text-white">
+          {routine.days.length} días · {totalExercises} ejercicios
+        </strong>
+        . Los cambios se aplican al pulsar Guardar.
       </p>
 
       <div>

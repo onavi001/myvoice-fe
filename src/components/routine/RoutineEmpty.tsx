@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../Button";
 import Card from "../Card";
 import { motion } from "framer-motion";
+import RoutineTemplatesModal from "./RoutineTemplatesModal";
 
 export default function RoutineEmpty() {
   const navigate = useNavigate();
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Variantes para animaciones
   const containerVariants = {
@@ -54,10 +57,20 @@ export default function RoutineEmpty() {
 
             <motion.div variants={itemVariants}>
               <Button
-                onClick={() => navigate("/routine-form")}
+                onClick={() => setShowTemplates(true)}
                 className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-md py-3 px-6 text-base font-semibold border border-[#1E88E5] shadow-md transition-all duration-200"
               >
-                Agregar Rutina Manual
+                Usar plantilla
+              </Button>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Button
+                onClick={() => navigate("/routine-form")}
+                variant="outline"
+                className="w-full min-h-12 rounded-md py-3 px-6 text-base font-semibold"
+              >
+                Crear rutina manual
               </Button>
             </motion.div>
 
@@ -72,6 +85,7 @@ export default function RoutineEmpty() {
           </div>
         </Card>
       </motion.div>
+      {showTemplates && <RoutineTemplatesModal onClose={() => setShowTemplates(false)} />}
     </div>
   );
 }

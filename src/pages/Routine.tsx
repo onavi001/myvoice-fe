@@ -5,9 +5,16 @@ import Loader, { FuturisticLoader } from "../components/Loader";
 import RoutineEmpty from "../components/routine/RoutineEmpty";
 import RoutineProgressSummary from "../components/routine/RoutineProgressSummary";
 import RoutineExportActions from "../components/routine/RoutineExportActions";
+import { useState } from "react";
 import { useRoutinePageController } from "../hooks/useRoutinePageController";
+import TodayWorkoutBanner from "../components/routine/TodayWorkoutBanner";
+import WorkoutMode from "../components/routine/WorkoutMode";
+import FreemiumGateModal from "../components/FreemiumGateModal";
+import { canUseFeature, UsageFeature } from "../utils/freemium";
 
 export default function RoutinePage() {
+  const [workoutModeOpen, setWorkoutModeOpen] = useState(false);
+  const [freemiumFeature, setFreemiumFeature] = useState<UsageFeature | null>(null);
   const {
     userLoading,
     routinesLoading,
@@ -79,6 +86,14 @@ export default function RoutinePage() {
           setSelectedDayId={setSelectedDayId}
           setSelectedDay={setSelectedDay}
         />
+        <TodayWorkoutBanner
+          routine={selectedRoutine}
+          onSelectSuggestedDay={(day) => {
+            setSelectedDay(day);
+            setSelectedDayId(day._id.toString());
+          }}
+          onStartWorkout={() => setWorkoutModeOpen(true)}
+        />
         <RoutineExportActions routine={selectedRoutine} />
         <RoutineProgressSummary
           routine={selectedRoutine}
@@ -89,7 +104,13 @@ export default function RoutinePage() {
           day={selectedDay}
           routineId={selectedRoutine._id.toString()}
           dayId={selectedDayId}
-          onGenerateExercise={onGenerateExercise}
+          onGenerateExercise={async (rid, did, eid) => {
+            if (!canUseFeature("aiRegenerateExercise")) {
+              setFreemiumFeature("aiRegenerateExercise");
+              return;
+            }
+            await onGenerateExercise(rid, did, eid);
+          }}
         />
       </div>
       <GenerateExerciseModal
@@ -99,6 +120,25 @@ export default function RoutinePage() {
         onSelect={onSelectGeneratedExercise}
         replacingExerciseName={replacingExerciseName}
       />
+      {workoutModeOpen && (
+        <WorkoutMode
+          routine={selectedRoutine}
+          day={selectedDay}
+          dayId={selectedDayId}
+          onClose={() => setWorkoutModeOpen(false)}
+          onGenerateExercise={async (rid, did, eid) => {
+            if (!canUseFeature("aiRegenerateExercise")) {
+              setFreemiumFeature("aiRegenerateExercise");
+              return;
+            }
+            setWorkoutModeOpen(false);
+            await onGenerateExercise(rid, did, eid);
+          }}
+        />
+      )}
+      {freemiumFeature && (
+        <FreemiumGateModal feature={freemiumFeature} onClose={() => setFreemiumFeature(null)} />
+      )}
     </div>
   );
 }

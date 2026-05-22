@@ -22,6 +22,12 @@ import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { useNavigate } from "react-router-dom";
 import { showRoutineGeneratedInterstitial } from "../services/ads/admob";
+import FreemiumGateModal from "../components/FreemiumGateModal";
+import {
+  canUseFeature,
+  recordFeatureUsage,
+  UsageFeature,
+} from "../utils/freemium";
 
 type LoadingState = {
   generating: boolean;
@@ -56,6 +62,7 @@ export default function RoutineAI() {
   });
   const [loadingState, setLoadingState] = useState<LoadingState>({ generating: false, saving: false });
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [freemiumFeature, setFreemiumFeature] = useState<UsageFeature | null>(null);
 
   const handleChange = (field: keyof RoutineAIFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -106,10 +113,15 @@ export default function RoutineAI() {
   };
 
   const handleGenerate = async () => {
+    if (!canUseFeature("aiGenerate")) {
+      setFreemiumFeature("aiGenerate");
+      return;
+    }
     setLoadingState((prev) => ({ ...prev, generating: true }));
     setToast(null);
     try {
       const generateRo = await dispatch(generateRoutine(formData)).unwrap();
+      recordFeatureUsage("aiGenerate");
       finishGeneration(generateRo);
     } catch (err) {
       const error = err as ThunkError;
@@ -127,6 +139,10 @@ export default function RoutineAI() {
   };
 
   const handleImport = async (payload: RoutineImportPayload) => {
+    if (!canUseFeature("aiImport")) {
+      setFreemiumFeature("aiImport");
+      return;
+    }
     setLoadingState((prev) => ({ ...prev, generating: true }));
     setToast(null);
     try {
@@ -138,6 +154,7 @@ export default function RoutineAI() {
           images: payload.images,
         })
       ).unwrap();
+      recordFeatureUsage("aiImport");
       finishGeneration(imported);
     } catch (err) {
       const error = err as ThunkError;
@@ -356,6 +373,9 @@ export default function RoutineAI() {
           type={toast.type}
           onClose={() => setToast(null)}
         />
+      )}
+      {freemiumFeature && (
+        <FreemiumGateModal feature={freemiumFeature} onClose={() => setFreemiumFeature(null)} />
       )}
     </div>
   );

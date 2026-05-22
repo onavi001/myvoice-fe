@@ -58,6 +58,10 @@ export function useRoutinePageController() {
         navigate("/login");
         return;
       }
+      if (error.status === 402) {
+        setGenerateError(error.message);
+        return;
+      }
       setGenerateError(
         error.message || "Error al generar alternativas. Comprueba tu conexión e inténtalo de nuevo."
       );
