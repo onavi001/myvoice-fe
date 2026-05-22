@@ -11,6 +11,7 @@ import { FuturisticLoader } from "../components/Loader";
 import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { useNavigate } from "react-router-dom";
+import { showRoutineGeneratedInterstitial } from "../services/ads/admob";
 
 type FormData = {
   level: "principiante" | "intermedio" | "avanzado";
@@ -109,6 +110,7 @@ export default function RoutineAI() {
       const generateRo = await dispatch(generateRoutine(formData)).unwrap();
       setCurrentRoutine(generateRo);
       setIsGenerating(false);
+      void showRoutineGeneratedInterstitial();
     } catch (err) {
       const error = err as ThunkError;
       if (error.status === 401) {

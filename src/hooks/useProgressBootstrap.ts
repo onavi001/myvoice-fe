@@ -18,18 +18,26 @@ export function useProgressBootstrap() {
   const routines = useSelector(selectRoutines);
   const exerciseOptions = useSelector(selectRoutineExerciseOptions);
   const muscleOptions = useSelector(selectRoutineMuscleOptions);
-  const { loading: progressLoading } = useSelector((state: RootState) => state.progress);
-  const { loading: routineLoading } = useSelector((state: RootState) => state.routine);
+  const { loading: progressLoading, status: progressStatus } = useSelector(
+    (state: RootState) => state.progress
+  );
+  const { loading: routineLoading, status: routineStatus } = useSelector(
+    (state: RootState) => state.routine
+  );
   const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
 
   useEffect(() => {
-    if (token) {
-      if (!routineLoading && routines.length === 0) dispatch(fetchRoutines());
-      if (!progressLoading && progress.length === 0) dispatch(fetchProgress());
-    } else {
+    if (!token) {
       navigate("/login");
+      return;
     }
-  }, [token, routineLoading, progressLoading, routines.length, progress.length, dispatch, navigate]);
+    if (routineStatus === "idle" || routineStatus === "failed") {
+      dispatch(fetchRoutines());
+    }
+    if (progressStatus === "idle" || progressStatus === "failed") {
+      dispatch(fetchProgress());
+    }
+  }, [token, routineStatus, progressStatus, dispatch, navigate]);
 
   return {
     progress,

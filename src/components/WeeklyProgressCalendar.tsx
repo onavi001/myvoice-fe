@@ -45,7 +45,7 @@ const WeeklyProgressCalendar = () => {
 
       // Obtener ejercicios planificados para el día
       const dayRoutine = selectedRoutine?.days.find((d) => d.dayName === dayName);
-      const plannedExercises = dayRoutine ? dayRoutine.exercises.length : 0;
+      const plannedExercises = dayRoutine?.exercises?.length ?? 0;
 
       // Obtener progreso del día
       const dayProgress = weekProgress.filter(

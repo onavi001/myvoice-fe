@@ -11,7 +11,8 @@ export function useRoutinePageController() {
   const dispatch: AppDispatch = useDispatch();
   const navigate = useNavigate();
   const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
-  const { routines, loading: routinesLoading, error: routinesError } = useSelector((state: RootState) => state.routine);
+  const { routines, loading: routinesLoading, error: routinesError, status: routineStatus } =
+    useSelector((state: RootState) => state.routine);
   const { loading, error, selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId } = useRoutineData(routines);
   const { handleNewExercise, handleSelectExercise } = useExerciseActions();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,12 +20,14 @@ export function useRoutinePageController() {
   const [loadingGenerate, setLoadingGenerate] = useState(false);
 
   useEffect(() => {
-    if (token && !routinesLoading && routines.length === 0) {
-      dispatch(fetchRoutines());
-    } else if (!token) {
+    if (!token) {
       navigate("/login");
+      return;
     }
-  }, [token, routines.length, routinesLoading, dispatch, navigate]);
+    if (routineStatus === "idle" || routineStatus === "failed") {
+      dispatch(fetchRoutines());
+    }
+  }, [token, routineStatus, dispatch, navigate]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);

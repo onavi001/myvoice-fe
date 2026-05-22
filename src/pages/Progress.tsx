@@ -14,6 +14,8 @@ import ProgressAddForm from "../components/progress/ProgressAddForm";
 import ProgressPagination from "../components/progress/ProgressPagination";
 import ProgressCard from "../components/progress/ProgressCard";
 import { useProgressViewModel } from "../hooks/useProgressViewModel";
+import WebAdBanner from "../components/ads/WebAdBanner";
+import { isWebPlatform } from "../services/ads/admobConfig";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, zoomPlugin);
 
@@ -95,7 +97,18 @@ export default function Progress() {
         )}
 
         {vm.filteredProgress.length === 0 ? (
-          <p className="text-[#B0B0B0] text-xs sm:text-sm mt-4 text-center">No hay progreso registrado con este filtro.</p>
+          <div className="mt-4 text-center space-y-2">
+            <p className="text-[#E0E0E0] text-sm">
+              {vm.searchQuery || vm.muscleFilter || vm.dateFilter.start || vm.dateFilter.end
+                ? "No hay progreso registrado con este filtro."
+                : "Aún no tienes progreso registrado."}
+            </p>
+            {!vm.searchQuery && !vm.muscleFilter && !vm.dateFilter.start && !vm.dateFilter.end && (
+              <p className="text-[#B0B0B0] text-xs">
+                Usa &quot;Agregar Progreso&quot; o marca ejercicios completados en tus rutinas.
+              </p>
+            )}
+          </div>
         ) : (
           <>
             <div className="mt-4 space-y-2">
@@ -129,6 +142,7 @@ export default function Progress() {
           </>
         )}
         {vm.toast && <Toast type={vm.toast.variant} message={vm.toast.message} onClose={vm.handleCloseToast} />}
+        {isWebPlatform() && <WebAdBanner />}
       </div>
     </div>
   );

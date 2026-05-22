@@ -15,7 +15,13 @@ export const selectProgressEntries = createSelector([selectProgressState], (prog
 
 export const selectRoutineExerciseOptions = createSelector([selectRoutines], (routines) => {
   const uniqueExercises = new Set<string>();
-  routines.forEach((routine) => routine.days?.forEach((day) => day.exercises?.forEach((exercise) => uniqueExercises.add(exercise.name))));
+  routines.forEach((routine) =>
+    routine.days?.forEach((day) =>
+      day.exercises?.forEach((exercise) => {
+        if (exercise?.name) uniqueExercises.add(exercise.name);
+      })
+    )
+  );
   return ["", ...Array.from(uniqueExercises).sort()];
 });
 

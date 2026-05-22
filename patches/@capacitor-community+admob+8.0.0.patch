@@ -1,0 +1,13 @@
+diff --git a/node_modules/@capacitor-community/admob/android/build.gradle b/node_modules/@capacitor-community/admob/android/build.gradle
+index 1056a18..13d21f7 100644
+--- a/node_modules/@capacitor-community/admob/android/build.gradle
++++ b/node_modules/@capacitor-community/admob/android/build.gradle
+@@ -37,7 +37,7 @@ android {
+     buildTypes {
+         release {
+             minifyEnabled false
+-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
++            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+         }
+     }
+     lintOptions {

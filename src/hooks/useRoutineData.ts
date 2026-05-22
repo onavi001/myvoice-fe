@@ -12,7 +12,7 @@ import { selectSelectedRoutine } from "../store/selectors";
 
 export default function useRoutineData(initialRoutines: RoutineData[]) {
   const dispatch = useDispatch<AppDispatch>();
-  const { routines, loading, error } = useSelector((state: RootState) => state.routine);
+  const { routines, loading, error, status: routineStatus } = useSelector((state: RootState) => state.routine);
   const selectedRoutine = useSelector(selectSelectedRoutine);
   const storedDayId = localStorage.getItem("dayId");
   const [selectedDay, setSelectedDay] = useState<RoutineData["days"][number] | undefined>(
@@ -46,12 +46,14 @@ export default function useRoutineData(initialRoutines: RoutineData[]) {
   }, [dispatch, routines, storedDayId]);
 
   useEffect(() => {
-    if (initialRoutines && routines.length === 0) {
+    if (initialRoutines.length > 0 && routines.length === 0) {
       dispatch(fetchRoutines.fulfilled(initialRoutines, "", undefined));
-    } else if (routines.length === 0) {
+      return;
+    }
+    if (routineStatus === "idle" || routineStatus === "failed") {
       dispatch(fetchRoutines());
     }
-  }, [dispatch, initialRoutines, routines.length]);
+  }, [dispatch, initialRoutines, routines.length, routineStatus]);
 
   const setSelectedDayIdHandler = (id: string | null) => {
     if (selectedRoutine && id) {

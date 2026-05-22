@@ -19,9 +19,11 @@
     "mobile:bundle:android": "npm run mobile:build:android && cd android && ./gradlew bundleRelease",
     "mobile:apk:android": "npm run mobile:build:android && cd android && ./gradlew assembleRelease",
     "mobile:bundle:android:java21": "bash scripts/android-use-java21.sh npm run mobile:bundle:android",
-    "mobile:apk:android:java21": "bash scripts/android-use-java21.sh npm run mobile:apk:android"
+    "mobile:apk:android:java21": "bash scripts/android-use-java21.sh npm run mobile:apk:android",
+    "postinstall": "patch-package"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.0.0",
     "@capacitor/android": "^8.3.1",
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
@@ -64,6 +66,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.3",
     "typescript": "~5.7.2",

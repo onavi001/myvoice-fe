@@ -20,6 +20,10 @@
             </intent-filter>
         </activity>
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="@string/admob_app_id" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -32,4 +36,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Requerido en Android 13+ cuando la app usa ID de publicidad (AdMob) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 </manifest>

@@ -63,7 +63,8 @@ export const fetchProgress = createAsyncThunk<ProgressData[], void, { rejectValu
   async (_, { rejectWithValue }) => {
     try {
       const data = await apiClient<ProgressData[]>("/api/progress", { method: "GET" });
-      return data.map(normalizeProgressEntry);
+      const entries = Array.isArray(data) ? data : [];
+      return entries.map(normalizeProgressEntry);
     } catch (error) {
       return rejectWithValue(toThunkError(error, "Error al obtener progreso"));
     }
