@@ -12,6 +12,7 @@ import {
   PaperAirplaneIcon,
 } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
+import { useAdMobBottomInset } from "../context/AdMobInsetContext";
 
 interface Message {
   id: string;
@@ -48,6 +49,7 @@ const getInitialMessages = (): Message[] => {
 };
 
 export default function Chatbot({ onClose }: ChatbotProps) {
+  const adBottomInset = useAdMobBottomInset();
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState<Message[]>(getInitialMessages);
   const [loading, setLoading] = useState(false);
@@ -119,7 +121,12 @@ export default function Chatbot({ onClose }: ChatbotProps) {
   };
 
   return (
-    <div className="fixed bottom-4 right-0 left-0 z-50 mx-auto w-[calc(100%-1rem)] max-w-md rounded-2xl border border-[#3A3A3A] bg-[#111111]/95 text-white shadow-2xl backdrop-blur-sm sm:bottom-6 sm:left-auto sm:right-6 sm:w-[26rem]">
+    <div
+      className="fixed right-0 left-0 z-50 mx-auto w-[calc(100%-1rem)] max-w-md rounded-2xl border border-[#3A3A3A] bg-[#111111]/95 text-white shadow-2xl backdrop-blur-sm sm:left-auto sm:right-6 sm:w-[26rem]"
+      style={{
+        bottom: `calc(${adBottomInset}px + max(1rem, env(safe-area-inset-bottom)))`,
+      }}
+    >
       <div className="flex items-center justify-between border-b border-[#2C2C2C] px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <div className="rounded-full bg-[#34C759]/15 p-1.5">

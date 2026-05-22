@@ -9,11 +9,17 @@ export const ADMOB_TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
 /** Google sample interstitial (Android). */
 export const ADMOB_TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
 
-/** Space above system nav / chat FAB so the banner does not cover controls (dp). */
-export const ADMOB_BOTTOM_CLEARANCE_PX = 72;
+/** Native banner margin from screen bottom (dp → px in WebView). */
+export const ADMOB_BOTTOM_CLEARANCE_PX = 80;
 
-/** Base scroll padding when a native banner is visible. */
-export const ADMOB_CONTENT_BASE_PADDING_PX = 96;
+/** Fallback height until SizeChanged fires (adaptive banner). */
+export const ADMOB_MIN_BANNER_HEIGHT_PX = 56;
+
+/** Extra gap between banner edge and fixed UI. */
+export const ADMOB_SAFE_BUFFER_PX = 20;
+
+/** Scroll padding below main content when ads are on (beyond adBottomInset). */
+export const ADMOB_MAIN_EXTRA_PADDING_PX = 72;
 
 export function isNativeAndroid(): boolean {
   return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";

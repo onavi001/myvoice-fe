@@ -1,4 +1,4 @@
-# Play Store release — v1.1.2 (versionCode 9)
+# Play Store release — v1.1.3 (versionCode 10)
 
 ## Archivo AAB
 
@@ -12,8 +12,8 @@ Salida: `android/app/build/outputs/bundle/release/app-release.aab`
 
 | Campo | Valor |
 |-------|--------|
-| `MV_VERSION_CODE` | 9 |
-| `MV_VERSION_NAME` | 1.1.2 |
+| `MV_VERSION_CODE` | 10 |
+| `MV_VERSION_NAME` | 1.1.3 |
 
 Definido en `android/gradle.properties`.
 
@@ -21,29 +21,14 @@ Definido en `android/gradle.properties`.
 
 **Novedades de esta versión**
 
-- Modo entrenamiento a pantalla completa con el mismo detalle que cada ejercicio (videos, consejos, campos y guardar).
-- Racha por sesiones planificadas y banner de qué entrenar hoy.
-- Plantillas de rutina (cuerpo completo, PPL, upper/lower).
-- Límites freemium en generar/importar/regenerar con IA (Pro simulable en desarrollo).
-- Recordatorios locales Lun/Mié/Vie en la app Android.
-- Progreso colapsable con barras Hoy/Semana y pistas de progresión.
-- Mejoras de estabilidad al iniciar sesión y al abrir rutinas.
+- Corrige anuncios que tapaban botones (guardar rutina, chat y modo entrenamiento).
+- Al cerrar un anuncio, el espacio en pantalla se libera correctamente.
 
 ## Checklist antes de subir
 
 - [ ] Backend en producción desplegado (`myvoice-be` en Vercel).
 - [ ] `VITE_API_BASE_URL` en `.env.production` apunta al API correcto.
-- [ ] Backend Vercel: `maxDuration` 60s, `GROQ_API_KEY`, `APP_URL` y opcional `CORS_ORIGINS`.
 - [ ] `android/keystore.properties` configurado (no se sube al repo).
-- [ ] Probar modo entrenamiento, marcar ejercicios, plantillas y login en dispositivo real.
+- [ ] Probar botones inferiores con banner visible y tras cerrar el anuncio.
 - [ ] Generar AAB con el comando de arriba.
-- [ ] En Play Console: crear release → subir `app-release.aab` → versionCode **9** → notas de versión.
-
-## Backend
-
-Desplegar `myvoice-be` en el mismo entorno que usa la app antes de publicar, para que funcionen:
-
-- `POST /api/routines/generate-from-import`
-- `POST /api/exercises/generate` (body con ejercicio a reemplazar)
-- `GET /api/auth/verify` sin rate limit estricto
-- CORS restringido + timeouts Groq alineados con Vercel (55s visión)
+- [ ] En Play Console: subir `app-release.aab` → versionCode **10** → notas de versión.
