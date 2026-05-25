@@ -1,8 +1,19 @@
 import { createContext, useContext } from "react";
 
-/** Extra space reserved above the native AdMob banner (px). */
-export const AdMobInsetContext = createContext(0);
+export type AdMobInsets = {
+  top: number;
+  bottom: number;
+};
 
-export function useAdMobBottomInset(): number {
+const defaultInsets: AdMobInsets = { top: 0, bottom: 0 };
+
+export const AdMobInsetContext = createContext<AdMobInsets>(defaultInsets);
+
+export function useAdMobInsets(): AdMobInsets {
   return useContext(AdMobInsetContext);
+}
+
+/** @deprecated Use useAdMobInsets().bottom — always 0 with top banner. */
+export function useAdMobBottomInset(): number {
+  return useContext(AdMobInsetContext).bottom;
 }

@@ -4,10 +4,6 @@ import { RoutineData } from "../../models/Routine";
 import ExerciseWorkoutDetail from "./ExerciseWorkoutDetail";
 import Button from "../Button";
 import useExerciseActions from "../../hooks/useExerciseActions";
-import { useAdMobBottomInset } from "../../context/AdMobInsetContext";
-
-const WORKOUT_FOOTER_HEIGHT_PX = 120;
-
 type Props = {
   routine: RoutineData;
   day: RoutineData["days"][number];
@@ -17,7 +13,6 @@ type Props = {
 };
 
 export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateExercise }: Props) {
-  const adBottomInset = useAdMobBottomInset();
   const routineId = routine._id.toString();
   const exercises = day.exercises ?? [];
   const [index, setIndex] = useState(0);
@@ -72,12 +67,7 @@ export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateEx
         </button>
       </header>
 
-      <main
-        className="flex-1 overflow-y-auto p-4"
-        style={{
-          paddingBottom: `calc(${WORKOUT_FOOTER_HEIGHT_PX}px + ${adBottomInset}px + max(1rem, env(safe-area-inset-bottom)))`,
-        }}
-      >
+      <main className="flex-1 overflow-y-auto p-4 pb-28">
         <ExerciseWorkoutDetail
           key={current._id.toString()}
           exercise={current}
@@ -88,10 +78,7 @@ export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateEx
         />
       </main>
 
-      <footer
-        className="shrink-0 fixed left-0 right-0 z-[61] p-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0A0A0A]/95 border-t border-[#3C3C3C] backdrop-blur-sm"
-        style={{ bottom: adBottomInset }}
-      >
+      <footer className="shrink-0 fixed bottom-0 left-0 right-0 z-[61] p-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#0A0A0A]/95 border-t border-[#3C3C3C] backdrop-blur-sm">
         <div className="max-w-lg mx-auto flex flex-col gap-2">
           {!current.completed && (
             <Button

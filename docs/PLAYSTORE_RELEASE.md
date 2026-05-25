@@ -1,4 +1,4 @@
-# Play Store release — v1.1.3 (versionCode 10)
+# Play Store release — v1.1.4 (versionCode 11)
 
 ## Archivo AAB
 
@@ -12,8 +12,8 @@ Salida: `android/app/build/outputs/bundle/release/app-release.aab`
 
 | Campo | Valor |
 |-------|--------|
-| `MV_VERSION_CODE` | 10 |
-| `MV_VERSION_NAME` | 1.1.3 |
+| `MV_VERSION_CODE` | 11 |
+| `MV_VERSION_NAME` | 1.1.4 |
 
 Definido en `android/gradle.properties`.
 
@@ -21,14 +21,15 @@ Definido en `android/gradle.properties`.
 
 **Novedades de esta versión**
 
-- Corrige anuncios que tapaban botones (guardar rutina, chat y modo entrenamiento).
-- Al cerrar un anuncio, el espacio en pantalla se libera correctamente.
+- Banner de anuncios arriba para no tapar botones inferiores.
+- Temporizador de ejercicio mejorado: avisos sonoros por fase (serie, descanso, fin) sin voz.
+- Modo entrenamiento: timer a pantalla completa y detalle completo del ejercicio.
+- Correcciones de estabilidad en rutinas y modo entrenamiento.
 
 ## Checklist antes de subir
 
-- [ ] Backend en producción desplegado (`myvoice-be` en Vercel).
-- [ ] `VITE_API_BASE_URL` en `.env.production` apunta al API correcto.
-- [ ] `android/keystore.properties` configurado (no se sube al repo).
-- [ ] Probar botones inferiores con banner visible y tras cerrar el anuncio.
-- [ ] Generar AAB con el comando de arriba.
-- [ ] En Play Console: subir `app-release.aab` → versionCode **10** → notas de versión.
+- [ ] Backend en producción (`myvoice-be` en Vercel) con `GROQ_API_KEY`.
+- [ ] `.env.production`: `VITE_API_BASE_URL` y AdMob real (`VITE_ADMOB_*`, `VITE_ADMOB_TESTING=false`).
+- [ ] `android/keystore.properties` configurado.
+- [ ] Probar login, rutinas, modo entrenamiento, timer y anuncios en dispositivo real.
+- [ ] Generar AAB y subir a Play Console → versionCode **11**.

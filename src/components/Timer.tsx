@@ -1,5 +1,11 @@
 import { StopCircleIcon } from "@heroicons/react/16/solid";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { playTimerCue, primeTimerAudio } from "../utils/shortBeep";
+
+const PREP_SECONDS = 10;
+/** Pitido cada segundo en los últimos N s (prep, serie, descanso). */
+const FINAL_SECONDS_BEEP = 5;
 
 interface TimerProps {
   sets: number;
@@ -21,143 +27,194 @@ export default function Timer({
 }: TimerProps) {
   const [timer, setTimer] = useState<number | null>(null);
   const [totalTime, setTotalTime] = useState<number | null>(null);
-  const [intervalId, setIntervalId] = useState<ReturnType<typeof setInterval> | null>(null);
-  const [phase, setPhase] = useState<"start" | "sets" | "rest" | null>(null);
-  const [setsLeft, setSetsLeft] = useState<number>(sets);
+  const [phase, setPhase] = useState<"prep" | "work" | "rest" | null>(null);
+  const [currentSet, setCurrentSet] = useState(1);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [showCongrats, setShowCongrats] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
 
   const perSetSeconds =
     setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : 30;
 
-  useEffect(() => {
-    if (isActive && !intervalId) {
-      startCountdown(sets, restTime, perSetSeconds);
+  const clearTick = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-    // Timer flow is intentionally controlled by explicit start/stop state.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive]);
-
-  const startCountdown = (initialSets: number, rest: number, workSeconds: number) => {
-    let countdownTime = 10;
-    setPhase("start");
-    setTimer(countdownTime);
-    setTotalTime(countdownTime);
-    setSetsLeft(initialSets);
-    const beep = new Audio("/alarms/countdown.mp3");
-    beep.play().catch((error) => console.error("Error al reproducir beep:", error));
-
-    const countdownInterval = setInterval(() => {
-      countdownTime -= 1;
-      setTimer(countdownTime);
-      if (countdownTime <= 0) {
-        clearInterval(countdownInterval);
-        setAlertMessage("¡Comienza ahora!");
-        startSetPhase(initialSets, rest, workSeconds);
-      }
-    }, 1000);
-    setIntervalId(countdownInterval);
   };
 
-  const startSetPhase = (remainingSets: number, rest: number, workSeconds: number) => {
+  const resetUi = () => {
+    clearTick();
+    setTimer(null);
+    setTotalTime(null);
+    setPhase(null);
+    setCurrentSet(1);
+    setAlertMessage(null);
+    setShowCongrats(false);
+  };
+
+  const startSetPhase = (setNumber: number, totalSets: number, rest: number, workSeconds: number) => {
     let setTime = workSeconds;
-    setPhase("sets");
+    setPhase("work");
+    setCurrentSet(setNumber);
     setTimer(setTime);
     setTotalTime(setTime);
+    setAlertMessage(null);
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTime -= 1;
       setTimer(setTime);
-      if (setTime <= 0) {
-        clearInterval(interval);
-        setAlertMessage("¡Serie completada!");
-        if (remainingSets > 1) {
-          setSetsLeft(remainingSets - 1);
-          startRestPhase(remainingSets - 1, rest, workSeconds);
-        } else {
-          setTimer(null);
-          setTotalTime(null);
-          setIntervalId(null);
-          setPhase(null);
-          setAlertMessage("¡Ejercicio terminado!");
-          setShowCongrats(true);
-          setTimeout(() => {
-            setShowCongrats(false);
-            onComplete();
-          }, 3000);
-        }
+
+      if (setTime > 0 && setTime <= FINAL_SECONDS_BEEP) {
+        playTimerCue("work-countdown");
+        setAlertMessage(`Quedan ${setTime}s de serie`);
+      }
+
+      if (setTime > 0) return;
+
+      clearTick();
+      playTimerCue("set-complete");
+      setAlertMessage("¡Serie completada!");
+
+      if (setNumber < totalSets) {
+        startRestPhase(setNumber + 1, totalSets, rest, workSeconds);
+      } else {
+        setPhase(null);
+        setTimer(null);
+        setTotalTime(null);
+        playTimerCue("workout-complete");
+        setAlertMessage("¡Ejercicio terminado!");
+        setShowCongrats(true);
+        window.setTimeout(() => {
+          if (!mountedRef.current) return;
+          setShowCongrats(false);
+          onComplete();
+        }, 3000);
       }
     }, 1000);
-    setIntervalId(interval);
   };
 
-  const startRestPhase = (remainingSets: number, rest: number, workSeconds: number) => {
+  const startRestPhase = (
+    nextSetNumber: number,
+    totalSets: number,
+    rest: number,
+    workSeconds: number
+  ) => {
     let restTimeLeft = rest;
     setPhase("rest");
+    setCurrentSet(nextSetNumber);
     setTimer(restTimeLeft);
     setTotalTime(restTimeLeft);
+    setAlertMessage(null);
 
-    const restInterval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       restTimeLeft -= 1;
       setTimer(restTimeLeft);
 
-      if (restTimeLeft === 11) {
-        const beep = new Audio("/alarms/countdown.mp3");
-        beep.play().catch((error) => console.error("Error al reproducir beep:", error));
+      if (restTimeLeft > 0 && restTimeLeft <= FINAL_SECONDS_BEEP) {
+        playTimerCue("rest-countdown");
+        setAlertMessage(`Descanso: ${restTimeLeft}s para la siguiente serie`);
       }
 
-      if (restTimeLeft <= 0) {
-        clearInterval(restInterval);
-        setAlertMessage("¡Descanso terminado! Siguiente serie.");
-        setSetsLeft(remainingSets);
-        startSetPhase(remainingSets, rest, workSeconds);
-      }
+      if (restTimeLeft > 0) return;
+
+      clearTick();
+      playTimerCue("rest-complete");
+      setAlertMessage("¡Descanso terminado!");
+      startSetPhase(nextSetNumber, totalSets, rest, workSeconds);
     }, 1000);
-    setIntervalId(restInterval);
   };
+
+  const startPrepCountdown = (totalSets: number, rest: number, workSeconds: number) => {
+    let countdownTime = PREP_SECONDS;
+    setPhase("prep");
+    setTimer(countdownTime);
+    setTotalTime(countdownTime);
+    setCurrentSet(1);
+    setAlertMessage(`Empieza en ${PREP_SECONDS}s`);
+
+    intervalRef.current = setInterval(() => {
+      countdownTime -= 1;
+      setTimer(countdownTime);
+
+      if (countdownTime > 0 && countdownTime <= FINAL_SECONDS_BEEP) {
+        playTimerCue("prep-countdown");
+        setAlertMessage(`Empieza en ${countdownTime}s`);
+      }
+
+      if (countdownTime > 0) return;
+
+      clearTick();
+      playTimerCue("rest-complete");
+      setAlertMessage("¡Comienza ahora!");
+      startSetPhase(1, totalSets, rest, workSeconds);
+    }, 1000);
+  };
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    if (!isActive) {
+      resetUi();
+      return () => {
+        mountedRef.current = false;
+        clearTick();
+      };
+    }
+
+    resetUi();
+    void primeTimerAudio();
+    startPrepCountdown(sets, restTime, perSetSeconds);
+
+    return () => {
+      mountedRef.current = false;
+      clearTick();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, sets, restTime, perSetSeconds]);
 
   const handleStop = () => {
-    if (intervalId) {
-      clearInterval(intervalId);
-      setTimer(null);
-      setTotalTime(null);
-      setIntervalId(null);
-      setPhase(null);
-      setAlertMessage(null);
-      setShowCongrats(false);
-      onStop();
-    }
+    resetUi();
+    onStop();
   };
 
-  const radius = 50; // Aumentamos el tamaño para mejor visibilidad
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const progress = timer !== null && totalTime !== null ? (timer / totalTime) * circumference : circumference;
   const strokeDashoffset = circumference - progress;
 
   if (!isActive) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black opacity-80 flex items-center justify-center z-50">
-      <div className="text-center text-white">
-        {timer !== null && totalTime !== null && (
+  const phaseLabel =
+    phase === "prep"
+      ? "Preparación"
+      : phase === "work"
+        ? `Serie ${currentSet} de ${sets}`
+        : phase === "rest"
+          ? `Descanso · siguiente: serie ${currentSet} de ${sets}`
+          : "";
+
+  const phaseColor =
+    phase === "prep" ? "#FF9800" : phase === "work" ? "#FFD700" : "#34C759";
+
+  const overlay = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Temporizador de ejercicio"
+    >
+      <div className="text-center text-white max-w-sm w-full">
+        {timer !== null && totalTime !== null && phase && (
           <div className="flex flex-col items-center">
-            <svg width="120" height="120" className="relative">
+            <svg width="120" height="120" className="relative" aria-hidden>
+              <circle cx="60" cy="60" r={radius} stroke="#2D2D2D" strokeWidth="6" fill="none" />
               <circle
                 cx="60"
                 cy="60"
                 r={radius}
-                stroke="#2D2D2D"
-                strokeWidth="6"
-                fill="none"
-              />
-              <circle
-                cx="60"
-                cy="60"
-                r={radius}
-                stroke={phase === "start" ? "#FF9800" : phase === "sets" ? "#FFD700" : "#34C759"}
+                stroke={phaseColor}
                 strokeWidth="6"
                 fill="none"
                 strokeDasharray={circumference}
@@ -170,39 +227,32 @@ export default function Timer({
                 y="50%"
                 textAnchor="middle"
                 dy=".3em"
-                className="text-white font-semibold text-2xl"
+                className="text-2xl font-semibold"
                 fill="white"
               >
                 {timer} s
               </text>
             </svg>
-            <p
-              className={`mt-4 text-xl font-bold ${
-                phase === "start" ? "text-[#FF9800]" : phase === "sets" ? "text-[#FFD700]" : "text-[#34C759]"
-              }`}
-            >
-              {phase === "start"
-                ? "¡Preparándote!"
-                : phase === "sets"
-                ? `Serie ${sets - setsLeft + 1} de ${sets}`
-                : `Descanso (${setsLeft} series restantes)`}
+            <p className="mt-4 text-xl font-bold" style={{ color: phaseColor }}>
+              {phaseLabel}
             </p>
           </div>
         )}
         {alertMessage && (
-          <div className="text-[#FFD700] bg-[#2D2D2D] p-4 rounded-md mt-4 animate-pulse text-lg">
+          <div className="text-[#FFD700] bg-[#2D2D2D] p-4 rounded-xl mt-4 text-lg font-medium">
             {alertMessage}
           </div>
         )}
         {showCongrats && (
-          <div className="text-[#34C759] bg-[#2D2D2D] p-6 rounded-md mt-4 animate-congrats text-xl">
+          <div className="text-[#34C759] bg-[#2D2D2D] p-6 rounded-xl mt-4 text-xl">
             <p className="text-2xl font-bold">🏆 ¡Felicidades, lo lograste!</p>
             <p>¡Gran trabajo completando las series!</p>
           </div>
         )}
         <button
+          type="button"
           onClick={handleStop}
-          className="mt-6 flex items-center mx-auto bg-[#EF5350] text-white rounded-full px-4 py-2 text-lg hover:bg-[#D32F2F]"
+          className="mt-6 flex items-center mx-auto bg-[#EF5350] text-white rounded-full px-4 py-2 text-lg hover:bg-[#D32F2F] min-h-12 touch-manipulation"
         >
           <span>Detener</span>
           <StopCircleIcon className="w-6 h-6 ml-2" />
@@ -210,4 +260,6 @@ export default function Timer({
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }

@@ -28,8 +28,6 @@ import {
   recordFeatureUsage,
   UsageFeature,
 } from "../utils/freemium";
-import { useAdMobBottomInset } from "../context/AdMobInsetContext";
-
 type LoadingState = {
   generating: boolean;
   saving: boolean;
@@ -37,12 +35,9 @@ type LoadingState = {
 
 type CreateMode = "generate" | "import";
 
-const DRAFT_FOOTER_HEIGHT_PX = 148;
-
 export default function RoutineAI() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const adBottomInset = useAdMobBottomInset();
   const { loading } = useSelector((state: RootState) => state.routine);
   const [currentRoutine, setCurrentRoutine] = useState<RoutineData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
@@ -335,21 +330,13 @@ export default function RoutineAI() {
         </div>
       ) : (
         currentRoutine && (
-          <div
-            className="max-w-lg mx-auto"
-            style={{
-              paddingBottom: `calc(${DRAFT_FOOTER_HEIGHT_PX}px + ${adBottomInset}px + max(1rem, env(safe-area-inset-bottom)))`,
-            }}
-          >
+          <div className="max-w-lg mx-auto pb-36">
             <RoutineAIDraftEditor
               routine={currentRoutine}
               onChange={setCurrentRoutine}
             />
 
-            <div
-              className="fixed left-0 right-0 z-20 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#1A1A1A]/95 border-t border-[#3C3C3C] backdrop-blur-sm"
-              style={{ bottom: adBottomInset }}
-            >
+            <div className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#1A1A1A]/95 border-t border-[#3C3C3C] backdrop-blur-sm">
               <div className="max-w-lg mx-auto flex flex-col gap-2">
                 <Button
                   onClick={handleSaveRoutine}

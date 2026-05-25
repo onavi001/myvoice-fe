@@ -9,16 +9,19 @@ export const ADMOB_TEST_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
 /** Google sample interstitial (Android). */
 export const ADMOB_TEST_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
 
-/** Native banner margin from screen bottom (dp → px in WebView). */
-export const ADMOB_BOTTOM_CLEARANCE_PX = 80;
+/**
+ * Native banner at TOP_CENTER: margin-top pushes it below the in-app navbar (~56px + padding).
+ * Bottom banners overlay the WebView and cannot be avoided with CSS on fixed bottom controls.
+ */
+export const ADMOB_TOP_MARGIN_PX = 72;
 
 /** Fallback height until SizeChanged fires (adaptive banner). */
 export const ADMOB_MIN_BANNER_HEIGHT_PX = 56;
 
-/** Extra gap between banner edge and fixed UI. */
-export const ADMOB_SAFE_BUFFER_PX = 20;
+/** Extra gap between banner edge and scrollable content. */
+export const ADMOB_SAFE_BUFFER_PX = 12;
 
-/** Scroll padding below main content when ads are on (beyond adBottomInset). */
+/** Scroll padding below main content (chat FAB clearance on web / no native ad). */
 export const ADMOB_MAIN_EXTRA_PADDING_PX = 72;
 
 export function isNativeAndroid(): boolean {

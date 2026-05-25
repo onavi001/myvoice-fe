@@ -13,6 +13,7 @@ import Loader, { SmallLoader } from "../Loader";
 import Timer from "../Timer";
 import useExerciseActions from "../../hooks/useExerciseActions";
 import { getProgressionHint } from "../../utils/progression";
+import { primeTimerAudio } from "../../utils/shortBeep";
 
 type Props = {
   exercise: IExercise;
@@ -94,6 +95,18 @@ export default function ExerciseWorkoutDetail({
     }
   };
 
+  const handleStartTimer = () => {
+    const sets = parseInt(String(currentExercise.sets || 0), 10);
+    const restTime = parseInt(String(currentExercise.rest || 0), 10);
+    if (Number.isNaN(sets) || sets <= 0 || Number.isNaN(restTime) || restTime <= 0) return;
+    if (currentExercise.repsUnit === "seconds") {
+      const repsAsSeconds = Number(currentExercise.reps);
+      if (!Number.isFinite(repsAsSeconds) || repsAsSeconds <= 0) return;
+    }
+    void primeTimerAudio();
+    setIsTimerActive(true);
+  };
+
   const formatPrescription = () => {
     const unit = currentExercise.repsUnit === "seconds" ? "s" : " reps";
     const weight =
@@ -151,11 +164,7 @@ export default function ExerciseWorkoutDetail({
 
         <div className="p-4 space-y-4 text-sm">
           <Button
-            onClick={() => {
-              const sets = parseInt(String(currentExercise.sets || 0), 10);
-              const restTime = parseInt(String(currentExercise.rest || 0), 10);
-              if (sets > 0 && restTime > 0) setIsTimerActive(true);
-            }}
+            onClick={handleStartTimer}
             className="w-full flex items-center justify-center gap-2 bg-[#34C759] text-black min-h-12 rounded-xl font-semibold hover:bg-[#2ca44e] disabled:opacity-50"
             disabled={
               isTimerActive ||

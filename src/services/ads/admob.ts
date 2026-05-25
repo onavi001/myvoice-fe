@@ -5,7 +5,7 @@ import {
   BannerAdSize,
 } from "@capacitor-community/admob";
 import {
-  ADMOB_BOTTOM_CLEARANCE_PX,
+  ADMOB_TOP_MARGIN_PX,
   getBannerAdUnitId,
   getInterstitialAdUnitId,
   isAdMobTesting,
@@ -57,8 +57,8 @@ export async function showAdBanner(): Promise<void> {
   await AdMob.showBanner({
     adId: getBannerAdUnitId(),
     adSize: BannerAdSize.ADAPTIVE_BANNER,
-    position: BannerAdPosition.BOTTOM_CENTER,
-    margin: ADMOB_BOTTOM_CLEARANCE_PX,
+    position: BannerAdPosition.TOP_CENTER,
+    margin: ADMOB_TOP_MARGIN_PX,
     isTesting: isAdMobTesting(),
   });
 }

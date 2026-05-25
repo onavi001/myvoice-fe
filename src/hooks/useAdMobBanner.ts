@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import type { PluginListenerHandle } from "@capacitor/core";
 import { BannerAdPluginEvents } from "@capacitor-community/admob";
 import {
-  ADMOB_BOTTOM_CLEARANCE_PX,
   ADMOB_MAIN_EXTRA_PADDING_PX,
   ADMOB_MIN_BANNER_HEIGHT_PX,
   ADMOB_SAFE_BUFFER_PX,
+  ADMOB_TOP_MARGIN_PX,
   isNativeAndroid,
 } from "../services/ads/admobConfig";
 import { initializeAdMob, removeAdBanner, showAdBanner } from "../services/ads/admob";
@@ -62,13 +62,25 @@ export function useAdMobBanner(show: boolean) {
   const effectiveBannerHeight =
     bannerHeight > 0 ? bannerHeight : bannerActive ? ADMOB_MIN_BANNER_HEIGHT_PX : 0;
 
-  const adBottomInset =
+  /** Space reserved at top so content is not hidden under the native overlay. */
+  const adTopInset =
     show && androidNative && bannerActive
-      ? ADMOB_BOTTOM_CLEARANCE_PX + effectiveBannerHeight + ADMOB_SAFE_BUFFER_PX
+      ? ADMOB_TOP_MARGIN_PX + effectiveBannerHeight + ADMOB_SAFE_BUFFER_PX
       : 0;
 
-  const contentPaddingBottom =
-    show && androidNative ? adBottomInset + ADMOB_MAIN_EXTRA_PADDING_PX : null;
+  /** Bottom stays clear: banner is top-aligned (native overlay cannot be beaten with bottom CSS). */
+  const adBottomInset = 0;
 
-  return { adBottomInset, contentPaddingBottom, bannerHeight, isAndroidNative: androidNative };
+  const contentPaddingTop = show && androidNative && adTopInset > 0 ? adTopInset : null;
+  const contentPaddingBottom =
+    show && androidNative ? ADMOB_MAIN_EXTRA_PADDING_PX : null;
+
+  return {
+    adTopInset,
+    adBottomInset,
+    contentPaddingTop,
+    contentPaddingBottom,
+    bannerHeight,
+    isAndroidNative: androidNative,
+  };
 }

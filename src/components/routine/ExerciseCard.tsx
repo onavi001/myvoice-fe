@@ -13,6 +13,7 @@ import { ArrowPathIcon, PlayCircleIcon, EyeIcon } from "@heroicons/react/16/soli
 import useExerciseActions from "../../hooks/useExerciseActions";
 import Timer from "../Timer";
 import { getProgressionHint } from "../../utils/progression";
+import { primeTimerAudio } from "../../utils/shortBeep";
 
 export default function ExerciseCard({
   exercise,
@@ -106,6 +107,7 @@ export default function ExerciseCard({
         return;
       }
     }
+    void primeTimerAudio();
     setIsTimerActive(true);
   };
 
