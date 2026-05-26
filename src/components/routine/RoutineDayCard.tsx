@@ -4,6 +4,7 @@ import Card from "../Card";
 import Input from "../Input";
 import Button from "../Button";
 import RoutineExerciseForm, { ExerciseFormData } from "./RoutineExerciseForm";
+import { ROUTINE_ACTION_BTN, ROUTINE_ACTION_ROW } from "./routineFormUi";
 
 interface DayLike {
   _id: string;
@@ -100,9 +101,24 @@ export default function RoutineDayCard(props: Props) {
               </Card>
             ))}
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button type="button" onClick={() => handleDeleteDay(dayIndex)} disabled={totalDays <= 1 || isCoachRestricted} className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11">Eliminar Día</Button>
-              <Button variant="secondary" type="button" onClick={() => handleAddExercise(dayIndex)} disabled={isCoachRestricted} className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-1.5 px-3 text-xs sm:text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-10 sm:min-h-11"><PlusIcon className="w-5 h-5" /> Agregar Ejercicio</Button>
+            <div className={ROUTINE_ACTION_ROW}>
+              <Button
+                type="button"
+                onClick={() => handleDeleteDay(dayIndex)}
+                disabled={totalDays <= 1 || isCoachRestricted}
+                className={`${ROUTINE_ACTION_BTN} bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] border border-[#D32F2F] disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed`}
+              >
+                Eliminar Día
+              </Button>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => handleAddExercise(dayIndex)}
+                disabled={isCoachRestricted}
+                className={`${ROUTINE_ACTION_BTN} bg-[#66BB6A] text-black hover:bg-[#4CAF50] border border-[#4CAF50] flex items-center justify-center gap-1.5 disabled:opacity-75`}
+              >
+                <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> Agregar ejercicio
+              </Button>
             </div>
           </motion.div>
         )}

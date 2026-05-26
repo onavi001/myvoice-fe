@@ -13,6 +13,12 @@ import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { IRoutine } from "../models/Routine";
 import { PlusIcon, ChevronUpIcon, ChevronDownIcon, ExclamationCircleIcon } from "@heroicons/react/20/solid";
+import {
+  ROUTINE_ACTION_BTN,
+  ROUTINE_ACTION_ROW,
+  ROUTINE_FORM_FOOTER,
+  ROUTINE_FORM_FOOTER_INNER,
+} from "../components/routine/routineFormUi";
 
 interface ExerciseFormData extends IExercise {
   isOpen: boolean;
@@ -47,7 +53,6 @@ const RoutineForm: React.FC = () => {
   const circuitColors = ["#4CAF50", "#AB47BC", "#42A5F5", "#FFCA28", "#EF5350"];
 
   const handleAddDay = useCallback(() => {
-    console.log("Adding new day");
     setAddingDay(true);
     setDays((prev) => [
       ...prev,
@@ -65,7 +70,6 @@ const RoutineForm: React.FC = () => {
   }, []);
 
   const handleAddExercise = useCallback((dayIndex: number) => {
-    console.log("Adding exercise to day:", dayIndex);
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       updatedDays[dayIndex].exercises.push({
@@ -84,34 +88,28 @@ const RoutineForm: React.FC = () => {
         rest: "60",
         circuitId: "",
       });
-      console.log("Updated days after addExercise:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const handleDeleteExercise = useCallback((dayIndex: number, exerciseId: string) => {
-    console.log("Deleting exercise:", exerciseId, "from day:", dayIndex);
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       updatedDays[dayIndex].exercises = updatedDays[dayIndex].exercises.filter(
         (ex) => ex._id !== exerciseId
       );
-      console.log("Updated days after deleteExercise:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const handleDeleteDay = useCallback((dayIndex: number) => {
-    console.log("Deleting day:", dayIndex);
     setDays((prev) => {
       const updatedDays = structuredClone(prev).filter((_, index) => index !== dayIndex);
-      console.log("Updated days after deleteDay:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const handleDayChange = useCallback((dayIndex: number, field: string, value: string) => {
-    console.log("Updating day:", dayIndex, "field:", field, "value:", value);
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       if (field === "musclesWorked" || field === "warmupOptions") {
@@ -119,14 +117,12 @@ const RoutineForm: React.FC = () => {
       } else {
         updatedDays[dayIndex] = { ...updatedDays[dayIndex], [field]: value };
       }
-      console.log("Updated days after dayChange:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const handleExerciseChange = useCallback(
     (dayIndex: number, exerciseId: string, field: string, value: string | number) => {
-      console.log("Updating exercise:", exerciseId, "field:", field, "value:", value);
       setDays((prev) => {
         const updatedDays = structuredClone(prev);
         const exerciseIndex = updatedDays[dayIndex].exercises.findIndex((ex) => ex._id === exerciseId);
@@ -142,7 +138,6 @@ const RoutineForm: React.FC = () => {
             };
           }
         }
-        console.log("Updated days after exerciseChange:", updatedDays);
         return updatedDays;
       });
     },
@@ -150,17 +145,14 @@ const RoutineForm: React.FC = () => {
   );
 
   const toggleDay = useCallback((dayIndex: number) => {
-    console.log("Toggling day:", dayIndex);
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       updatedDays[dayIndex].isOpen = !updatedDays[dayIndex].isOpen;
-      console.log("Updated days after toggleDay:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const toggleExercise = useCallback((dayIndex: number, exerciseId: string) => {
-    console.log("Toggling exercise:", exerciseId, "in day:", dayIndex);
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       const exerciseIndex = updatedDays[dayIndex].exercises.findIndex((ex) => ex._id === exerciseId);
@@ -168,13 +160,11 @@ const RoutineForm: React.FC = () => {
         updatedDays[dayIndex].exercises[exerciseIndex].isOpen =
           !updatedDays[dayIndex].exercises[exerciseIndex].isOpen;
       }
-      console.log("Updated days after toggleExercise:", updatedDays);
       return updatedDays;
     });
   }, []);
 
   const toggleAll = useCallback(() => {
-    console.log("Toggling all days and exercises");
     setAllExpanded((prev) => {
       const newState = !prev;
       setDays((prevDays) => {
@@ -185,7 +175,6 @@ const RoutineForm: React.FC = () => {
             ex.isOpen = newState;
           });
         });
-        console.log("Updated days after toggleAll:", updatedDays);
         return updatedDays;
       });
       return newState;
@@ -228,7 +217,6 @@ const RoutineForm: React.FC = () => {
       if (dayErrors.length) newErrors.days = dayErrors;
 
       if (Object.keys(newErrors).length) {
-        console.log("Validation errors:", newErrors);
         setErrors(newErrors);
         return;
       }
@@ -250,16 +238,13 @@ const RoutineForm: React.FC = () => {
       });
 
       try {
-        console.log("Submitting routine:", { name: routineName, days: cleanedDays });
         await dispatch(createRoutine({ name: routineName, days: cleanedDays } as IRoutine)).unwrap();
         navigate("/routine");
       } catch (err) {
         const error = err as ThunkError;
         if (error.message === "Unauthorized" && error.status === 401) {
-          console.log("Unauthorized, redirecting to /login");
           navigate("/login");
         } else {
-          console.log("Submit error:", error);
           setErrors({ routineName: "Error al crear la rutina" });
         }
       } finally {
@@ -277,10 +262,10 @@ const RoutineForm: React.FC = () => {
           <Button
             variant="secondary"
             onClick={toggleAll}
-            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-4 py-2 text-sm font-semibold border border-[#FFC107] shadow-md transition-colors flex items-center gap-2 min-h-12"
+            className="bg-[#FFD700] text-black hover:bg-[#FFC107] rounded-lg px-3 py-2 text-xs sm:text-sm font-semibold border border-[#FFC107] shadow-md flex items-center gap-1.5 min-h-10 sm:min-h-11 shrink-0"
           >
-            {allExpanded ? <ChevronUpIcon className="w-5 h-5" /> : <ChevronDownIcon className="w-5 h-5" />}
-            {allExpanded ? "Colapsar Todo" : "Expandir Todo"}
+            {allExpanded ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
+            <span className="hidden sm:inline">{allExpanded ? "Colapsar todo" : "Expandir todo"}</span>
           </Button>
         </div>
 
@@ -486,23 +471,23 @@ const RoutineForm: React.FC = () => {
                           </Card>
                         ))}
 
-                        <div className="flex flex-col sm:flex-row gap-3">
+                        <div className={ROUTINE_ACTION_ROW}>
                           <Button
                             type="button"
                             onClick={() => handleDeleteDay(dayIndex)}
                             disabled={days.length <= 1}
-                            className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                            className={`${ROUTINE_ACTION_BTN} bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] border border-[#D32F2F] disabled:opacity-75 disabled:cursor-not-allowed`}
                           >
-                            Eliminar Día
+                            Eliminar día
                           </Button>
                           <Button
                             variant="secondary"
                             type="button"
                             onClick={() => handleAddExercise(dayIndex)}
-                            className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md transition-colors flex items-center justify-center gap-2 min-h-12"
+                            className={`${ROUTINE_ACTION_BTN} bg-[#66BB6A] text-black hover:bg-[#4CAF50] border border-[#4CAF50] flex items-center justify-center gap-1.5`}
                             data-testid="add-exercise"
                           >
-                            <PlusIcon className="w-5 h-5" /> Agregar Ejercicio
+                            <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> Agregar ejercicio
                           </Button>
                         </div>
                       </motion.div>
@@ -518,29 +503,31 @@ const RoutineForm: React.FC = () => {
             type="button"
             onClick={handleAddDay}
             disabled={addingDay}
-            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-3 px-4 text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
+            className={`${ROUTINE_ACTION_BTN} bg-[#42A5F5] text-black hover:bg-[#1E88E5] border border-[#1E88E5] flex items-center justify-center gap-1.5 disabled:opacity-75`}
             data-testid="add-day"
           >
-            {addingDay ? <SmallLoader /> : (
+            {addingDay ? (
+              <SmallLoader />
+            ) : (
               <>
-                <PlusIcon className="w-5 h-5" /> Agregar Día
+                <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> Agregar día
               </>
             )}
           </Button>
 
-          <div className="mt-6 p-3 sm:p-0">
-            <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-3">
+          <div className={ROUTINE_FORM_FOOTER}>
+            <div className={ROUTINE_FORM_FOOTER_INNER}>
               <Button
                 type="submit"
                 disabled={creatingRoutine}
-                className="w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-3 px-4 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-12"
+                className={`${ROUTINE_ACTION_BTN} bg-[#66BB6A] text-black hover:bg-[#4CAF50] border border-[#4CAF50] disabled:opacity-75`}
               >
-                {creatingRoutine ? <SmallLoader /> : "Crear Rutina"}
+                {creatingRoutine ? <SmallLoader /> : "Crear rutina"}
               </Button>
               <Button
                 type="button"
                 onClick={() => navigate("/routine")}
-                className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-3 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md transition-colors min-h-12"
+                className={`${ROUTINE_ACTION_BTN} bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#383838] border border-[#5A5A5A]`}
               >
                 Cancelar
               </Button>
@@ -724,15 +711,13 @@ const ExerciseForm = memo(
                   />
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  type="button"
-                  onClick={() => onDelete(dayIndex, exercise._id)}
-                  className="w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-4 text-sm font-semibold border border-[#D32F2F] shadow-md transition-colors min-h-12"
-                >
-                  Eliminar
-                </Button>
-              </div>
+              <Button
+                type="button"
+                onClick={() => onDelete(dayIndex, exercise._id)}
+                className={`${ROUTINE_ACTION_BTN} max-w-[10rem] bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] border border-[#D32F2F]`}
+              >
+                Eliminar ejercicio
+              </Button>
             </motion.div>
           )}
         </Card>

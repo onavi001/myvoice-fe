@@ -132,9 +132,6 @@ const Admin: React.FC = () => {
   };
 
   const filteredUsers = useMemo(() => {
-    console.log("Filtering users...");
-    console.log("Search query:", searchQuery);
-    console.log("Users:", users); 
     return users.filter(
       (user) =>
         user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||

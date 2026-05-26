@@ -6,6 +6,11 @@ import Card from "../components/Card";
 import Loader, { SmallLoader } from "../components/Loader";
 import { PlusIcon, ChevronUpIcon, ChevronDownIcon, ExclamationCircleIcon } from "@heroicons/react/20/solid";
 import RoutineDayCard from "../components/routine/RoutineDayCard";
+import {
+  ROUTINE_ACTION_BTN,
+  ROUTINE_FORM_FOOTER,
+  ROUTINE_FORM_FOOTER_INNER,
+} from "../components/routine/routineFormUi";
 import { useRoutineEditController } from "../hooks/useRoutineEditController";
 
 
@@ -171,31 +176,33 @@ const RoutineEdit: React.FC = () => {
             type="button"
             onClick={handleAddDay}
             disabled={addingDay || isCoachRestricted}
-            className="w-full bg-[#42A5F5] text-black hover:bg-[#1E88E5] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#1E88E5] shadow-md disabled:bg-[#1E88E5]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-10 sm:min-h-11"
+            className={`${ROUTINE_ACTION_BTN} bg-[#42A5F5] text-black hover:bg-[#1E88E5] border border-[#1E88E5] flex items-center justify-center gap-1.5 disabled:opacity-75`}
           >
-            {addingDay ? <SmallLoader /> : (
+            {addingDay ? (
+              <SmallLoader />
+            ) : (
               <>
-                <PlusIcon className="w-5 h-5" /> Agregar Día
+                <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> Agregar día
               </>
             )}
           </Button>
 
-          <div className="sticky bottom-0 z-20 mt-6 -mx-3 border-t border-[#3A3A3A] bg-[#1A1A1A]/95 px-3 py-2 backdrop-blur sm:static sm:mx-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:py-0">
-            <div className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+          <div className={ROUTINE_FORM_FOOTER}>
+            <div className={ROUTINE_FORM_FOOTER_INNER}>
               <Button
                 type="submit"
                 disabled={savingRoutine || deletingRoutine || isCoachRestricted}
-                className="col-span-1 sm:col-span-2 w-full bg-[#66BB6A] text-black hover:bg-[#4CAF50] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
+                className={`${ROUTINE_ACTION_BTN} bg-[#66BB6A] text-black hover:bg-[#4CAF50] border border-[#4CAF50] disabled:opacity-75`}
               >
-                {savingRoutine ? <SmallLoader /> : "Guardar Rutina"}
+                {savingRoutine ? <SmallLoader /> : "Guardar rutina"}
               </Button>
               <Button
                 type="button"
                 onClick={handleDelete}
                 disabled={savingRoutine || deletingRoutine || isCoachRestricted}
-                className="col-span-1 w-full bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] rounded-lg py-2 px-3 text-xs sm:text-sm font-semibold border border-[#D32F2F] shadow-md disabled:bg-[#D32F2F]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors min-h-10 sm:min-h-11"
+                className={`${ROUTINE_ACTION_BTN} bg-[#EF5350] text-[#E0E0E0] hover:bg-[#D32F2F] border border-[#D32F2F] disabled:opacity-75`}
               >
-                {deletingRoutine ? <SmallLoader /> : "Eliminar Rutina"}
+                {deletingRoutine ? <SmallLoader /> : "Eliminar rutina"}
               </Button>
             </div>
           </div>
