@@ -11,6 +11,8 @@ import TodayWorkoutBanner from "../components/routine/TodayWorkoutBanner";
 import WorkoutMode from "../components/routine/WorkoutMode";
 import FreemiumGateModal from "../components/FreemiumGateModal";
 import { canUseFeature, UsageFeature } from "../utils/freemium";
+import WebAdBanner from "../components/ads/WebAdBanner";
+import { isWebPlatform } from "../services/ads/admobConfig";
 
 export default function RoutinePage() {
   const [workoutModeOpen, setWorkoutModeOpen] = useState(false);
@@ -112,6 +114,7 @@ export default function RoutinePage() {
             await onGenerateExercise(rid, did, eid);
           }}
         />
+        {isWebPlatform() && <WebAdBanner />}
       </div>
       <GenerateExerciseModal
         isOpen={isModalOpen}

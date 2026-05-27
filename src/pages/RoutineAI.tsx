@@ -28,6 +28,8 @@ import {
   recordFeatureUsage,
   UsageFeature,
 } from "../utils/freemium";
+import WebAdBanner from "../components/ads/WebAdBanner";
+import { isWebPlatform } from "../services/ads/admobConfig";
 type LoadingState = {
   generating: boolean;
   saving: boolean;
@@ -376,6 +378,7 @@ export default function RoutineAI() {
       {freemiumFeature && (
         <FreemiumGateModal feature={freemiumFeature} onClose={() => setFreemiumFeature(null)} />
       )}
+      {isWebPlatform() && <WebAdBanner />}
     </div>
   );
 }
