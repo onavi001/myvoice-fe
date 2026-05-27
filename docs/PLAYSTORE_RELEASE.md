@@ -1,4 +1,4 @@
-# Play Store release — v1.1.5 (versionCode 12)
+# Play Store release — v1.1.6 (versionCode 13)
 
 ## Archivo AAB
 
@@ -12,8 +12,8 @@ Salida: `android/app/build/outputs/bundle/release/app-release.aab`
 
 | Campo | Valor |
 |-------|--------|
-| `MV_VERSION_CODE` | 12 |
-| `MV_VERSION_NAME` | 1.1.5 |
+| `MV_VERSION_CODE` | 13 |
+| `MV_VERSION_NAME` | 1.1.6 |
 
 Definido en `android/gradle.properties`.
 
@@ -21,7 +21,8 @@ Definido en `android/gradle.properties`.
 
 **Novedades de esta versión**
 
-- Cumple la política de permisos de fotos: sin acceso amplio a la galería; selector del sistema para elegir imágenes.
+- Importación IA simplificada: ahora solo admite PDF/TXT (sin imágenes/cámara) para evitar bloqueos de política.
+- Se eliminan los permisos y flujos relacionados con imágenes en Android.
 - Botones más compactos al crear y editar rutinas en móvil.
 - Mejoras del temporizador de ejercicio y correcciones generales.
 
@@ -33,6 +34,6 @@ Ver **`docs/PLAYSTORE_PHOTO_PERMISSIONS.md`** y actualizar la declaración en Pl
 
 - [ ] Backend en producción (`myvoice-be` en Vercel).
 - [ ] `.env.production`: `VITE_API_BASE_URL` y AdMob (`VITE_ADMOB_TESTING=false`).
-- [ ] Play Console: permisos de fotos/vídeos actualizados (sin READ_MEDIA).
-- [ ] Probar galería y cámara en importar rutina (dispositivo real).
-- [ ] Generar AAB y subir → versionCode **12**.
+- [ ] Play Console: permisos de fotos/vídeos actualizados (sin READ_MEDIA / sin cámara).
+- [ ] Probar importar rutina con PDF/TXT en dispositivo real.
+- [ ] Generar AAB y subir → versionCode **13**.

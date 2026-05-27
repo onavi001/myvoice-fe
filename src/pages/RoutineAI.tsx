@@ -150,7 +150,7 @@ export default function RoutineAI() {
           name: payload.name,
           notes: payload.notes,
           extractedText: payload.extractedText,
-          images: payload.images,
+          images: [],
         })
       ).unwrap();
       recordFeatureUsage("aiImport");
@@ -286,7 +286,7 @@ export default function RoutineAI() {
                   : "text-[#E0E0E0] active:bg-[#2D2D2D]"
               }`}
             >
-              Desde foto / PDF
+              Desde PDF / TXT
             </button>
           </div>
 

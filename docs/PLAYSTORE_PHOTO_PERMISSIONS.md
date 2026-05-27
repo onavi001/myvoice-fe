@@ -4,34 +4,33 @@
 
 Google rechazó la actualización por la **Política de permisos de fotos y vídeos**: el uso del permiso no está directamente relacionado con el objetivo principal de la app.
 
-La app declaraba `READ_MEDIA_IMAGES` y `READ_EXTERNAL_STORAGE`, pero **no los necesita**:
+La app declaraba `READ_MEDIA_IMAGES` y `READ_EXTERNAL_STORAGE`, pero **no los necesita**.
+Para desbloquear la primera publicación en producción, además se retiró la importación por imagen/cámara.
 
-- **Galería:** `Camera.pickImages()` usa el **selector de fotos de Android** (sin permiso de lectura de toda la galería).
-- **Cámara:** solo `CAMERA` al tomar una foto para importar una rutina con IA.
-
-## Cambio en código (v1.1.5+)
+## Cambio en código (v1.1.6+)
 
 - Eliminados `READ_MEDIA_IMAGES` y `READ_EXTERNAL_STORAGE` del manifiesto.
+- Eliminado también `CAMERA` del manifiesto.
 - Se fuerza `tools:node="remove"` por si alguna dependencia los fusionaba.
-- Se mantiene `CAMERA` (opcional, `required=false`).
+- Importación con IA ahora acepta solo `PDF/TXT`.
 
 ## Pasos en Play Console (obligatorio)
 
 1. **Política → Contenido de la app → Permisos de fotos y vídeos**
    - Indica que la app **no** usa acceso amplio a fotos/vídeos.
-   - Si solo aparece **Cámara**, justifica: *"La cámara se usa únicamente para que el usuario fotografíe su rutina de entrenamiento e importarla con IA. La galería usa el selector del sistema sin permiso READ_MEDIA."*
+   - Indica que la app no usa acceso a fotos/vídeos ni cámara.
 
 2. **Ficha → Seguridad de datos**
    - Revisa que no declares "Fotos y vídeos" como dato recopilado si ya no lees la galería con permiso amplio.
 
-3. Sube un **nuevo AAB** (versionCode **12**, 1.1.5) generado después de este cambio.
+3. Sube un **nuevo AAB** (versionCode **13**, 1.1.6) generado después de este cambio.
 
-## Texto sugerido para Cámara (≤250 caracteres, español)
+## Texto sugerido para la declaración (≤250 caracteres, español)
 
-La app usa la cámara solo cuando el usuario elige importar una rutina desde una foto. La imagen se envía a nuestro servidor para generar la rutina con IA. No accedemos a toda la galería; para elegir fotos existentes se usa el selector del sistema de Android.
+La app no solicita acceso amplio a fotos ni vídeos y tampoco usa la cámara en esta versión. La importación de rutinas con IA se realiza únicamente mediante archivos PDF o TXT seleccionados por el usuario.
 
 ## Probar en dispositivo
 
-1. Rutina con IA → Desde foto/PDF → **Galería** (debe abrir selector, sin pedir "fotos y vídeos").
-2. **Cámara** (debe pedir permiso de cámara la primera vez).
-3. Importar PDF desde el selector de archivos sigue funcionando en web; en Android nativo usar galería/cámara.
+1. Rutina con IA → Desde PDF/TXT → seleccionar un PDF o TXT.
+2. Confirmar que no aparece solicitud de permisos de fotos/vídeos ni cámara.
+3. Completar importación y verificar que genera borrador de rutina.
