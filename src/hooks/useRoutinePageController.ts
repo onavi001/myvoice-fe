@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../store";
-import { fetchRoutines, ThunkError } from "../store/routineSlice";
+import { fetchRoutineById, fetchRoutines, ThunkError } from "../store/routineSlice";
 import useRoutineData from "./useRoutineData";
 import useExerciseActions from "./useExerciseActions";
 import { IExercise } from "../models/Exercise";
+
+const asId = (value: unknown) => String(value ?? "");
 
 export function useRoutinePageController() {
   const dispatch: AppDispatch = useDispatch();
@@ -24,6 +26,7 @@ export function useRoutinePageController() {
   const [loadingGenerate, setLoadingGenerate] = useState(false);
   const [exerciseToReplaceId, setExerciseToReplaceId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const hydratedRoutineIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!token) {
@@ -36,6 +39,42 @@ export function useRoutinePageController() {
       dispatch(fetchRoutines());
     }
   }, [token, routineStatus, routinesLoading, dispatch, navigate]);
+
+  useEffect(() => {
+    if (!selectedRoutine || selectedRoutine.days.length === 0) return;
+
+    const hasValidSelectedDay = selectedRoutine.days.some(
+      (day) => asId(day._id) === asId(selectedDayId)
+    );
+
+    if (hasValidSelectedDay && selectedDay) return;
+
+    const firstDay = selectedRoutine.days[0];
+    setSelectedDay(firstDay);
+    setSelectedDayId(asId(firstDay._id));
+  }, [selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId]);
+
+  useEffect(() => {
+    if (!selectedRoutine) return;
+    const routineId = asId(selectedRoutine._id);
+    if (!routineId) return;
+    if (hydratedRoutineIdsRef.current.has(routineId)) return;
+
+    // Some list responses may include days but not fully populated exercises.
+    const needsHydration = selectedRoutine.days.some((day) => {
+      if (!Array.isArray(day.exercises)) return true;
+      return day.exercises.some(
+        (exercise) => typeof exercise !== "object" || exercise === null || !("_id" in exercise)
+      );
+    });
+
+    if (!needsHydration) return;
+
+    hydratedRoutineIdsRef.current.add(routineId);
+    dispatch(fetchRoutineById(routineId)).catch(() => {
+      hydratedRoutineIdsRef.current.delete(routineId);
+    });
+  }, [dispatch, selectedRoutine]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);

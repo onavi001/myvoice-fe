@@ -10,6 +10,8 @@ import { selectRoutine } from "../store/routineSlice";
 import { RoutineData } from "../models/Routine";
 import { selectSelectedRoutine } from "../store/selectors";
 
+const asId = (value: unknown) => String(value ?? "");
+
 export default function useRoutineData() {
   const dispatch = useDispatch<AppDispatch>();
   const { routines, loading, error } = useSelector((state: RootState) => state.routine);
@@ -28,7 +30,7 @@ export default function useRoutineData() {
     }
 
     const routineId = localStorage.getItem("routineId");
-    const routine = routines.find((r) => r._id === routineId) || routines[0];
+    const routine = routines.find((r) => asId(r._id) === asId(routineId)) || routines[0];
     if (!routine) {
       dispatch(selectRoutine(""));
       setSelectedDay(undefined);
@@ -37,8 +39,11 @@ export default function useRoutineData() {
       return;
     }
 
-    dispatch(selectRoutine(routine._id.toString()));
-    const day = routine.days.find((d) => d._id === storedDayId) || routine.days[0];
+    const nextRoutineId = asId(routine._id);
+    dispatch(selectRoutine(nextRoutineId));
+    localStorage.setItem("routineId", nextRoutineId);
+
+    const day = routine.days.find((d) => asId(d._id) === asId(storedDayId)) || routine.days[0];
     if (day) {
       setSelectedDay(day);
       setSelectedDayId(day._id.toString());
@@ -52,7 +57,7 @@ export default function useRoutineData() {
 
   const setSelectedDayIdHandler = (id: string | null) => {
     if (selectedRoutine && id) {
-      const day = selectedRoutine.days.find((d) => d._id === id);
+      const day = selectedRoutine.days.find((d) => asId(d._id) === asId(id));
       setSelectedDay(day || undefined);
       setSelectedDayId(id);
       localStorage.setItem("dayId", id || "");

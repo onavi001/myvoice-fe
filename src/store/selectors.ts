@@ -1,6 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "./index";
 
+const toId = (value: unknown) => String(value ?? "");
+
 export const selectRoutineState = (state: RootState) => state.routine;
 export const selectProgressState = (state: RootState) => state.progress;
 
@@ -8,7 +10,8 @@ export const selectRoutines = createSelector([selectRoutineState], (routine) => 
 export const selectSelectedRoutineId = createSelector([selectRoutineState], (routine) => routine.selectedRoutineId);
 export const selectSelectedRoutine = createSelector(
   [selectRoutines, selectSelectedRoutineId],
-  (routines, selectedRoutineId) => routines.find((routine) => routine._id === selectedRoutineId)
+  (routines, selectedRoutineId) =>
+    routines.find((routine) => toId(routine._id) === toId(selectedRoutineId))
 );
 
 export const selectProgressEntries = createSelector([selectProgressState], (progress) => progress.progress);

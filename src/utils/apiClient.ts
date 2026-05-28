@@ -19,7 +19,8 @@ type RequestOptions = RequestInit & {
 
 const readToken = () => Cookies.get("token") || localStorage.getItem("token") || "";
 const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || "";
-const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "");
+const DEFAULT_API_BASE_URL = "https://myvoice-be.vercel.app";
+const API_BASE_URL = (RAW_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
 
 const resolveApiUrl = (url: string) => {
   if (/^https?:\/\//i.test(url)) {

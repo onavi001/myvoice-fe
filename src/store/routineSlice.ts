@@ -46,6 +46,16 @@ const initialState: RoutineState = {
 };
 
 const AI_REQUEST_TIMEOUT_MS = 90_000;
+const toId = (value: unknown) => String(value ?? "");
+
+const upsertRoutine = (routines: RoutineData[], next: RoutineData) => {
+  const index = routines.findIndex((r) => toId(r._id) === toId(next._id));
+  if (index === -1) {
+    routines.push(next);
+    return;
+  }
+  routines[index] = next;
+};
 
 const toThunkError = (error: unknown, fallbackMessage: string, aiLongRunning = false): ThunkError =>
   mapThunkError(error, fallbackMessage, { aiLongRunning });
@@ -127,7 +137,7 @@ export const selectRoutine = createAsyncThunk<string, string, { rejectValue: Thu
   "routine/selectRoutine",
   async (routineId, { getState, rejectWithValue }) => {
     const state = getState() as { routine: RoutineState };
-    if (state.routine.routines.some((r) => r._id === routineId)) {
+    if (state.routine.routines.some((r) => toId(r._id) === toId(routineId))) {
       localStorage.setItem("routineId", routineId);
       return routineId;
     }
@@ -409,13 +419,13 @@ const routineSlice = createSlice({
       // Fetch Routine by ID
       .addCase(fetchRoutineById.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         state.status = "succeeded";
-        const index = state.routines.findIndex((r) => r._id === action.payload._id);
+        const index = state.routines.findIndex((r) => toId(r._id) === toId(action.payload._id));
         if (index !== -1) {
           state.routines[index] = action.payload;
         } else {
           state.routines.push(action.payload);
         }
-        state.selectedRoutineId = action.payload._id;
+        state.selectedRoutineId = toId(action.payload._id);
         
       }
       )
@@ -430,9 +440,9 @@ const routineSlice = createSlice({
         state.error = null;
       })
       .addCase(resetDayProgress.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(action.payload.dayId));
           if (day) {
             day.exercises.forEach((exercise) => {
               exercise.completed = false; // Reset completed status
@@ -451,7 +461,7 @@ const routineSlice = createSlice({
         state.error = null;
       })
       .addCase(resetRoutineProgress.fulfilled, (state, action: PayloadAction<{ routineId: string }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
           routine.days.forEach((day) => {
             day.exercises.forEach((exercise) => {
@@ -472,7 +482,7 @@ const routineSlice = createSlice({
       .addCase(fetchRoutines.fulfilled, (state, action: PayloadAction<RoutineData[]>) => {
         setAsyncSucceeded(state);
         state.routines = action.payload;
-        state.selectedRoutineId = action.payload.length > 0 ? action.payload[0]._id : null;
+        state.selectedRoutineId = action.payload.length > 0 ? toId(action.payload[0]._id) : null;
       })
       .addCase(fetchRoutines.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         setAsyncFailed(state, action.payload?.message ?? "Error desconocido");
@@ -480,8 +490,8 @@ const routineSlice = createSlice({
       // Create Routine
       .addCase(createRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         state.status = "succeeded";
-        state.routines.push(action.payload);
-        state.selectedRoutineId = action.payload._id;
+        upsertRoutine(state.routines, action.payload);
+        state.selectedRoutineId = toId(action.payload._id);
       })
       .addCase(createRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.status = "failed";
@@ -490,7 +500,7 @@ const routineSlice = createSlice({
       // Update Routine
       .addCase(updateRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
         state.status = "succeeded";
-        const index = state.routines.findIndex((r) => r._id === action.payload._id);
+        const index = state.routines.findIndex((r) => toId(r._id) === toId(action.payload._id));
         if (index !== -1) {
           state.routines[index] = action.payload;
         }
@@ -502,8 +512,8 @@ const routineSlice = createSlice({
       // Delete Routine
       .addCase(deleteRoutine.fulfilled, (state, action: PayloadAction<string>) => {
         state.status = "succeeded";
-        state.routines = state.routines.filter((r) => r._id !== action.payload);
-        state.selectedRoutineId = state.routines.length > 0 ? state.routines[0]._id : null;
+        state.routines = state.routines.filter((r) => toId(r._id) !== toId(action.payload));
+        state.selectedRoutineId = state.routines.length > 0 ? toId(state.routines[0]._id) : null;
       })
       .addCase(deleteRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         state.status = "failed";
@@ -518,7 +528,7 @@ const routineSlice = createSlice({
       })
       // Create Day
       .addCase(createDay.fulfilled, (state, action: PayloadAction<{ routineId: string; day: RoutineData["days"][number] }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
           routine.days.push(action.payload.day);
         }
@@ -528,9 +538,9 @@ const routineSlice = createSlice({
       })
       // Update Day
       .addCase(updateDay.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; dayName: string }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(action.payload.dayId));
           if (day) {
             day.dayName = action.payload.dayName;
           }
@@ -541,9 +551,9 @@ const routineSlice = createSlice({
       })
       // Delete Day
       .addCase(deleteDay.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          routine.days = routine.days.filter((d) => d._id !== action.payload.dayId);
+          routine.days = routine.days.filter((d) => toId(d._id) !== toId(action.payload.dayId));
         }
       })
       .addCase(deleteDay.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
@@ -551,9 +561,9 @@ const routineSlice = createSlice({
       })
       // Create Exercise
       .addCase(createExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exercise: RoutineData["days"][number]["exercises"][number] }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(action.payload.dayId));
           if (day) {
             day.exercises.push(action.payload.exercise);
           }
@@ -569,11 +579,13 @@ const routineSlice = createSlice({
       })
       .addCase(updateExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; exercise: RoutineData["days"][number]["exercises"][number] }>) => {
         state.loading = false;
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(action.payload.dayId));
           if (day) {
-            const exerciseIndex = day.exercises.findIndex((e) => e._id === action.payload.exerciseId);
+            const exerciseIndex = day.exercises.findIndex(
+              (e) => toId(e._id) === toId(action.payload.exerciseId)
+            );
             if (exerciseIndex !== -1) {
               day.exercises[exerciseIndex] = action.payload.exercise;
             }
@@ -585,11 +597,13 @@ const routineSlice = createSlice({
       })
       // Delete Exercise
       .addCase(deleteExercise.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string }>) => {
-        const routine = state.routines.find((r) => r._id === action.payload.routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload.routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === action.payload.dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(action.payload.dayId));
           if (day) {
-            day.exercises = day.exercises.filter((e) => e._id !== action.payload.exerciseId);
+            day.exercises = day.exercises.filter(
+              (e) => toId(e._id) !== toId(action.payload.exerciseId)
+            );
             delete state.loadingVideos[`${action.payload.routineId}-${action.payload.dayId}-${action.payload.exerciseId}`];
           }
         }
@@ -600,11 +614,11 @@ const routineSlice = createSlice({
       // Update Exercise Completed
       .addCase(updateExerciseCompleted.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; completed: boolean }>) => {
         const { routineId, dayId, exerciseId, completed } = action.payload;
-        const routine = state.routines.find((r) => r._id === routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(dayId));
           if (day) {
-            const exercise = day.exercises.find((e) => e._id === exerciseId);
+            const exercise = day.exercises.find((e) => toId(e._id) === toId(exerciseId));
             if (exercise) {
               exercise.completed = completed;
             }
@@ -621,11 +635,11 @@ const routineSlice = createSlice({
       })
       .addCase(setExerciseVideos.fulfilled, (state, action: PayloadAction<{ routineId: string; dayId: string; exerciseId: string; videos: { _id: string; url: string; isCurrent: boolean }[] }>) => {
         const { routineId, dayId, exerciseId, videos } = action.payload;
-        const routine = state.routines.find((r) => r._id === routineId);
+        const routine = state.routines.find((r) => toId(r._id) === toId(routineId));
         if (routine) {
-          const day = routine.days.find((d) => d._id === dayId);
+          const day = routine.days.find((d) => toId(d._id) === toId(dayId));
           if (day) {
-            const exercise = day.exercises.find((e) => e._id === exerciseId);
+            const exercise = day.exercises.find((e) => toId(e._id) === toId(exerciseId));
             if (exercise) {
               exercise.videos = videos;
             }
@@ -654,10 +668,10 @@ const routineSlice = createSlice({
       .addCase(generateRoutine.pending, (state) => {
         setAsyncLoading(state);
       })
-      .addCase(generateRoutine.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+      .addCase(generateRoutine.fulfilled, (state) => {
         setAsyncSucceeded(state);
-        state.routines.push(action.payload);
-        state.selectedRoutineId = action.payload._id;
+        // IA generation returns a draft preview in RoutineAI.
+        // Do not add it to persisted routines list until user taps "Guardar rutina".
       })
       .addCase(generateRoutine.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         setAsyncFailed(state, action.payload?.message ?? "Error desconocido");
@@ -665,10 +679,9 @@ const routineSlice = createSlice({
       .addCase(generateRoutineFromImport.pending, (state) => {
         setAsyncLoading(state);
       })
-      .addCase(generateRoutineFromImport.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+      .addCase(generateRoutineFromImport.fulfilled, (state) => {
         setAsyncSucceeded(state);
-        state.routines.push(action.payload);
-        state.selectedRoutineId = action.payload._id;
+        // Import generation is also a draft preview; persist only on explicit save.
       })
       .addCase(generateRoutineFromImport.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         setAsyncFailed(state, action.payload?.message ?? "Error al importar rutina");
