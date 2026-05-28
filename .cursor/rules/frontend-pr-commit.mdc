@@ -1,0 +1,11 @@
+---
+description: Lightweight commit and PR conventions for frontend
+alwaysApply: true
+---
+
+# Frontend Commit and PR Rules
+
+- Use concise commit messages in imperative mood (e.g., `fix login redirect race`).
+- Keep commits focused on one logical change.
+- PR summary should state user impact and key files touched.
+- Add a short test plan checklist with commands run and manual checks performed.

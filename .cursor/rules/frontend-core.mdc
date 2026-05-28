@@ -1,0 +1,17 @@
+---
+description: Frontend standards for React, Redux Toolkit, and network usage
+alwaysApply: true
+---
+
+# Frontend Core Rules (myvoice-fe)
+
+- Use TypeScript strict-safe patterns. Avoid `any`; if unavoidable, isolate and document why.
+- Keep presentational components in `src/components` and page-level composition in `src/pages`.
+- Reusable state belongs in Redux slices (`src/store/*Slice.ts`); avoid duplicating API/loading/error logic in pages.
+- Centralize HTTP access through shared utilities and slices; do not scatter `fetch` implementations across unrelated components.
+- Handle async UI states explicitly: loading, empty, error, and success.
+- For forms, keep controlled inputs and validate before dispatching async thunks.
+- Do not store sensitive data in localStorage; auth/session tokens must be handled in the current app-approved mechanism.
+- Keep accessibility basics: meaningful `alt`, button semantics, keyboard-focusable interactions.
+- Prefer small, composable components/hooks over very large page files.
+- Before finishing changes, run `npm run lint` (and `npm run build` for risky refactors) when possible.

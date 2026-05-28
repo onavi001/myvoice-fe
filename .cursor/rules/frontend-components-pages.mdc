@@ -1,0 +1,14 @@
+---
+description: Conventions for React pages and components
+globs: src/**/*.{tsx}
+alwaysApply: false
+---
+
+# Frontend Components and Pages
+
+- Use functional components and keep props typed explicitly (no implicit `any` props).
+- `src/pages/*`: orchestrate data flow and layout; avoid embedding large reusable UI logic here.
+- `src/components/*`: focus on reusable UI blocks; avoid direct API calls when data can come from slices/hooks.
+- Keep render logic readable: extract repeated JSX into small components.
+- Guard interactive states (`disabled`, `aria-*`, loading labels) on actionable UI.
+- Prefer existing shared primitives (`Button`, `Input`, `Modal`, etc.) before creating new variants.

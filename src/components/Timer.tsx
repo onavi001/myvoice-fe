@@ -2,6 +2,7 @@ import { StopCircleIcon } from "@heroicons/react/16/solid";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { playTimerCue, primeTimerAudio } from "../utils/shortBeep";
+import HappyCoach from "./mascot/HappyCoach";
 
 const PREP_SECONDS = 10;
 /** Pitido cada segundo en los últimos N s (prep, serie, descanso). */
@@ -244,9 +245,15 @@ export default function Timer({
           </div>
         )}
         {showCongrats && (
-          <div className="text-[#34C759] bg-[#2D2D2D] p-6 rounded-xl mt-4 text-xl">
-            <p className="text-2xl font-bold">🏆 ¡Felicidades, lo lograste!</p>
-            <p>¡Gran trabajo completando las series!</p>
+          <div className="bg-[#2D2D2D] p-4 rounded-xl mt-4">
+            <HappyCoach
+              variant="celebrate"
+              size="lg"
+              layout="stacked"
+              messageKey="timerComplete"
+              showName
+              animated
+            />
           </div>
         )}
         <button

@@ -31,14 +31,11 @@ export function useRoutinePageController() {
       return;
     }
     if (routinesLoading) return;
-    const shouldFetch =
-      routineStatus === "idle" ||
-      routineStatus === "failed" ||
-      (routineStatus === "succeeded" && routines.length === 0);
-    if (shouldFetch) {
+    // Empty array after success is valid — do not refetch or we loop forever.
+    if (routineStatus === "idle" || routineStatus === "failed") {
       dispatch(fetchRoutines());
     }
-  }, [token, routineStatus, routines.length, routinesLoading, dispatch, navigate]);
+  }, [token, routineStatus, routinesLoading, dispatch, navigate]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {
     setLoadingGenerate(true);

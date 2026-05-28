@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
-import { ChevronDownIcon, FireIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import HappyCoach from "../mascot/HappyCoach";
 import { AppDispatch } from "../../store";
 import { resetDayProgress, resetRoutineProgress } from "../../store/routineSlice";
 import { RoutineData } from "../../models/Routine";
@@ -90,17 +91,21 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-[#3C3C3C]">
-          <div className="flex items-center gap-3 pt-3 mb-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#3C3C3C]">
-            <FireIcon className="w-8 h-8 text-[#FF9500] shrink-0" />
-            <div>
-              <p className="text-2xl font-bold text-white tabular-nums">{streakState.streak}</p>
-              <p className="text-xs text-[#888]">
-                sesiones seguidas según tu plan · próxima: {getNextPlannedDayLabel(routine)}
-              </p>
-              <p className="text-xs text-[#666] mt-1">
-                Esta semana: {weekSessions.done}/{weekSessions.total} sesiones del plan · 1 día de gracia/semana
-              </p>
-            </div>
+          <div className="pt-3 mb-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#3C3C3C]">
+            <HappyCoach
+              variant={streakState.streak > 0 ? "celebrate" : "idle"}
+              size="md"
+              animated
+              messageKey="streak"
+              messageParams={{ streak: streakState.streak }}
+            />
+            <p className="text-2xl font-bold text-white tabular-nums mt-3">{streakState.streak}</p>
+            <p className="text-xs text-[#888]">
+              sesiones seguidas según tu plan · próxima: {getNextPlannedDayLabel(routine)}
+            </p>
+            <p className="text-xs text-[#666] mt-1">
+              Esta semana: {weekSessions.done}/{weekSessions.total} sesiones del plan · 1 día de gracia/semana
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -162,9 +167,9 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
               )}
             </div>
           ) : (
-            <p className="text-sm text-[#888] pt-3 border-t border-[#3C3C3C]">
-              Marca ejercicios como completados para registrar tu progreso y sumar a la racha.
-            </p>
+            <div className="pt-3 border-t border-[#3C3C3C]">
+              <HappyCoach variant="encourage" size="md" animated messageKey="progressHint" />
+            </div>
           )}
         </div>
       )}

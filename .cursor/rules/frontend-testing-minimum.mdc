@@ -1,0 +1,11 @@
+---
+description: Lightweight frontend testing expectations
+alwaysApply: true
+---
+
+# Frontend Testing Minimum
+
+- For medium/high-risk UI changes, add at least one verification path (automated test or clear manual test plan).
+- Verify critical states affected by the change: loading, error, success.
+- If no tests are added, include a brief reason and manual validation steps in the PR description.
+- Do not merge changes that break `npm run lint` or production build.

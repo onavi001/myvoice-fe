@@ -1,4 +1,5 @@
-import { SparklesIcon, PlayIcon } from "@heroicons/react/24/outline";
+import { PlayIcon } from "@heroicons/react/24/outline";
+import HappyCoach from "../mascot/HappyCoach";
 import { RoutineData } from "../../models/Routine";
 import { getTodayWorkoutMessage, resolveSuggestedDay } from "../../utils/todayWorkout";
 import { getNextPlannedDayLabel } from "../../utils/planStreak";
@@ -19,10 +20,11 @@ export default function TodayWorkoutBanner({ routine, onSelectSuggestedDay, onSt
 
   return (
     <section className="mb-4 rounded-xl border border-[#34C759]/40 bg-[#1a2e1f] p-4">
-      <div className="flex items-start gap-3">
-        <SparklesIcon className="w-6 h-6 text-[#34C759] shrink-0 mt-0.5" />
+      <div className="flex items-center gap-3 sm:gap-4">
+        <HappyCoach variant="encourage" size="lg" animated illustrationOnly />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-[#34C759]">¿Qué entreno hoy?</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#34C759]">Happy</p>
+          <p className="text-sm font-semibold text-[#34C759] mt-0.5">¿Qué entreno hoy?</p>
           <p className="text-base text-white mt-1">{message}</p>
           <p className="text-xs text-[#888] mt-1">
             Siguiente en tu plan (racha): <span className="text-[#B0B0B0]">{nextPlan}</span>

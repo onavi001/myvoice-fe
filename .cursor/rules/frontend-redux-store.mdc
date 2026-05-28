@@ -1,0 +1,14 @@
+---
+description: Redux Toolkit slice and store rules
+globs: src/store/**/*.ts
+alwaysApply: false
+---
+
+# Frontend Redux Store Rules
+
+- Use Redux Toolkit patterns (`createSlice`, `createAsyncThunk`) and keep slice state serializable.
+- Standardize async state shape with at least `loading` and `error` for network-backed flows.
+- Thunks should return typed payloads and map server errors to user-safe messages.
+- Keep reducers pure and deterministic; side effects belong in thunks, not reducers.
+- Export typed selectors when state access is reused across multiple pages/components.
+- Avoid duplicating the same endpoint logic in multiple slices; centralize shared fetch logic.
