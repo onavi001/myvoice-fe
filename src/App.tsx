@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar";
 import Loader from "./components/Loader";
 import Layout from "./components/layout";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -84,12 +85,17 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
     dispatch(verifyUser()).finally(() => setIsInitialLoad(false));
   }, [dispatch]);
 
+  const publicPaths = ["/", "/login", "/forgot-password", "/reset-password", "/auth/forgot-password", "/auth/reset-password"];
+
   useEffect(() => {
     if (isInitialLoad) return;
-    if (!token && location.pathname !== "/login") {
+    const isPublicPath = publicPaths.includes(location.pathname);
+    if (!token && !isPublicPath) {
       navigate("/login", { replace: true });
     } else if (token && location.pathname === "/login") {
       navigate("/routine", { replace: true });
+    } else if (token && location.pathname === "/") {
+      navigate("/home", { replace: true });
     }
   }, [token, location.pathname, isInitialLoad, navigate]);
 
@@ -161,7 +167,8 @@ const routes: RouteConfig[] = [
   { path: "/reset-password", element: <ResetPassword />, protected: false },
   { path: "/auth/forgot-password", element: <ForgotPassword />, protected: false },
   { path: "/auth/reset-password", element: <ResetPassword />, protected: false },
-  { path: "/", element: <Home />, protected: true },
+  { path: "/", element: <Landing />, protected: false },
+  { path: "/home", element: <Home />, protected: true },
   { path: "/routine", element: <Routine />, protected: true },
   { path: "/routine-AI", element: <RoutineAI />, protected: true },
   { path: "/routine-form", element: <RoutineForm />, protected: true },
@@ -182,6 +189,11 @@ function RouteSeo() {
   const location = useLocation();
 
   const seoByPath: Record<string, { title: string; description: string }> = {
+    "/": {
+      title: "My Voice Fit | Rutinas y progreso",
+      description:
+        "Crea rutinas de entrenamiento, sigue tu progreso y descarga la app Android en Google Play.",
+    },
     "/login": {
       title: "Iniciar Sesion | My Voice",
       description: "Accede a My Voice para gestionar tus rutinas.",

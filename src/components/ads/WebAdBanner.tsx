@@ -8,6 +8,7 @@ declare global {
 
 const ADSENSE_CLIENT = (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined)?.trim();
 const ADSENSE_SLOT = (import.meta.env.VITE_ADSENSE_SLOT as string | undefined)?.trim();
+const ADSENSE_ENABLED = import.meta.env.VITE_ADSENSE_ENABLED !== "false";
 
 let scriptLoaded = false;
 
@@ -38,7 +39,7 @@ export default function WebAdBanner() {
   const pushedRef = useRef(false);
 
   useEffect(() => {
-    if (!ADSENSE_CLIENT || !ADSENSE_SLOT) return undefined;
+    if (!ADSENSE_ENABLED || !ADSENSE_CLIENT || !ADSENSE_SLOT) return undefined;
     let cancelled = false;
 
     void (async () => {
@@ -58,7 +59,7 @@ export default function WebAdBanner() {
     };
   }, []);
 
-  if (!ADSENSE_CLIENT || !ADSENSE_SLOT) return null;
+  if (!ADSENSE_ENABLED || !ADSENSE_CLIENT || !ADSENSE_SLOT) return null;
 
   return (
     <div className="px-4 py-2 flex justify-center">

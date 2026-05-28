@@ -83,7 +83,7 @@ export default function RoutineEmpty() {
 
             <motion.div variants={itemVariants}>
               <Button
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/home")}
                 variant="outlineDanger"
                 className="w-full min-h-11 rounded-xl py-3 px-4 text-base font-semibold"
               >

@@ -22,7 +22,7 @@ export default function CoachesDashboard() {
     if (!token) {
       navigate("/login");
     } else if (user && user.role && role !== "user") {
-      navigate("/");
+      navigate("/home");
     } else {
       dispatch(fetchCoaches());
     }

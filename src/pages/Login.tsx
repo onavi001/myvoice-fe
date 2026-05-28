@@ -22,7 +22,7 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !loading) {
-        navigate("/");
+        navigate("/home");
     }
   }, [user, loading, navigate]);
 
@@ -39,7 +39,7 @@ export default function Login() {
       } else {
         await dispatch(loginUser({ email: formData.email, password: formData.password })).unwrap();
       }
-      navigate("/");
+      navigate("/home");
     } catch {
       setFormError("Error al procesar. Verifica tus datos.");
     }
