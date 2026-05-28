@@ -81,7 +81,12 @@ export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateEx
       <main className="flex-1 overflow-y-auto p-4 pb-28">
         {showDayComplete && (
           <div className="mb-4 p-3 rounded-xl border border-[#34C759]/50 bg-[#1a2e1f]">
-            <HappyCoach variant="celebrate" size="md" animated messageKey="workoutDayComplete" />
+            <HappyCoach
+              variant="celebrate"
+              size="md"
+              animated={false}
+              messageKey="workoutDayComplete"
+            />
           </div>
         )}
         <ExerciseWorkoutDetail

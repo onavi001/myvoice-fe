@@ -29,3 +29,4 @@ android/keystore.properties
 keystores/
 *.jks
 *.keystore
+android/.gradle-local/

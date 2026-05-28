@@ -252,7 +252,7 @@ export default function Timer({
               layout="stacked"
               messageKey="timerComplete"
               showName
-              animated
+              animated={false}
             />
           </div>
         )}
