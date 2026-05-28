@@ -1,4 +1,5 @@
 import { RoutineData } from "../models/Routine";
+import { Capacitor } from "@capacitor/core";
 
 const APP_NAME = "My Voice";
 const PDF_COLORS = {
@@ -188,6 +189,45 @@ function downloadBlob(blob: Blob, filename: string) {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
+async function saveAndShareNativeFile(
+  bytes: Uint8Array,
+  filename: string,
+  title: string
+): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+
+  const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+    import("@capacitor/filesystem"),
+    import("@capacitor/share"),
+  ]);
+
+  const { uri } = await Filesystem.writeFile({
+    path: filename,
+    data: toBase64(bytes),
+    directory: Directory.Cache,
+    recursive: true,
+  });
+
+  await Share.share({
+    title,
+    text: `${APP_NAME} · ${title}`,
+    url: uri,
+    dialogTitle: "Guardar o compartir archivo",
+  });
+
+  return true;
 }
 
 export function downloadRoutineAsText(routine: RoutineData) {
@@ -507,7 +547,15 @@ export async function buildRoutinePdfBlob(routine: RoutineData): Promise<Blob> {
 
 export async function downloadRoutineAsPdf(routine: RoutineData) {
   const blob = await buildRoutinePdfBlob(routine);
-  downloadBlob(blob, `${slugify(routine.name)}.pdf`);
+  const filename = `${slugify(routine.name)}.pdf`;
+
+  if (Capacitor.isNativePlatform()) {
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    await saveAndShareNativeFile(bytes, filename, `Rutina ${routine.name}`);
+    return;
+  }
+
+  downloadBlob(blob, filename);
 }
 
 export type ShareRoutineResult =
@@ -517,6 +565,18 @@ export type ShareRoutineResult =
 export async function shareRoutine(routine: RoutineData): Promise<ShareRoutineResult> {
   const text = buildRoutinePlainText(routine);
   const title = `Rutina: ${routine.name}`;
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const pdfBlob = await buildRoutinePdfBlob(routine);
+      const bytes = new Uint8Array(await pdfBlob.arrayBuffer());
+      const filename = `${slugify(routine.name)}.pdf`;
+      await saveAndShareNativeFile(bytes, filename, title);
+      return { ok: true, method: "file" };
+    } catch {
+      // Fallback to text sharing below.
+    }
+  }
 
   if (typeof navigator !== "undefined" && navigator.share) {
     try {

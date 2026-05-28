@@ -19,7 +19,7 @@ export default function RoutineExportActions({ routine }: { routine: RoutineData
     setBusy("pdf");
     try {
       await downloadRoutineAsPdf(routine);
-      setToast({ message: "PDF descargado correctamente", type: "success" });
+      setToast({ message: "PDF listo para guardar o compartir", type: "success" });
     } catch {
       try {
         downloadRoutineAsText(routine);
