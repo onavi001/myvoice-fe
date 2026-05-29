@@ -192,7 +192,7 @@ function RouteSeo() {
     "/": {
       title: "My Voice Fit | Rutinas y progreso",
       description:
-        "Crea rutinas de entrenamiento, sigue tu progreso y descarga la app Android en Google Play.",
+        "Organiza tu gym con rutinas, progreso e IA. App gratis en Android y acceso web.",
     },
     "/login": {
       title: "Iniciar Sesion | My Voice",

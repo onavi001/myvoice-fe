@@ -3,6 +3,7 @@ import { ChevronDownIcon, ChevronUpIcon, PlusIcon, TrashIcon } from "@heroicons/
 import { RoutineData } from "../../models/Routine";
 import Input from "../Input";
 import { newTempId } from "../../utils/nativeMediaPicker";
+import { formatListField, parseListFieldInput } from "../../utils/listFieldInput";
 
 const FIELD =
   "w-full min-h-11 px-3 py-2.5 bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#888] rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#252525] touch-manipulation";
@@ -90,11 +91,7 @@ export default function RoutineAIDraftEditor({ routine, onChange }: Props) {
     setOpenDays((prev) => ({ ...prev, [dayId]: !prev[dayId] }));
   };
 
-  const splitCsv = (value: string) =>
-    value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  const splitCsv = parseListFieldInput;
 
   return (
     <div className="space-y-4">
@@ -162,7 +159,7 @@ export default function RoutineAIDraftEditor({ routine, onChange }: Props) {
                   <Input
                     name={`muscles-${day._id}`}
                     type="text"
-                    value={day.musclesWorked.join(", ")}
+                    value={formatListField(day.musclesWorked)}
                     onChange={(e) =>
                       updateDay(day._id, { musclesWorked: splitCsv(e.target.value) })
                     }
@@ -174,7 +171,7 @@ export default function RoutineAIDraftEditor({ routine, onChange }: Props) {
                   <Input
                     name={`warmup-${day._id}`}
                     type="text"
-                    value={day.warmupOptions.join(", ")}
+                    value={formatListField(day.warmupOptions)}
                     onChange={(e) =>
                       updateDay(day._id, { warmupOptions: splitCsv(e.target.value) })
                     }

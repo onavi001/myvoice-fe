@@ -7,6 +7,10 @@ import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { RoutineData } from "../models/Routine";
 import { ExerciseFormData } from "../components/routine/RoutineExerciseForm";
+import {
+  normalizeDayListFields,
+  parseListFieldInput,
+} from "../utils/listFieldInput";
 
 export interface DayFormData extends IDay {
   isOpen: boolean;
@@ -136,7 +140,7 @@ export function useRoutineEditController() {
     setDays((prev) => {
       const updatedDays = [...prev];
       if (field === "musclesWorked" || field === "warmupOptions") {
-        updatedDays[dayIndex][field] = value.split(",").map((item) => item.trim());
+        updatedDays[dayIndex][field] = parseListFieldInput(value);
       } else {
         updatedDays[dayIndex] = { ...updatedDays[dayIndex], [field]: value };
       }
@@ -151,7 +155,7 @@ export function useRoutineEditController() {
       const exerciseIndex = updatedDays[dayIndex].exercises.findIndex((ex) => ex._id === exerciseId);
       if (exerciseIndex !== -1) {
         if (typeof value === "string" && (field === "muscleGroup" || field === "tips")) {
-          updatedDays[dayIndex].exercises[exerciseIndex][field] = value.split(",").map((item) => item.trim());
+          updatedDays[dayIndex].exercises[exerciseIndex][field] = parseListFieldInput(value);
         } else {
           updatedDays[dayIndex].exercises[exerciseIndex] = {
             ...updatedDays[dayIndex].exercises[exerciseIndex],
@@ -246,14 +250,14 @@ export function useRoutineEditController() {
     const cleanedDays = days.map((day: Partial<IDay>) => {
       const dayRest = { ...day };
       if (dayRest._id?.startsWith("temp")) delete dayRest._id;
-      return {
+      return normalizeDayListFields({
         ...dayRest,
         exercises: (day.exercises || []).map((exercise: Partial<IExercise>) => {
           const exerciseRest = { ...exercise };
           if (exerciseRest._id?.startsWith("temp")) delete exerciseRest._id;
           return exerciseRest;
         }),
-      };
+      });
     });
 
     try {

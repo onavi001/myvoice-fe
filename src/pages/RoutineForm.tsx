@@ -19,6 +19,11 @@ import {
   ROUTINE_FORM_FOOTER,
   ROUTINE_FORM_FOOTER_INNER,
 } from "../components/routine/routineFormUi";
+import {
+  formatListField,
+  normalizeDayListFields,
+  parseListFieldInput,
+} from "../utils/listFieldInput";
 
 interface ExerciseFormData extends IExercise {
   isOpen: boolean;
@@ -113,7 +118,7 @@ const RoutineForm: React.FC = () => {
     setDays((prev) => {
       const updatedDays = structuredClone(prev);
       if (field === "musclesWorked" || field === "warmupOptions") {
-        updatedDays[dayIndex][field] = value.split(",").map((item) => item.trim());
+        updatedDays[dayIndex][field] = parseListFieldInput(value);
       } else {
         updatedDays[dayIndex] = { ...updatedDays[dayIndex], [field]: value };
       }
@@ -128,9 +133,7 @@ const RoutineForm: React.FC = () => {
         const exerciseIndex = updatedDays[dayIndex].exercises.findIndex((ex) => ex._id === exerciseId);
         if (exerciseIndex !== -1) {
           if (typeof value === "string" && (field === "muscleGroup" || field === "tips")) {
-            updatedDays[dayIndex].exercises[exerciseIndex][field] = value
-              .split(",")
-              .map((item) => item.trim());
+            updatedDays[dayIndex].exercises[exerciseIndex][field] = parseListFieldInput(value);
           } else {
             updatedDays[dayIndex].exercises[exerciseIndex] = {
               ...updatedDays[dayIndex].exercises[exerciseIndex],
@@ -227,14 +230,14 @@ const RoutineForm: React.FC = () => {
       const cleanedDays = days.map((day: Partial<IDay>) => {
         const { ...dayRest } = day;
         if (dayRest._id?.startsWith("temp")) delete dayRest._id;
-        return {
+        return normalizeDayListFields({
           ...dayRest,
           exercises: (day.exercises || []).map((exercise: Partial<IExercise>) => {
             const { ...exerciseRest } = exercise;
             if (exerciseRest._id?.startsWith("temp")) delete exerciseRest._id;
             return exerciseRest;
           }),
-        };
+        });
       });
 
       try {
@@ -382,11 +385,11 @@ const RoutineForm: React.FC = () => {
                             </label>
                             <Input
                               name={`musclesWorked-${dayIndex}`}
-                              value={day.musclesWorked.join(", ")}
+                              value={formatListField(day.musclesWorked)}
                               onChange={(e) =>
                                 handleDayChange(dayIndex, "musclesWorked", e.target.value)
                               }
-                              placeholder="Pecho, Tríceps"
+                              placeholder="Ej. Pecho, espalda baja"
                               className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
                             />
                           </div>
@@ -396,11 +399,11 @@ const RoutineForm: React.FC = () => {
                             </label>
                             <Input
                               name={`warmupOptions-${dayIndex}`}
-                              value={day.warmupOptions.join(", ")}
+                              value={formatListField(day.warmupOptions)}
                               onChange={(e) =>
                                 handleDayChange(dayIndex, "warmupOptions", e.target.value)
                               }
-                              placeholder="Caminadora, Estiramientos"
+                              placeholder="Ej. Caminadora, estiramientos dinámicos"
                               className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
                             />
                           </div>
@@ -631,9 +634,9 @@ const ExerciseForm = memo(
                   </label>
                   <Input
                     name={`muscleGroup-${exercise._id}`}
-                    value={exercise.muscleGroup.join(", ")}
+                    value={formatListField(exercise.muscleGroup)}
                     onChange={(e) => onChange(dayIndex, exercise._id, "muscleGroup", e.target.value)}
-                    placeholder="Músculos (ej. Pecho, Hombros)"
+                    placeholder="Ej. Pecho, espalda baja"
                     className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
                   />
                 </div>
@@ -641,9 +644,9 @@ const ExerciseForm = memo(
                   <label className="block text-[#E0E0E0] text-sm font-medium mb-1">Consejos</label>
                   <Input
                     name={`tips-${exercise._id}`}
-                    value={exercise.tips.join(", ")}
+                    value={formatListField(exercise.tips)}
                     onChange={(e) => onChange(dayIndex, exercise._id, "tips", e.target.value)}
-                    placeholder="Consejos (ej. Mantén la espalda recta)"
+                    placeholder="Ej. Mantén la espalda recta, baja despacio"
                     className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors min-h-12"
                   />
                 </div>
