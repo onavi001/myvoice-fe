@@ -13,6 +13,14 @@ import {
 } from "./admobConfig";
 
 let initPromise: Promise<boolean> | null = null;
+let interstitialPrepared = false;
+let interstitialShownThisSession = false;
+let interstitialPreloadPromise: Promise<void> | null = null;
+
+const interstitialOptions = () => ({
+  adId: getInterstitialAdUnitId(),
+  isTesting: isAdMobTesting(),
+});
 
 export async function initializeAdMob(): Promise<boolean> {
   if (!isNativeAndroid()) return false;
@@ -81,19 +89,43 @@ export async function removeAdBanner(): Promise<void> {
   }
 }
 
+/** Preload interstitial when entering Routine AI (once per session until shown). */
+export async function preloadRoutineInterstitial(): Promise<void> {
+  if (!isNativeAndroid() || interstitialShownThisSession || interstitialPrepared) return;
+  if (interstitialPreloadPromise) return interstitialPreloadPromise;
+
+  interstitialPreloadPromise = (async () => {
+    const ready = await initializeAdMob();
+    if (!ready) return;
+
+    try {
+      await AdMob.prepareInterstitial(interstitialOptions());
+      interstitialPrepared = true;
+    } catch {
+      interstitialPrepared = false;
+    } finally {
+      interstitialPreloadPromise = null;
+    }
+  })();
+
+  return interstitialPreloadPromise;
+}
+
+/** Show at most one interstitial per app session after a successful AI/import generation. */
 export async function showRoutineGeneratedInterstitial(): Promise<void> {
-  if (!isNativeAndroid()) return;
+  if (!isNativeAndroid() || interstitialShownThisSession) return;
 
   const ready = await initializeAdMob();
   if (!ready) return;
 
   try {
-    await AdMob.prepareInterstitial({
-      adId: getInterstitialAdUnitId(),
-      isTesting: isAdMobTesting(),
-    });
+    if (!interstitialPrepared) {
+      await AdMob.prepareInterstitial(interstitialOptions());
+    }
     await AdMob.showInterstitial();
+    interstitialShownThisSession = true;
+    interstitialPrepared = false;
   } catch {
-    // No fill or user dismissed early
+    interstitialPrepared = false;
   }
 }

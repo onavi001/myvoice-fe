@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import {
@@ -21,7 +21,10 @@ import { FuturisticLoader } from "../components/Loader";
 import { IExercise } from "../models/Exercise";
 import { IDay } from "../models/Day";
 import { useNavigate } from "react-router-dom";
-import { showRoutineGeneratedInterstitial } from "../services/ads/admob";
+import {
+  preloadRoutineInterstitial,
+  showRoutineGeneratedInterstitial,
+} from "../services/ads/admob";
 import FreemiumGateModal from "../components/FreemiumGateModal";
 import {
   canUseFeature,
@@ -41,6 +44,10 @@ export default function RoutineAI() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading } = useSelector((state: RootState) => state.routine);
+
+  useEffect(() => {
+    void preloadRoutineInterstitial();
+  }, []);
   const [currentRoutine, setCurrentRoutine] = useState<RoutineData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const [createMode, setCreateMode] = useState<CreateMode>("generate");
