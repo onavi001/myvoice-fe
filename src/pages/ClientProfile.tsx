@@ -80,6 +80,30 @@ export default function ClientProfile() {
               <label className="block text-[#E0E0E0] text-base font-medium mb-1">Notas del Cliente</label>
               <p className="text-[#E0E0E0] text-sm break-words">{selectedClient.notes || "Sin notas"}</p>
             </div>
+            {selectedClient.trainingProfile ? (
+              <div className="pt-2 border-t border-[#4A4A4A]">
+                <label className="block text-[#E0E0E0] text-base font-medium mb-2">
+                  Perfil de entrenamiento (Rutina IA)
+                </label>
+                <ul className="text-[#E0E0E0] text-sm space-y-1">
+                  <li>
+                    Sexo biológico:{" "}
+                    {selectedClient.trainingProfile.biologicalSex === "femenino"
+                      ? "Femenino"
+                      : "Masculino"}
+                  </li>
+                  <li>Altura: {selectedClient.trainingProfile.heightCm} cm</li>
+                  <li>Peso: {selectedClient.trainingProfile.weightKg} kg</li>
+                  <li>
+                    Tiempo por sesión: {selectedClient.trainingProfile.sessionDurationMin} min
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <div className="pt-2 border-t border-[#4A4A4A]">
+                <p className="text-[#888] text-sm">Sin perfil de entrenamiento guardado aún.</p>
+              </div>
+            )}
           </div>
         </Card>
 

@@ -11,20 +11,16 @@ export interface ThunkError {
 }
 
 interface RoutineInput {
+  biologicalSex: "masculino" | "femenino";
+  heightCm: number;
+  weightKg: number;
+  sessionDurationMin: number;
   level: "principiante" | "intermedio" | "avanzado";
   goal: "fuerza" | "hipertrofia" | "resistencia";
   days: number;
   equipment: "gym" | "casa" | "pesas";
   name?: string;
   notes?: string;
-  blockWeeks?: number;
-  sessionDurationMin?: number;
-  injuriesOrPain?: string;
-  goalMetric?: string;
-  targetDate?: string;
-  sleepHours?: number;
-  stressLevel?: "bajo" | "medio" | "alto";
-  trainingAgeMonths?: number;
 }
 
 interface RoutineState {

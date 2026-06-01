@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store";
 import {
@@ -33,6 +33,11 @@ import {
 } from "../utils/freemium";
 import WebAdBanner from "../components/ads/WebAdBanner";
 import { isWebPlatform } from "../services/ads/admobConfig";
+import { mergeTrainingProfile } from "../models/TrainingProfile";
+import {
+  fetchTrainingProfile,
+  saveTrainingProfile,
+} from "../store/trainingProfileSlice";
 type LoadingState = {
   generating: boolean;
   saving: boolean;
@@ -44,33 +49,73 @@ export default function RoutineAI() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading } = useSelector((state: RootState) => state.routine);
+  const { loaded: trainingProfileLoaded, profile: savedTrainingProfile } = useSelector(
+    (state: RootState) => state.trainingProfile
+  );
+  const profileHydratedRef = useRef(false);
+  const skipProfileSaveRef = useRef(true);
 
   useEffect(() => {
     void preloadRoutineInterstitial();
-  }, []);
+    void dispatch(fetchTrainingProfile());
+  }, [dispatch]);
+
   const [currentRoutine, setCurrentRoutine] = useState<RoutineData | null>(null);
   const [isGenerating, setIsGenerating] = useState(true);
   const [createMode, setCreateMode] = useState<CreateMode>("generate");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [formData, setFormData] = useState<RoutineAIFormData>({
+    biologicalSex: "masculino",
+    heightCm: 170,
+    weightKg: 70,
+    sessionDurationMin: 60,
     level: "intermedio",
     goal: "hipertrofia",
     days: 3,
     equipment: "gym",
     name: "Rutina de Volumen",
-    notes: "Enfocarse en movimientos compuestos",
-    blockWeeks: 6,
-    sessionDurationMin: 60,
-    injuriesOrPain: "",
-    goalMetric: "Mejorar fuerza y tecnica en movimientos principales",
-    targetDate: "",
-    sleepHours: 7,
-    stressLevel: "medio",
-    trainingAgeMonths: 6,
+    notes: "",
   });
   const [loadingState, setLoadingState] = useState<LoadingState>({ generating: false, saving: false });
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [freemiumFeature, setFreemiumFeature] = useState<UsageFeature | null>(null);
+
+  useEffect(() => {
+    if (!trainingProfileLoaded || profileHydratedRef.current) return;
+    const merged = mergeTrainingProfile(savedTrainingProfile);
+    setFormData((prev) => ({
+      ...prev,
+      biologicalSex: merged.biologicalSex,
+      heightCm: merged.heightCm,
+      weightKg: merged.weightKg,
+      sessionDurationMin: merged.sessionDurationMin,
+    }));
+    profileHydratedRef.current = true;
+    const unlockSave = window.setTimeout(() => {
+      skipProfileSaveRef.current = false;
+    }, 0);
+    return () => window.clearTimeout(unlockSave);
+  }, [trainingProfileLoaded, savedTrainingProfile]);
+
+  useEffect(() => {
+    if (!profileHydratedRef.current || skipProfileSaveRef.current) return;
+    const timer = window.setTimeout(() => {
+      void dispatch(
+        saveTrainingProfile({
+          biologicalSex: formData.biologicalSex,
+          heightCm: formData.heightCm,
+          weightKg: formData.weightKg,
+          sessionDurationMin: formData.sessionDurationMin,
+        })
+      );
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [
+    dispatch,
+    formData.biologicalSex,
+    formData.heightCm,
+    formData.weightKg,
+    formData.sessionDurationMin,
+  ]);
 
   const handleChange = (field: keyof RoutineAIFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -231,21 +276,18 @@ export default function RoutineAI() {
   };
 
   const handleReset = () => {
+    const merged = mergeTrainingProfile(savedTrainingProfile);
     setFormData({
+      biologicalSex: merged.biologicalSex,
+      heightCm: merged.heightCm,
+      weightKg: merged.weightKg,
+      sessionDurationMin: merged.sessionDurationMin,
       level: "intermedio",
       goal: "hipertrofia",
       days: 3,
       equipment: "gym",
       name: "Rutina de Volumen",
-      notes: "Enfocarse en movimientos compuestos",
-      blockWeeks: 6,
-      sessionDurationMin: 60,
-      injuriesOrPain: "",
-      goalMetric: "Mejorar fuerza y tecnica en movimientos principales",
-      targetDate: "",
-      sleepHours: 7,
-      stressLevel: "medio",
-      trainingAgeMonths: 6,
+      notes: "",
     });
     setCurrentRoutine(null);
     setIsGenerating(true);
@@ -302,12 +344,7 @@ export default function RoutineAI() {
           <Card className="bg-[#252525] border-2 border-[#4A4A4A] p-4 sm:p-5 rounded-xl shadow-md">
             {createMode === "generate" ? (
               <>
-                <RoutineAIFormFields
-                  formData={formData}
-                  onChange={handleChange}
-                  showAdvanced={showAdvanced}
-                  onToggleAdvanced={() => setShowAdvanced((prev) => !prev)}
-                />
+                <RoutineAIFormFields formData={formData} onChange={handleChange} />
                 <Button
                   onClick={handleGenerate}
                   disabled={loadingState.generating}

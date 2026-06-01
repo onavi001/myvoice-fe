@@ -1,4 +1,5 @@
 import { Schema, model, Model } from "mongoose";
+import type { TrainingProfile } from "./TrainingProfile";
 
 export interface IUser {
   _id: string;
@@ -11,6 +12,7 @@ export interface IUser {
   coachId?: string; // Para usuarios: ID del coach asignado
   specialties?: string[]; // Para coaches: ej. ["Fuerza", "Cardio"]
   bio?: string; // Para coaches: descripción
+  trainingProfile?: TrainingProfile;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
