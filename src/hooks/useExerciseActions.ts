@@ -20,9 +20,11 @@ import {
   SESSION_COMPLETE_THRESHOLD,
   updatePlanStreakOnSessionComplete,
 } from "../utils/planStreak";
-import { canUseFeature, recordFeatureUsage } from "../utils/freemium";
+import { canUseFeature, recordFeatureUsage, isProUser } from "../utils/freemium";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { showRegenerateVideosInterstitial } from "../services/ads/admob";
+import { isNativeAndroid } from "../services/ads/admobConfig";
 
 export default function useExerciseActions() {
   const dispatch = useDispatch<AppDispatch>();
@@ -272,6 +274,44 @@ export default function useExerciseActions() {
     }
   };
 
+  const handleRegenerateVideos = async (
+    searchQuery: string,
+    routineId: string,
+    dayId: string,
+    exerciseId: string
+  ) => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (isNativeAndroid() && !isProUser()) {
+      await showRegenerateVideosInterstitial();
+    }
+
+    const query = searchQuery.trim();
+    if (!query) {
+      throw { message: "Escribe un término de búsqueda.", status: undefined } as ThunkError;
+    }
+
+    const videos = await fetchVideos(query);
+    if (videos.length === 0) {
+      throw {
+        message: `No se encontraron videos para "${query}". Prueba otro nombre o más específico.`,
+        status: undefined,
+      } as ThunkError;
+    }
+
+    await dispatch(
+      setExerciseVideos({
+        routineId,
+        dayId,
+        exerciseId,
+        videos: videos.map((v) => ({ url: v.url, isCurrent: v.isCurrent })),
+      })
+    ).unwrap();
+  };
+
   return {
     loadingVideos,
     handleSave,
@@ -279,5 +319,6 @@ export default function useExerciseActions() {
     handleNewExercise,
     handleSelectExercise,
     handleFetchVideos,
+    handleRegenerateVideos,
   };
 }

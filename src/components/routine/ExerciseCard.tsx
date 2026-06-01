@@ -9,8 +9,9 @@ import Button from "../Button";
 import VideoPlayer from "./VideoPlayer";
 import ModelWorkoutModal from "../ModelWorkoutModal";
 import Loader, { SmallLoader } from "../Loader";
-import { ArrowPathIcon, PlayCircleIcon, EyeIcon } from "@heroicons/react/16/solid";
+import { PlayCircleIcon, EyeIcon } from "@heroicons/react/16/solid";
 import useExerciseActions from "../../hooks/useExerciseActions";
+import ExerciseSecondaryActions from "./ExerciseSecondaryActions";
 import Timer from "../Timer";
 import { getProgressionHint } from "../../utils/progression";
 import { primeTimerAudio } from "../../utils/shortBeep";
@@ -161,54 +162,63 @@ export default function ExerciseCard({
           <span className="text-[#B0B0B0] text-xs">{isExpanded ? "▲" : "▼"}</span>
         </button>
         {isExpanded && (
-          <div className="p-2 bg-[#4A4A4A] text-xs space-y-2">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={handleStartTimer}
-                className="flex items-center bg-[#34C759] text-black rounded-full text-xs hover:bg-[#2ca44e] disabled:opacity-50"
-                disabled={
-                  isTimerActive ||
-                  (currentExercise.repsUnit === "seconds" &&
-                    (!Number.isFinite(Number(currentExercise.reps)) ||
-                      Number(currentExercise.reps) <= 0))
-                }
-              >
-                <span className="ml-1">Iniciar ejercicio</span>
-                <PlayCircleIcon className="w-4 h-4 mx-2" />
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              <div>
+          <div className="p-3 bg-[#4A4A4A] text-xs space-y-3">
+            <Button
+              onClick={handleStartTimer}
+              className="w-full flex items-center justify-center gap-2 bg-[#34C759] text-black rounded-xl text-sm font-semibold hover:bg-[#2ca44e] min-h-11 disabled:opacity-50 touch-manipulation"
+              disabled={
+                isTimerActive ||
+                (currentExercise.repsUnit === "seconds" &&
+                  (!Number.isFinite(Number(currentExercise.reps)) ||
+                    Number(currentExercise.reps) <= 0))
+              }
+            >
+              <span>Iniciar ejercicio</span>
+              <PlayCircleIcon className="w-5 h-5 shrink-0" />
+            </Button>
+
+            <div className="grid grid-cols-2 gap-2 text-left">
+              <div className="min-w-0">
                 <button
+                  type="button"
                   onClick={() => {
                     setOpenBodyModal(true);
                     setMusclesToShow(exercise.muscleGroup);
                   }}
-                  className="flex text-[#B0B0B0] font-semibold"
+                  className="flex items-center text-[#B0B0B0] font-semibold touch-manipulation"
                 >
-                  Músculo: <EyeIcon className="w-4 h-4 ml-2" />
+                  Músculo <EyeIcon className="w-4 h-4 ml-1 shrink-0" />
                 </button>
-                <p className="text-[#FFFFFF]">{currentExercise.muscleGroup.join(", ")}</p>
-                <Button
-                  onClick={() => onGenerateExercise(routineId, dayId, exerciseId)}
-                  className="my-4 flex items-center gap-1 bg-[#34C759] text-black px-2 py-1 rounded-full text-xs hover:bg-[#2ca44e]"
-                  disabled={editRoutine}
-                >
-                  <ArrowPathIcon className="w-4 h-4" />
-                  <span>Regenerar</span>
-                </Button>
+                <p className="text-[#FFFFFF] mt-0.5 break-words">
+                  {currentExercise.muscleGroup.join(", ")}
+                </p>
               </div>
-              {currentExercise.tips?.length > 0 && (
-                <div>
-                  <span className="text-[#B0B0B0] font-semibold">Consejos:</span>
-                  <ul className="list-disc pl-3 text-[#FFFFFF] max-w-full">
+              {currentExercise.tips?.length > 0 ? (
+                <div className="min-w-0">
+                  <span className="text-[#B0B0B0] font-semibold">Consejos</span>
+                  <ul className="list-disc pl-3.5 text-[#FFFFFF] mt-0.5 space-y-0.5">
                     {currentExercise.tips.map((tip, index) => (
-                      <li key={index}>{tip}</li>
+                      <li key={index} className="break-words">
+                        {tip}
+                      </li>
                     ))}
                   </ul>
                 </div>
+              ) : (
+                <div className="flex items-end">
+                  <p className="text-[#666] text-[10px]">Sin consejos</p>
+                </div>
               )}
             </div>
+
+            <ExerciseSecondaryActions
+              routineId={routineId}
+              dayId={dayId}
+              exerciseId={exerciseId}
+              exerciseName={currentExercise.name}
+              onRegenerateExercise={() => onGenerateExercise(routineId, dayId, exerciseId)}
+              regenerateExerciseDisabled={editRoutine}
+            />
             {loadingVideos ? (
               <SmallLoader />
             ) : (

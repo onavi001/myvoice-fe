@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { ArrowPathIcon, EyeIcon, PlayCircleIcon } from "@heroicons/react/16/solid";
+import { EyeIcon, PlayCircleIcon } from "@heroicons/react/16/solid";
 import { RootState } from "../../store";
 import { IExercise } from "../../models/Exercise";
 import { RoutineData } from "../../models/Routine";
@@ -12,6 +12,7 @@ import ModelWorkoutModal from "../ModelWorkoutModal";
 import Loader, { SmallLoader } from "../Loader";
 import Timer from "../Timer";
 import useExerciseActions from "../../hooks/useExerciseActions";
+import ExerciseSecondaryActions from "./ExerciseSecondaryActions";
 import { getProgressionHint } from "../../utils/progression";
 import { primeTimerAudio } from "../../utils/shortBeep";
 
@@ -176,8 +177,8 @@ export default function ExerciseWorkoutDetail({
             Iniciar ejercicio
           </Button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-2 gap-3 text-left">
+            <div className="min-w-0">
               <button
                 type="button"
                 onClick={() => {
@@ -186,39 +187,43 @@ export default function ExerciseWorkoutDetail({
                 }}
                 className="flex items-center text-[#B0B0B0] font-semibold mb-1 touch-manipulation"
               >
-                Músculo <EyeIcon className="w-4 h-4 ml-2" />
+                Músculo <EyeIcon className="w-4 h-4 ml-1 shrink-0" />
               </button>
-              <p className="text-[#FFFFFF]">
+              <p className="text-[#FFFFFF] break-words">
                 {(currentExercise.muscleGroup ?? []).length > 0
                   ? currentExercise.muscleGroup.join(", ")
                   : "—"}
               </p>
-              {onGenerateExercise && (
-                <Button
-                  onClick={() => onGenerateExercise(routineId, dayId, exerciseId)}
-                  className="mt-3 flex items-center gap-1 bg-[#34C759] text-black px-3 py-2 rounded-full text-xs hover:bg-[#2ca44e] min-h-10"
-                  disabled={editRoutine}
-                >
-                  <ArrowPathIcon className="w-4 h-4" />
-                  Regenerar
-                </Button>
-              )}
             </div>
 
             {currentExercise.tips && currentExercise.tips.length > 0 ? (
-              <div>
+              <div className="min-w-0">
                 <span className="text-[#B0B0B0] font-semibold">Consejos</span>
                 <ul className="list-disc pl-4 text-[#FFFFFF] mt-1 space-y-1">
                   {currentExercise.tips.map((tip, i) => (
-                    <li key={i}>{tip}</li>
+                    <li key={i} className="break-words">
+                      {tip}
+                    </li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <p className="text-[#666] text-xs">Sin consejos para este ejercicio.</p>
+              <div className="flex items-end">
+                <p className="text-[#666] text-xs">Sin consejos</p>
+              </div>
             )}
           </div>
 
+          {onGenerateExercise ? (
+            <ExerciseSecondaryActions
+              routineId={routineId}
+              dayId={dayId}
+              exerciseId={exerciseId}
+              exerciseName={currentExercise.name}
+              onRegenerateExercise={() => onGenerateExercise(routineId, dayId, exerciseId)}
+              regenerateExerciseDisabled={editRoutine}
+            />
+          ) : null}
           {loadingVideos ? (
             <SmallLoader classNameLoader="py-6" />
           ) : (

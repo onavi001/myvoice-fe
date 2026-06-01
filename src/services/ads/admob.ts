@@ -129,3 +129,18 @@ export async function showRoutineGeneratedInterstitial(): Promise<void> {
     interstitialPrepared = false;
   }
 }
+
+/** Interstitial al regenerar videos de toda la rutina (Android; no comparte límite 1/sesión de Rutina IA). */
+export async function showRegenerateVideosInterstitial(): Promise<void> {
+  if (!isNativeAndroid()) return;
+
+  const ready = await initializeAdMob();
+  if (!ready) return;
+
+  try {
+    await AdMob.prepareInterstitial(interstitialOptions());
+    await AdMob.showInterstitial();
+  } catch {
+    // Si falla el anuncio, igual se regeneran los videos.
+  }
+}
