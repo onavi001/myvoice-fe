@@ -55,6 +55,7 @@ export default function RoutineEmpty() {
           <div className="space-y-2.5">
             <motion.div variants={itemVariants}>
               <Button
+                id="onboarding-empty-ai-cta"
                 onClick={() => navigate("/routine-AI")}
                 className="w-full bg-[#34C759] text-black hover:bg-[#2DAF47] rounded-xl py-3 px-4 text-base font-semibold border border-[#2DAF47]"
               >

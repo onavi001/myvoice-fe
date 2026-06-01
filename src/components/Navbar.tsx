@@ -66,6 +66,7 @@ const Navbar: React.FC<NavbarProps> = ({
             {/* Botones principales */}
             <div className="flex space-x-2 items-center">
               <Button
+                id="onboarding-navbar-ai"
                 variant="secondary"
                 onClick={onGenerateRoutine}
                 className="!bg-[#42A5F5] text-black !hover:bg-[#1E88E5] rounded-lg px-4 py-2 text-sm font-semibold border !border-[#1E88E5] shadow-md transition-colors flex items-center gap-2"

@@ -25,6 +25,7 @@ import CoachDashboard from "./pages/CoachDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import EditProfile from "./pages/EditProfile";
 import Admin from "./pages/Admin";
+import { RoutineAiOnboardingProvider } from "./contexts/RoutineAiOnboardingContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -144,7 +145,7 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
   }
 
   return (
-    <>
+    <RoutineAiOnboardingProvider>
       {showNavbar && (
         <Navbar
           onMyRoutine={onMyRoutine}
@@ -157,7 +158,7 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
         />
       )}
       {user ? <Layout>{children}</Layout> : children}
-    </>
+    </RoutineAiOnboardingProvider>
   );
 });
 

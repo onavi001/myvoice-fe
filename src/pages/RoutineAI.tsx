@@ -38,6 +38,7 @@ import {
   fetchTrainingProfile,
   saveTrainingProfile,
 } from "../store/trainingProfileSlice";
+import { useRoutineAiOnboarding } from "../contexts/RoutineAiOnboardingContext";
 type LoadingState = {
   generating: boolean;
   saving: boolean;
@@ -48,6 +49,7 @@ type CreateMode = "generate" | "import";
 export default function RoutineAI() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { setDraftReady, complete: completeOnboarding } = useRoutineAiOnboarding();
   const { loading } = useSelector((state: RootState) => state.routine);
   const { loaded: trainingProfileLoaded, profile: savedTrainingProfile } = useSelector(
     (state: RootState) => state.trainingProfile
@@ -162,8 +164,15 @@ export default function RoutineAI() {
   const finishGeneration = (routine: RoutineData) => {
     setCurrentRoutine(routine);
     setIsGenerating(false);
+    setDraftReady(true);
     void showRoutineGeneratedInterstitial();
   };
+
+  useEffect(() => {
+    if (isGenerating) {
+      setDraftReady(false);
+    }
+  }, [isGenerating, setDraftReady]);
 
   const handleGenerate = async () => {
     if (!canUseFeature("aiGenerate")) {
@@ -248,6 +257,7 @@ export default function RoutineAI() {
       }
 
       setToast({ message: "Rutina guardada correctamente", type: "success" });
+      completeOnboarding();
       setTimeout(() => navigate("/routine"), 1000);
     } catch (err) {
       const error = err as ThunkError;
@@ -344,8 +354,11 @@ export default function RoutineAI() {
           <Card className="bg-[#252525] border-2 border-[#4A4A4A] p-4 sm:p-5 rounded-xl shadow-md">
             {createMode === "generate" ? (
               <>
-                <RoutineAIFormFields formData={formData} onChange={handleChange} />
+                <div id="onboarding-ai-form">
+                  <RoutineAIFormFields formData={formData} onChange={handleChange} />
+                </div>
                 <Button
+                  id="onboarding-ai-generate"
                   onClick={handleGenerate}
                   disabled={loadingState.generating}
                   className="w-full mt-6 min-h-14 text-base font-semibold bg-[#34C759] text-black rounded-xl hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50 touch-manipulation"
@@ -385,6 +398,7 @@ export default function RoutineAI() {
             <div className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] bg-[#1A1A1A]/95 border-t border-[#3C3C3C] backdrop-blur-sm">
               <div className="max-w-lg mx-auto flex flex-col gap-2">
                 <Button
+                  id="onboarding-ai-save"
                   onClick={handleSaveRoutine}
                   disabled={loadingState.saving || !currentRoutine.name.trim()}
                   className="w-full min-h-14 text-base font-semibold bg-[#34C759] text-black rounded-xl hover:bg-[#2ca44e] border border-[#34C759] shadow-md disabled:opacity-50 touch-manipulation"
