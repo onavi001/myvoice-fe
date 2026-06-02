@@ -1,8 +1,16 @@
+type Props = {
+  compact?: boolean;
+};
+
 /** Ranura vacía con brillo — invita a desbloquear medallas en Progreso. */
-export default function EmptyNavbarMedalSlot() {
+export default function EmptyNavbarMedalSlot({ compact = false }: Props) {
+  const w = compact ? 36 : 44;
+  const h = compact ? 44 : 54;
+
   return (
     <div
-      className="relative shrink-0 w-11 h-[54px] flex items-center justify-center"
+      className="relative shrink-0 flex items-center justify-center"
+      style={{ width: w, height: h }}
       aria-hidden
     >
       <div className="absolute inset-0 rounded-full bg-[#34C759]/20 blur-md animate-pulse" />
@@ -10,7 +18,7 @@ export default function EmptyNavbarMedalSlot() {
         className="absolute inset-0 rounded-full border border-[#5DD4F7]/30 animate-ping opacity-40"
         style={{ animationDuration: "2.5s" }}
       />
-      <svg viewBox="0 0 80 96" width={44} height={54} className="relative z-[1]">
+      <svg viewBox="0 0 80 96" width={w} height={h} className="relative z-[1]">
         <defs>
           <linearGradient id="empty-medal-shine" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#5DD4F7" stopOpacity="0.9">

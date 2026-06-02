@@ -20,7 +20,6 @@ import {
   buildProgressAchievements,
   type ProgressAchievement,
 } from "../utils/progressAchievements";
-import { filterProgressForRoutine } from "../utils/progressSessions";
 import { pickDefaultRoutineId, PROGRESS_ROUTINE_STORAGE_KEY } from "../utils/progressOverview";
 import {
   loadFeaturedMedal,
@@ -75,12 +74,13 @@ export function FeaturedMedalProvider({ children }: { children: ReactNode }) {
   }, [routines, progress]);
 
   const achievements = useMemo(() => {
-    if (!routineId) return [];
-    const routine = routines.find((r) => r._id.toString() === routineId);
-    if (!routine) return [];
-    const scoped = filterProgressForRoutine(progress, routineId);
-    const stats = buildAchievementStats(routine, scoped, {
+    if (progress.length === 0 && routines.length === 0) return [];
+    const selectedRoutine = routineId
+      ? routines.find((r) => r._id.toString() === routineId)
+      : undefined;
+    const stats = buildAchievementStats(progress, routines, {
       totalRoutines: routines.length,
+      selectedRoutine,
     });
     return buildProgressAchievements(stats);
   }, [routineId, routines, progress]);

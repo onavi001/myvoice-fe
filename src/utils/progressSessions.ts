@@ -96,6 +96,83 @@ export function inferSessionEventsFromProgress(
   return events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
 
+/** Sesiones inferidas aunque la rutina ya no exista (solo historial de progreso). */
+export function inferSessionEventsFromProgressOrHistory(
+  progress: ProgressData[],
+  routine?: RoutineData
+): SessionCompletionEvent[] {
+  if (routine && routine.days.length > 0) {
+    return inferSessionEventsFromProgress(progress, routine);
+  }
+
+  const groups = new Map<
+    string,
+    { dayId: string; exerciseIds: Set<string>; latestAt: Date }
+  >();
+
+  for (const entry of progress) {
+    if (!entry.completed) continue;
+    const dayId = normalizeId(entry.dayId);
+    if (!dayId) continue;
+    const dateKey = localDateKey(new Date(entry.date));
+    const key = `${dayId}|${dateKey}`;
+    const at = new Date(entry.date);
+    const existing = groups.get(key);
+    if (existing) {
+      existing.exerciseIds.add(normalizeId(entry.exerciseId));
+      if (at > existing.latestAt) existing.latestAt = at;
+    } else {
+      groups.set(key, {
+        dayId,
+        exerciseIds: new Set([normalizeId(entry.exerciseId)]),
+        latestAt: at,
+      });
+    }
+  }
+
+  const events: SessionCompletionEvent[] = [];
+  const dayOrder = new Map<string, number>();
+  for (const group of groups.values()) {
+    const total = exerciseTotalForDay(group.dayId, progress);
+    const ratio = total > 0 ? group.exerciseIds.size / total : group.exerciseIds.size > 0 ? 1 : 0;
+    if (ratio * 100 < SESSION_COMPLETE_THRESHOLD) continue;
+
+    if (!dayOrder.has(group.dayId)) {
+      dayOrder.set(group.dayId, dayOrder.size);
+    }
+
+    events.push({
+      dayId: group.dayId,
+      dayIndex: dayOrder.get(group.dayId) ?? 0,
+      at: group.latestAt.toISOString(),
+    });
+  }
+
+  return events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
+
+export function buildGlobalSessionLog(
+  allProgress: ProgressData[],
+  routines: RoutineData[]
+): SessionCompletionEvent[] {
+  const routineById = new Map(routines.map((r) => [r._id.toString(), r]));
+  const routineIds = new Set<string>();
+  for (const entry of allProgress) {
+    const rid = normalizeId(entry.routineId);
+    if (rid) routineIds.add(rid);
+  }
+
+  const events: SessionCompletionEvent[] = [];
+  for (const rid of routineIds) {
+    const scoped = filterProgressForRoutine(allProgress, rid);
+    events.push(
+      ...inferSessionEventsFromProgressOrHistory(scoped, routineById.get(rid))
+    );
+  }
+
+  return events.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
+
 export function mergeSessionLogs(
   local: SessionCompletionEvent[],
   fromProgress: SessionCompletionEvent[]
@@ -210,6 +287,135 @@ export function syncPlanStreakWithProgress(
 
   savePlanStreakState(routineId, next);
   return next;
+}
+
+function historicalExerciseTotal(dayId: string, entries: ProgressData[]): number {
+  const ids = new Set<string>();
+  for (const e of entries) {
+    if (!e.completed) continue;
+    if (normalizeId(e.dayId) !== dayId) continue;
+    const ex = normalizeId(e.exerciseId);
+    if (ex) ids.add(ex);
+  }
+  return ids.size;
+}
+
+function exerciseTotalForDay(
+  dayId: string,
+  entries: ProgressData[],
+  routine?: RoutineData
+): number {
+  if (routine) {
+    const day = routine.days.find((d) => normalizeId(d._id) === dayId);
+    if (day && day.exercises.length > 0) return day.exercises.length;
+  }
+  const historical = historicalExerciseTotal(dayId, entries);
+  return historical > 0 ? historical : 1;
+}
+
+/** Días del plan: unión de historial + rutina actual (si existe). Sobrevive si borran la rutina. */
+function planDayIdsForRoutine(entries: ProgressData[], routine?: RoutineData): string[] {
+  const ids = new Set<string>();
+  for (const e of entries) {
+    const d = normalizeId(e.dayId);
+    if (d) ids.add(d);
+  }
+  if (routine) {
+    for (const d of routine.days) {
+      const id = normalizeId(d._id);
+      if (id) ids.add(id);
+    }
+  }
+  return [...ids];
+}
+
+/**
+ * Semanas perfectas de una rutina según historial (≥80% ejercicios por día, unión semanal).
+ * No requiere que la rutina siga existiendo si `entries` tiene el historial guardado.
+ */
+export function countPerfectPlanWeeksForRoutineEntries(
+  entries: ProgressData[],
+  routine?: RoutineData
+): number {
+  const planDayIds = planDayIdsForRoutine(entries, routine);
+  if (planDayIds.length === 0) return 0;
+
+  const byWeekDay = new Map<string, Map<string, Set<string>>>();
+  for (const entry of entries) {
+    if (!entry.completed) continue;
+    const dayId = normalizeId(entry.dayId);
+    const exerciseId = normalizeId(entry.exerciseId);
+    if (!dayId || !exerciseId || !planDayIds.includes(dayId)) continue;
+
+    const week = isoWeekKey(new Date(entry.date));
+    if (!byWeekDay.has(week)) byWeekDay.set(week, new Map());
+    const weekMap = byWeekDay.get(week)!;
+    if (!weekMap.has(dayId)) weekMap.set(dayId, new Set());
+    weekMap.get(dayId)!.add(exerciseId);
+  }
+
+  let perfectWeeks = 0;
+  for (const weekMap of byWeekDay.values()) {
+    let completeDays = 0;
+    for (const dayId of planDayIds) {
+      const completedIds = weekMap.get(dayId);
+      if (!completedIds) continue;
+
+      let matched = completedIds.size;
+      if (routine) {
+        const day = routine.days.find((d) => normalizeId(d._id) === dayId);
+        if (day && day.exercises.length > 0) {
+          const routineExIds = new Set(
+            day.exercises.map((ex) => normalizeId(ex._id)).filter(Boolean)
+          );
+          matched = 0;
+          for (const id of completedIds) {
+            if (routineExIds.has(id)) matched += 1;
+          }
+        }
+      }
+
+      const total = exerciseTotalForDay(dayId, entries, routine);
+      if (total > 0 && (matched / total) * 100 >= SESSION_COMPLETE_THRESHOLD) {
+        completeDays += 1;
+      }
+    }
+    if (completeDays >= planDayIds.length) perfectWeeks += 1;
+  }
+
+  return perfectWeeks;
+}
+
+export function countPerfectPlanWeeksFromProgress(
+  routine: RoutineData,
+  progress: ProgressData[]
+): number {
+  const routineId = routine._id.toString();
+  const scoped = filterProgressForRoutine(progress, routineId);
+  return countPerfectPlanWeeksForRoutineEntries(scoped, routine);
+}
+
+/** Cuenta semanas perfectas en todo el historial (todas las rutinas, aunque estén borradas). */
+export function countPerfectPlanWeeksGlobal(
+  allProgress: ProgressData[],
+  routines: RoutineData[] = []
+): number {
+  const routineById = new Map(routines.map((r) => [r._id.toString(), r]));
+  const byRoutine = new Map<string, ProgressData[]>();
+
+  for (const entry of allProgress) {
+    if (!entry.completed) continue;
+    const rid = normalizeId(entry.routineId);
+    if (!rid) continue;
+    if (!byRoutine.has(rid)) byRoutine.set(rid, []);
+    byRoutine.get(rid)!.push(entry);
+  }
+
+  let total = 0;
+  for (const [rid, entries] of byRoutine) {
+    total += countPerfectPlanWeeksForRoutineEntries(entries, routineById.get(rid));
+  }
+  return total;
 }
 
 export function countWeeklyPlanSessionsFromLog(

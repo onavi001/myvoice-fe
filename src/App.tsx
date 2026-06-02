@@ -27,6 +27,7 @@ import EditProfile from "./pages/EditProfile";
 import Admin from "./pages/Admin";
 import { RoutineAiOnboardingProvider } from "./contexts/RoutineAiOnboardingContext";
 import { FeaturedMedalProvider } from "./contexts/FeaturedMedalContext";
+import AppUpdateGate from "./components/AppUpdateGate";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -148,6 +149,7 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
   return (
     <RoutineAiOnboardingProvider>
       <FeaturedMedalProvider>
+        <AppUpdateGate />
         {showNavbar && (
           <Navbar
             onMyRoutine={onMyRoutine}

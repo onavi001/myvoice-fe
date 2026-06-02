@@ -178,14 +178,16 @@ export function useProgressViewModel() {
   }, [trainingOverview, activityStrip, routineScopedProgress]);
 
   const progressAchievements = useMemo(() => {
-    if (!selectedRoutineId) return [];
-    const routine = routines.find((r) => r._id.toString() === selectedRoutineId);
-    if (!routine) return [];
-    const stats = buildAchievementStats(routine, routineScopedProgress, {
+    if (progress.length === 0 && routines.length === 0) return [];
+    const selectedRoutine = selectedRoutineId
+      ? routines.find((r) => r._id.toString() === selectedRoutineId)
+      : undefined;
+    const stats = buildAchievementStats(progress, routines, {
       totalRoutines: routines.length,
+      selectedRoutine,
     });
     return buildProgressAchievements(stats);
-  }, [routines, selectedRoutineId, routineScopedProgress]);
+  }, [progress, routines, selectedRoutineId]);
 
   const personalRecords = useMemo(() => {
     let scoped = progress;

@@ -2,7 +2,13 @@ import { RoutineData } from "../models/Routine";
 import { ProgressData } from "../models/Progress";
 import { hasAiRoutineCreated } from "./achievementMilestones";
 import { isoWeekKey, localDateKey, SessionCompletionEvent } from "./planStreak";
-import { mergeSessionLogs, inferSessionEventsFromProgress } from "./progressSessions";
+import {
+  mergeSessionLogs,
+  inferSessionEventsFromProgress,
+  countPerfectPlanWeeksGlobal,
+  buildGlobalSessionLog,
+  filterProgressForRoutine,
+} from "./progressSessions";
 import { loadPlanStreakState } from "./planStreak";
 
 export type AchievementTier = "starter" | "bronze" | "silver" | "gold" | "platinum";
@@ -66,7 +72,7 @@ const ACHIEVEMENT_DEFS: AchievementDef[] = [
   {
     id: "first_perfect_week",
     title: "Primera semana",
-    description: "Completaste todas las sesiones del plan en una semana",
+    description: "Completaste todas las sesiones de tu plan en una misma semana calendario",
     tier: "bronze",
     isUnlocked: (s) => s.perfectWeeksCount >= 1,
   },
@@ -264,33 +270,48 @@ function replayMaxPlanStreak(routine: RoutineData, log: SessionCompletionEvent[]
 }
 
 export function buildAchievementStats(
-  routine: RoutineData,
-  routineProgress: ProgressData[],
-  options?: { totalRoutines?: number }
+  allProgress: ProgressData[],
+  routines: RoutineData[] = [],
+  options?: { totalRoutines?: number; selectedRoutine?: RoutineData }
 ): AchievementStats {
-  const routineId = routine._id.toString();
-  const local = loadPlanStreakState(routineId);
-  const inferred = inferSessionEventsFromProgress(routineProgress, routine);
-  const log = mergeSessionLogs(local.completionLog, inferred);
+  const totalRoutines = options?.totalRoutines ?? routines.length;
+  const selectedRoutine = options?.selectedRoutine;
+
+  const globalLog = buildGlobalSessionLog(allProgress, routines);
 
   const dayKeys = new Set<string>();
-  for (const entry of log) {
+  for (const entry of globalLog) {
     dayKeys.add(localDateKey(new Date(entry.at)));
   }
-  for (const entry of routineProgress) {
+  for (const entry of allProgress) {
     if (entry.completed) dayKeys.add(localDateKey(new Date(entry.date)));
   }
 
-  const allDayKeys = [...dayKeys];
-
-  const totalRoutines = options?.totalRoutines ?? 0;
+  let maxPlanStreak = 0;
+  if (selectedRoutine) {
+    const routineId = selectedRoutine._id.toString();
+    const local = loadPlanStreakState(routineId);
+    const scoped = filterProgressForRoutine(allProgress, routineId);
+    const inferred = inferSessionEventsFromProgress(scoped, selectedRoutine);
+    const log = mergeSessionLogs(local.completionLog, inferred);
+    maxPlanStreak = replayMaxPlanStreak(selectedRoutine, log);
+  } else {
+    for (const routine of routines) {
+      const routineId = routine._id.toString();
+      const local = loadPlanStreakState(routineId);
+      const scoped = filterProgressForRoutine(allProgress, routineId);
+      const inferred = inferSessionEventsFromProgress(scoped, routine);
+      const log = mergeSessionLogs(local.completionLog, inferred);
+      maxPlanStreak = Math.max(maxPlanStreak, replayMaxPlanStreak(routine, log));
+    }
+  }
 
   return {
-    totalTrainingDays: allDayKeys.length,
-    perfectWeeksCount: countPerfectPlanWeeks(routine, log),
-    maxWeekStreak: computeMaxCalendarWeekStreak(log),
-    maxDayStreak: computeMaxCalendarDayStreak(allDayKeys),
-    maxPlanStreak: replayMaxPlanStreak(routine, log),
+    totalTrainingDays: dayKeys.size,
+    perfectWeeksCount: countPerfectPlanWeeksGlobal(allProgress, routines),
+    maxWeekStreak: computeMaxCalendarWeekStreak(globalLog),
+    maxDayStreak: computeMaxCalendarDayStreak([...dayKeys]),
+    maxPlanStreak,
     hasAnyRoutine: totalRoutines >= 1,
     hasAiRoutine: hasAiRoutineCreated(),
   };
