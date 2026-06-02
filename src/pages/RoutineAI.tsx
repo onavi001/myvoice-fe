@@ -31,6 +31,7 @@ import {
   recordFeatureUsage,
   UsageFeature,
 } from "../utils/freemium";
+import { markAiRoutineCreated } from "../utils/achievementMilestones";
 import WebAdBanner from "../components/ads/WebAdBanner";
 import { isWebPlatform } from "../services/ads/admobConfig";
 import { mergeTrainingProfile } from "../models/TrainingProfile";
@@ -256,6 +257,7 @@ export default function RoutineAI() {
         daysSaved += 1;
       }
 
+      markAiRoutineCreated();
       setToast({ message: "Rutina guardada correctamente", type: "success" });
       completeOnboarding();
       setTimeout(() => navigate("/routine"), 1000);

@@ -1,3 +1,10 @@
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  scrollToProgressMedalsSection,
+  shouldScrollToProgressMedals,
+  type ProgressMedalsLocationState,
+} from "../utils/scrollToProgressMedals";
 import Button from "../components/Button";
 import Loader from "../components/Loader";
 import Toast from "../components/Toast";
@@ -8,11 +15,15 @@ import "react-datepicker/dist/react-datepicker.css";
 import {
   ArrowDownTrayIcon,
   FunnelIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
+import ProgressOverview from "../components/progress/ProgressOverview";
+import ProgressWeekStrip from "../components/progress/ProgressWeekStrip";
+import ProgressRecentSessions from "../components/progress/ProgressRecentSessions";
 import ProgressFiltersPanel from "../components/progress/ProgressFiltersPanel";
 import ProgressAddForm from "../components/progress/ProgressAddForm";
 import ProgressPagination from "../components/progress/ProgressPagination";
-import ProgressCard from "../components/progress/ProgressCard";
+import ProgressSessionGroup from "../components/progress/ProgressSessionGroup";
 import { useProgressViewModel } from "../hooks/useProgressViewModel";
 import WebAdBanner from "../components/ads/WebAdBanner";
 import { isWebPlatform } from "../services/ads/admobConfig";
@@ -21,8 +32,32 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 export default function Progress() {
   const vm = useProgressViewModel();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const historialRef = useRef<HTMLDivElement>(null);
+  const pageReady =
+    !vm.userLoading && !vm.routineLoading && !vm.progressLoading;
 
-  if (vm.userLoading || vm.routineLoading || vm.progressLoading) {
+  const scrollToHistorial = () => {
+    historialRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  useEffect(() => {
+    if (!pageReady) return;
+    if (!shouldScrollToProgressMedals(location.hash, location.state)) return;
+
+    scrollToProgressMedalsSection();
+
+    const state = location.state as ProgressMedalsLocationState | null;
+    if (state?.scrollToMedals) {
+      navigate(
+        { pathname: location.pathname, hash: location.hash },
+        { replace: true, state: {} }
+      );
+    }
+  }, [pageReady, location.hash, location.state, location.pathname, navigate]);
+
+  if (!pageReady) {
     return (
       <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex items-center justify-center">
         <Loader/>
@@ -31,30 +66,64 @@ export default function Progress() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
+    <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col pb-24 sm:pb-6">
       <div className="p-3 sm:p-6 w-full max-w-5xl mx-auto flex-1">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-xl text-[#E0E0E0]">Progreso</h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <h1 className="text-base sm:text-xl text-[#E0E0E0]">Progreso</h1>
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               onClick={vm.handleExport}
-              className="flex items-center gap-2 bg-[#2D2D2D] border border-[#3A3A3A] text-[#E0E0E0] hover:bg-[#3A3A3A] rounded-lg p-1.5 sm:p-2 text-xs sm:text-sm min-h-10 sm:min-h-12 transition-colors"
-              aria-label="Export progress as CSV"
+              className="flex items-center gap-2 bg-[#2D2D2D] border border-[#3A3A3A] text-[#E0E0E0] hover:bg-[#3A3A3A] rounded-lg px-3 py-2 text-xs sm:text-sm min-h-10 transition-colors"
+              aria-label="Exportar progreso CSV"
             >
-              <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Exportar
+              <ArrowDownTrayIcon className="w-4 h-4" /> Exportar
             </Button>
             <Button
               onClick={() => vm.setShowFilters(!vm.showFilters)}
-              className="flex items-center gap-2 bg-[#2D2D2D] border border-[#3A3A3A] text-[#E0E0E0] hover:bg-[#3A3A3A] rounded-lg p-1.5 sm:p-2 text-xs sm:text-sm min-h-10 sm:min-h-12 transition-colors sm:hidden"
-              aria-label="Toggle filters"
+              className="flex items-center gap-2 bg-[#2D2D2D] border border-[#3A3A3A] text-[#E0E0E0] hover:bg-[#3A3A3A] rounded-lg px-3 py-2 text-xs sm:text-sm min-h-10 transition-colors sm:hidden"
+              aria-label="Mostrar filtros"
             >
-              <FunnelIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {vm.showFilters ? "Ocultar Filtros" : "Filtros"}
+              <FunnelIcon className="w-4 h-4" /> {vm.showFilters ? "Ocultar" : "Filtros"}
             </Button>
           </div>
         </div>
-        <div className="space-y-2">
+
+        <ProgressOverview
+          routines={vm.routines}
+          selectedRoutineId={vm.selectedRoutineId}
+          onRoutineChange={vm.handleRoutineChange}
+          overview={vm.trainingOverview}
+          period={vm.periodPreset}
+          onPeriodChange={vm.handlePeriodChange}
+          entriesInPeriod={vm.entriesInPeriod}
+          uniqueExercisesInPeriod={vm.uniqueExercisesInPeriod}
+          personalRecords={vm.personalRecords}
+          lastWorkoutLabel={vm.lastWorkoutLabel}
+          topExerciseName={vm.topExerciseName}
+          consistencyInsights={vm.consistencyInsights}
+          progressAchievements={vm.progressAchievements}
+        />
+
+        {vm.activityStrip.some((d) => d.trained) && (
+          <div className="mb-4">
+            <ProgressWeekStrip
+              days={vm.activityStrip}
+              trainedCount={vm.activityStripTrainedCount}
+            />
+          </div>
+        )}
+
+        {vm.recentSessions.length > 0 && (
+          <div className="mb-4">
+            <ProgressRecentSessions
+              sessions={vm.recentSessions}
+              onViewAll={scrollToHistorial}
+            />
+          </div>
+        )}
+
+        <div ref={historialRef} id="historial" className="space-y-2 scroll-mt-4">
+          <h2 className="text-sm font-semibold text-[#888]">Historial</h2>
           <ProgressFiltersPanel
             showFilters={vm.showFilters}
             searchQuery={vm.searchQuery}
@@ -91,32 +160,35 @@ export default function Progress() {
         />
 
         {vm.showChart && vm.filteredProgress.length > 0 && (
-          <div className="mt-4 bg-[#252525] border border-[#3A3A3A] rounded-lg p-2 sm:p-3 h-64 sm:h-80">
+          <div className="mt-4 bg-[#252525] border border-[#3A3A3A] rounded-lg p-2 sm:p-3 h-56 sm:h-80">
             <Line data={vm.chartData} options={vm.chartOptions} />
           </div>
         )}
 
-        {vm.filteredProgress.length === 0 ? (
-          <div className="mt-4 text-center space-y-2">
+        {vm.sessionGroups.length === 0 ? (
+          <div className="mt-4 text-center space-y-2 px-2">
             <p className="text-[#E0E0E0] text-sm">
-              {vm.searchQuery || vm.muscleFilter || vm.dateFilter.start || vm.dateFilter.end
-                ? "No hay progreso registrado con este filtro."
+              {vm.searchQuery || vm.muscleFilter || vm.periodPreset !== "all"
+                ? "No hay registros con este filtro."
                 : "Aún no tienes progreso registrado."}
             </p>
-            {!vm.searchQuery && !vm.muscleFilter && !vm.dateFilter.start && !vm.dateFilter.end && (
+            {!vm.searchQuery && !vm.muscleFilter && vm.periodPreset === "all" && (
               <p className="text-[#B0B0B0] text-xs">
-                Usa &quot;Agregar Progreso&quot; o marca ejercicios completados en tus rutinas.
+                Marca ejercicios en tu rutina o usa el botón + para agregar un registro.
               </p>
             )}
           </div>
         ) : (
           <>
-            <div className="mt-4 space-y-2">
-              {vm.paginatedProgress.map((entry, index) => (
-                <ProgressCard
-                  key={entry._id}
-                  entry={entry}
-                  index={index}
+            <p className="text-xs text-[#666] mt-3 mb-2">
+              {vm.sessionGroups.length} {vm.sessionGroups.length === 1 ? "día" : "días"} · toca un día
+              para ver ejercicios
+            </p>
+            <div className="mt-2 space-y-2">
+              {vm.paginatedSessionGroups.map((group) => (
+                <ProgressSessionGroup
+                  key={group.dateKey}
+                  group={group}
                   expandedCardKey={vm.expandedCardKey}
                   editData={vm.editData}
                   savingProgress={vm.savingProgress}
@@ -141,9 +213,23 @@ export default function Progress() {
             />
           </>
         )}
+
         {vm.toast && <Toast type={vm.toast.variant} message={vm.toast.message} onClose={vm.handleCloseToast} />}
         {isWebPlatform() && <WebAdBanner />}
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          vm.setShowAddForm(true);
+          scrollToHistorial();
+        }}
+        className="fixed bottom-20 right-4 z-40 flex items-center gap-2 rounded-full bg-[#34C759] text-black font-semibold shadow-lg px-5 min-h-12 touch-manipulation sm:bottom-8 sm:right-8"
+        aria-label="Agregar progreso"
+      >
+        <PlusIcon className="w-5 h-5" />
+        <span className="text-sm">Agregar</span>
+      </button>
     </div>
   );
 }

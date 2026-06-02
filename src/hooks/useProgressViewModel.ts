@@ -4,6 +4,27 @@ import { addProgress, deleteProgress, editProgress } from "../store/progressSlic
 import { ThunkError } from "../store/routineSlice";
 import { ProgressData } from "../models/Progress";
 import { useProgressBootstrap } from "./useProgressBootstrap";
+import {
+  buildTrainingOverview,
+  computePersonalRecords,
+  countEntriesInPeriod,
+  countUniqueExercisesInPeriod,
+  periodToDateRange,
+  pickDefaultRoutineId,
+  PROGRESS_ROUTINE_STORAGE_KEY,
+  type PeriodPreset,
+} from "../utils/progressOverview";
+import { filterProgressForRoutine } from "../utils/progressSessions";
+import { buildAchievementStats, buildProgressAchievements } from "../utils/progressAchievements";
+import { buildConsistencyInsights } from "../utils/consistencyInsights";
+import {
+  buildActivityStrip,
+  countTrainedDaysInStrip,
+  formatLastWorkoutLabel,
+  getLastWorkoutDate,
+  getTopExerciseInPeriod,
+  groupProgressByDay,
+} from "../utils/progressInsights";
 
 type ToastState = { message: string; variant: "success" | "error" } | null;
 
@@ -53,7 +74,7 @@ export function useProgressViewModel() {
   const [chartMetric, setChartMetric] = useState<"weight" | "reps" | "sets">("weight");
   const [chartExercise, setChartExercise] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [editData, setEditData] = useState<Record<string, Partial<ProgressData>>>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -62,12 +83,122 @@ export function useProgressViewModel() {
   const [addingProgress, setAddingProgress] = useState(false);
   const [savingProgress, setSavingProgress] = useState<Record<string, boolean>>({});
   const [deletingProgress, setDeletingProgress] = useState<Record<string, boolean>>({});
-  const [dateFilter, setDateFilter] = useState<{ start?: Date; end?: Date }>({});
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("30d");
+  const [dateFilter, setDateFilter] = useState<{ start?: Date; end?: Date }>(() =>
+    periodToDateRange("30d")
+  );
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(null);
   const [muscleFilter, setMuscleFilter] = useState<string>("");
   const [sortBy, setSortBy] = useState<"date" | "weight" | "reps">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const debouncedSearch = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    if (routines.length === 0) return;
+    const stored = localStorage.getItem(PROGRESS_ROUTINE_STORAGE_KEY);
+    const validStored = stored && routines.some((r) => r._id.toString() === stored);
+    setSelectedRoutineId(validStored ? stored : pickDefaultRoutineId(routines, progress));
+  }, [routines, progress]);
+
+  const handlePeriodChange = useCallback((preset: PeriodPreset) => {
+    setPeriodPreset(preset);
+    setDateFilter(periodToDateRange(preset));
+    setCurrentPage(1);
+  }, []);
+
+  const handleRoutineChange = useCallback((routineId: string) => {
+    setSelectedRoutineId(routineId);
+    localStorage.setItem(PROGRESS_ROUTINE_STORAGE_KEY, routineId);
+  }, []);
+
+  const { start: periodStart, end: periodEnd } = useMemo(
+    () => periodToDateRange(periodPreset),
+    [periodPreset]
+  );
+
+  const entriesInPeriod = useMemo(
+    () => countEntriesInPeriod(progress, periodStart, periodEnd, selectedRoutineId ?? undefined),
+    [progress, periodStart, periodEnd, selectedRoutineId]
+  );
+
+  const uniqueExercisesInPeriod = useMemo(
+    () =>
+      countUniqueExercisesInPeriod(progress, periodStart, periodEnd, selectedRoutineId ?? undefined),
+    [progress, periodStart, periodEnd, selectedRoutineId]
+  );
+
+  const routineScopedProgress = useMemo(() => {
+    if (!selectedRoutineId) return progress;
+    return filterProgressForRoutine(progress, selectedRoutineId);
+  }, [progress, selectedRoutineId]);
+
+  const periodScopedProgress = useMemo(() => {
+    return routineScopedProgress.filter((entry) => {
+      const d = new Date(entry.date);
+      if (periodStart && d < periodStart) return false;
+      if (periodEnd && d > periodEnd) return false;
+      return true;
+    });
+  }, [routineScopedProgress, periodStart, periodEnd]);
+
+  const activityStrip = useMemo(
+    () => buildActivityStrip(routineScopedProgress),
+    [routineScopedProgress]
+  );
+
+  const activityStripTrainedCount = useMemo(
+    () => countTrainedDaysInStrip(activityStrip),
+    [activityStrip]
+  );
+
+  const lastWorkoutLabel = useMemo(
+    () => formatLastWorkoutLabel(getLastWorkoutDate(routineScopedProgress)),
+    [routineScopedProgress]
+  );
+
+  const topExerciseName = useMemo(
+    () => getTopExerciseInPeriod(periodScopedProgress),
+    [periodScopedProgress]
+  );
+
+  const trainingOverview = useMemo(() => {
+    if (!selectedRoutineId) return null;
+    const routine = routines.find((r) => r._id.toString() === selectedRoutineId);
+    return routine ? buildTrainingOverview(routine, progress) : null;
+  }, [routines, selectedRoutineId, progress]);
+
+  const consistencyInsights = useMemo(() => {
+    if (!trainingOverview) return [];
+    return buildConsistencyInsights(
+      trainingOverview,
+      activityStrip,
+      getLastWorkoutDate(routineScopedProgress)
+    );
+  }, [trainingOverview, activityStrip, routineScopedProgress]);
+
+  const progressAchievements = useMemo(() => {
+    if (!selectedRoutineId) return [];
+    const routine = routines.find((r) => r._id.toString() === selectedRoutineId);
+    if (!routine) return [];
+    const stats = buildAchievementStats(routine, routineScopedProgress, {
+      totalRoutines: routines.length,
+    });
+    return buildProgressAchievements(stats);
+  }, [routines, selectedRoutineId, routineScopedProgress]);
+
+  const personalRecords = useMemo(() => {
+    let scoped = progress;
+    if (periodStart || periodEnd) {
+      scoped = scoped.filter((entry) => {
+        const d = new Date(entry.date);
+        if (periodStart && d < periodStart) return false;
+        if (periodEnd && d > periodEnd) return false;
+        return true;
+      });
+    }
+    return computePersonalRecords(scoped, selectedRoutineId ?? undefined);
+  }, [progress, periodStart, periodEnd, selectedRoutineId]);
 
   const handleCloseToast = () => setToast(null);
 
@@ -190,7 +321,9 @@ export function useProgressViewModel() {
   const muscles = muscleOptions;
 
   const filteredProgress = useMemo(() => {
-    let result = [...progress];
+    let result = selectedRoutineId
+      ? filterProgressForRoutine(progress, selectedRoutineId)
+      : [...progress];
     if (debouncedSearch) result = result.filter((entry) => entry.exerciseName.toLowerCase().includes(debouncedSearch.toLowerCase()));
     if (dateFilter.start) result = result.filter((entry) => new Date(entry.date) >= dateFilter.start!);
     if (dateFilter.end) result = result.filter((entry) => new Date(entry.date) <= dateFilter.end!);
@@ -207,7 +340,11 @@ export function useProgressViewModel() {
       return sortOrder === "asc" ? (aValue < bValue ? -1 : 1) : (bValue < aValue ? -1 : 1);
     });
     return result;
-  }, [progress, debouncedSearch, dateFilter, muscleFilter, sortBy, sortOrder, routines]);
+  }, [progress, selectedRoutineId, debouncedSearch, dateFilter, muscleFilter, sortBy, sortOrder, routines]);
+
+  const sessionGroups = useMemo(() => groupProgressByDay(filteredProgress), [filteredProgress]);
+
+  const recentSessions = useMemo(() => sessionGroups.slice(0, 5), [sessionGroups]);
 
   const chartData = useMemo(() => {
     let data = chartExercise === "all" ? filteredProgress : filteredProgress.filter((e) => e.exerciseName === chartExercise);
@@ -236,13 +373,34 @@ export function useProgressViewModel() {
     },
   };
 
-  const totalPages = Math.ceil(filteredProgress.length / itemsPerPage);
-  const paginatedProgress = filteredProgress.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(sessionGroups.length / itemsPerPage));
+  const paginatedSessionGroups = sessionGroups.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return {
+    routines,
     progressLoading,
     routineLoading,
     userLoading,
+    periodPreset,
+    handlePeriodChange,
+    selectedRoutineId,
+    handleRoutineChange,
+    trainingOverview,
+    consistencyInsights,
+    progressAchievements,
+    entriesInPeriod,
+    uniqueExercisesInPeriod,
+    personalRecords,
+    activityStrip,
+    activityStripTrainedCount,
+    lastWorkoutLabel,
+    topExerciseName,
+    recentSessions,
+    sessionGroups,
+    paginatedSessionGroups,
     toast,
     handleCloseToast,
     showFilters,
@@ -275,7 +433,6 @@ export function useProgressViewModel() {
     filteredProgress,
     chartData,
     chartOptions,
-    paginatedProgress,
     expandedCardKey,
     editData,
     savingProgress,

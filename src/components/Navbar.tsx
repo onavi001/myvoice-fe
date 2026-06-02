@@ -3,6 +3,7 @@ import Button from "./Button";
 import { useSelector } from "react-redux";
 import { RootState } from "../store";
 import { useNavigate } from "react-router-dom";
+import NavbarFeaturedMedal from "./navbar/NavbarFeaturedMedal";
 import {
   Bars3Icon,
   CalendarIcon,
@@ -55,16 +56,17 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <div className="bg-[#1A1A1A] p-2 shadow-md border-b border-[#4A4A4A] z-50">
-      <div className="max-w-4xl mx-auto flex justify-between items-center space-x-2">
-        {/* Logo o título */}
-        <div onClick={onMyRoutine} className="flex text-[#E0E0E0] items-center text-lg font-semibold cursor-pointer">
-          <img src="/android-chrome-192x192.png" alt="logo" width={40} height={40} className="w-10 h-10 mr-4" />
-          MyVoice
+      <div className="max-w-4xl mx-auto flex justify-between items-center gap-2 min-w-0">
+        <div onClick={onMyRoutine} className="flex text-[#E0E0E0] items-center text-lg font-semibold cursor-pointer shrink-0 min-w-0">
+          <img src="/android-chrome-192x192.png" alt="logo" width={40} height={40} className="w-10 h-10 mr-2 sm:mr-4 shrink-0" />
+          <span className="truncate">MyVoice</span>
         </div>
         {user && (
           <>
-            {/* Botones principales */}
-            <div className="flex space-x-2 items-center">
+            <div className="flex flex-1 justify-center min-w-0 px-1">
+              <NavbarFeaturedMedal />
+            </div>
+            <div className="flex space-x-2 items-center shrink-0">
               <Button
                 id="onboarding-navbar-ai"
                 variant="secondary"

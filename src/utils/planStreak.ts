@@ -22,7 +22,20 @@ export type PlanStreakState = {
 
 const storageKey = (routineId: string) => `mv_plan_streak_${routineId}`;
 
-function isoWeekKey(date = new Date()): string {
+export function localDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+export function isoWeekKey(date = new Date()): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
@@ -48,15 +61,120 @@ function savePlanStreakState(routineId: string, state: PlanStreakState) {
   localStorage.setItem(storageKey(routineId), JSON.stringify(state));
 }
 
+/** Registra una sesión completada (para rachas de días/semanas y contador semanal). */
+function recordPlanSession(state: PlanStreakState, dayId: string, dayIndex: number): boolean {
+  const today = localDateKey(new Date());
+  const alreadyToday = state.completionLog.some(
+    (e) => e.dayId === dayId && localDateKey(new Date(e.at)) === today
+  );
+  if (alreadyToday) return false;
+  state.completionLog.push({ dayId, dayIndex, at: new Date().toISOString() });
+  state.completionLog = state.completionLog.slice(-120);
+  return true;
+}
+
 /** Sesiones del plan registradas como completadas en la semana calendario actual. */
-export function countWeeklyPlanSessions(routine: RoutineData): { done: number; total: number } {
+export type ActivityStreaks = {
+  /** Días de calendario consecutivos con al menos una sesión completada */
+  dayStreak: number;
+  /** Semanas ISO consecutivas con al menos una sesión completada */
+  weekStreak: number;
+  /** Días distintos con sesión (histórico en el log) */
+  totalTrainingDays: number;
+  /** Semanas distintas con sesión (histórico en el log) */
+  totalTrainingWeeks: number;
+};
+
+function dayKeysFromLog(log: SessionCompletionEvent[], extraDayKeys: string[] = []): Set<string> {
+  const days = new Set(log.map((e) => localDateKey(new Date(e.at))));
+  for (const key of extraDayKeys) days.add(key);
+  return days;
+}
+
+function weekKeysFromDayKeys(dayKeys: Set<string>): Set<string> {
+  const weeks = new Set<string>();
+  for (const dk of dayKeys) {
+    weeks.add(isoWeekKey(new Date(`${dk}T12:00:00`)));
+  }
+  return weeks;
+}
+
+/** Racha de días seguidos (calendario). Cuenta hoy o, si hoy no hay sesión, desde ayer. */
+export function computeCalendarDayStreak(
+  log: SessionCompletionEvent[],
+  now = new Date(),
+  extraTrainingDayKeys: string[] = []
+): number {
+  const days = dayKeysFromLog(log, extraTrainingDayKeys);
+  if (days.size === 0) return 0;
+
+  let cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let key = localDateKey(cursor);
+  if (!days.has(key)) {
+    cursor = addDays(cursor, -1);
+    key = localDateKey(cursor);
+    if (!days.has(key)) return 0;
+  }
+
+  let streak = 0;
+  while (days.has(localDateKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+/** Racha de semanas seguidas (calendario ISO). Cuenta esta semana o la anterior si aún no entrenaste esta semana. */
+export function computeCalendarWeekStreak(
+  log: SessionCompletionEvent[],
+  now = new Date(),
+  extraTrainingDayKeys: string[] = []
+): number {
+  const weeks = weekKeysFromDayKeys(dayKeysFromLog(log, extraTrainingDayKeys));
+  if (weeks.size === 0) return 0;
+
+  let cursor = new Date(now);
+  let key = isoWeekKey(cursor);
+  if (!weeks.has(key)) {
+    cursor = addDays(cursor, -7);
+    key = isoWeekKey(cursor);
+    if (!weeks.has(key)) return 0;
+  }
+
+  let streak = 0;
+  while (weeks.has(isoWeekKey(cursor))) {
+    streak += 1;
+    cursor = addDays(cursor, -7);
+  }
+  return streak;
+}
+
+export function computeActivityStreaks(
+  log: SessionCompletionEvent[],
+  now = new Date(),
+  extraTrainingDayKeys: string[] = []
+): ActivityStreaks {
+  const days = dayKeysFromLog(log, extraTrainingDayKeys);
+  const weeks = weekKeysFromDayKeys(days);
+  return {
+    dayStreak: computeCalendarDayStreak(log, now, extraTrainingDayKeys),
+    weekStreak: computeCalendarWeekStreak(log, now, extraTrainingDayKeys),
+    totalTrainingDays: days.size,
+    totalTrainingWeeks: weeks.size,
+  };
+}
+
+export function countWeeklyPlanSessions(
+  routine: RoutineData,
+  log?: SessionCompletionEvent[]
+): { done: number; total: number } {
   const total = routine.days.length;
   if (total === 0) return { done: 0, total: 0 };
 
   const week = isoWeekKey();
-  const state = loadPlanStreakState(routine._id.toString());
+  const entries = log ?? loadPlanStreakState(routine._id.toString()).completionLog;
   const doneIds = new Set(
-    state.completionLog.filter((e) => isoWeekKey(new Date(e.at)) === week).map((e) => e.dayId)
+    entries.filter((e) => isoWeekKey(new Date(e.at)) === week).map((e) => e.dayId)
   );
   return { done: doneIds.size, total };
 }
@@ -79,7 +197,10 @@ export function updatePlanStreakOnSessionComplete(
   }
 
   const state = loadPlanStreakState(routineId);
+  recordPlanSession(state, dayId, dayIndex);
+
   if (state.countedDayIds.includes(dayId)) {
+    savePlanStreakState(routineId, state);
     return { streak: state.streak, advanced: false, usedGrace: false };
   }
 
@@ -110,12 +231,6 @@ export function updatePlanStreakOnSessionComplete(
   }
 
   state.countedDayIds.push(dayId);
-  state.completionLog.push({
-    dayId,
-    dayIndex,
-    at: new Date().toISOString(),
-  });
-  state.completionLog = state.completionLog.slice(-80);
   savePlanStreakState(routineId, state);
   return { streak: state.streak, advanced: true, usedGrace };
 }

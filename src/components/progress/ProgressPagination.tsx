@@ -32,7 +32,7 @@ export default function ProgressPagination({
           <option value="10">10</option>
           <option value="20">20</option>
         </select>
-        <span className="text-xs sm:text-sm text-[#B0B0B0]">por página</span>
+        <span className="text-xs sm:text-sm text-[#B0B0B0]">días por página</span>
       </div>
       <div className="flex items-center gap-2">
         <Button

@@ -26,6 +26,7 @@ import ClientProfile from "./pages/ClientProfile";
 import EditProfile from "./pages/EditProfile";
 import Admin from "./pages/Admin";
 import { RoutineAiOnboardingProvider } from "./contexts/RoutineAiOnboardingContext";
+import { FeaturedMedalProvider } from "./contexts/FeaturedMedalContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -146,18 +147,20 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
 
   return (
     <RoutineAiOnboardingProvider>
-      {showNavbar && (
-        <Navbar
-          onMyRoutine={onMyRoutine}
-          onNewRoutine={onNewRoutine}
-          onProgress={onProgress}
-          onAdmin={onAdmin}
-          onLogout={onLogout}
-          onGenerateRoutine={onGenerateRoutine}
-          onEditRoutine={onEditRoutine}
-        />
-      )}
-      {user ? <Layout>{children}</Layout> : children}
+      <FeaturedMedalProvider>
+        {showNavbar && (
+          <Navbar
+            onMyRoutine={onMyRoutine}
+            onNewRoutine={onNewRoutine}
+            onProgress={onProgress}
+            onAdmin={onAdmin}
+            onLogout={onLogout}
+            onGenerateRoutine={onGenerateRoutine}
+            onEditRoutine={onEditRoutine}
+          />
+        )}
+        {user ? <Layout>{children}</Layout> : children}
+      </FeaturedMedalProvider>
     </RoutineAiOnboardingProvider>
   );
 });

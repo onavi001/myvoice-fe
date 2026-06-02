@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import HappyCoach from "../mascot/HappyCoach";
 import { AppDispatch } from "../../store";
@@ -7,11 +7,17 @@ import { resetDayProgress, resetRoutineProgress } from "../../store/routineSlice
 import { RoutineData } from "../../models/Routine";
 import { calculateDayProgress, calculateWeekProgress } from "../../utils/calculateProgress";
 import {
+  computeActivityStreaks,
   countWeeklyPlanSessions,
   getNextPlannedDayLabel,
-  loadPlanStreakState,
   resetPlanStreak,
 } from "../../utils/planStreak";
+import {
+  filterProgressForRoutine,
+  syncPlanStreakWithProgress,
+  trainingDateKeysFromProgress,
+} from "../../utils/progressSessions";
+import { selectProgressEntries } from "../../store/selectors";
 import { usageSummary } from "../../utils/freemium";
 import { useWorkoutReminders } from "../../hooks/useWorkoutReminders";
 import Button from "../Button";
@@ -46,9 +52,23 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
   const { enabled, hour, minute, native, status, toggleEnabled, updateTime } = useWorkoutReminders();
 
   const routineId = routine._id.toString();
+  const allProgress = useSelector(selectProgressEntries);
   const progressKey = routine.days.map((d) => `${d._id}:${Math.round(calculateDayProgress(d))}`).join("|");
-  const streakState = useMemo(() => loadPlanStreakState(routineId), [routineId, progressKey]);
-  const weekSessions = useMemo(() => countWeeklyPlanSessions(routine), [routine, progressKey]);
+  const streakState = useMemo(() => {
+    const routineProgress = filterProgressForRoutine(allProgress, routineId);
+    return syncPlanStreakWithProgress(routine, routineProgress);
+  }, [routine, routineId, allProgress, progressKey]);
+  const activityStreaks = useMemo(() => {
+    const trainingDays = trainingDateKeysFromProgress(
+      filterProgressForRoutine(allProgress, routineId),
+      routineId
+    );
+    return computeActivityStreaks(streakState.completionLog, new Date(), trainingDays);
+  }, [streakState.completionLog, allProgress, routineId]);
+  const weekSessions = useMemo(
+    () => countWeeklyPlanSessions(routine, streakState.completionLog),
+    [routine, streakState.completionLog]
+  );
   const dayPct = calculateDayProgress(day);
   const weekPct = calculateWeekProgress(routine);
   const hasProgress = dayPct > 0 || weekPct > 0;
@@ -77,7 +97,8 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
           <span className="text-sm font-semibold text-[#34C759]">Tu progreso</span>
           {!expanded && (
             <p className="text-xs text-[#888] mt-0.5 tabular-nums">
-              Racha {streakState.streak} · Hoy {Math.round(dayPct)}% · Semana {Math.round(weekPct)}%
+              {activityStreaks.dayStreak}d · {activityStreaks.weekStreak}sem · plan{" "}
+              {streakState.streak} · Hoy {Math.round(dayPct)}%
             </p>
           )}
         </div>
@@ -93,18 +114,48 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
         <div className="px-4 pb-4 border-t border-[#3C3C3C]">
           <div className="pt-3 mb-4 p-3 rounded-xl bg-[#1A1A1A] border border-[#3C3C3C]">
             <HappyCoach
-              variant={streakState.streak > 0 ? "celebrate" : "idle"}
+              variant={
+                activityStreaks.dayStreak > 0 ||
+                activityStreaks.weekStreak > 0 ||
+                streakState.streak > 0
+                  ? "celebrate"
+                  : "idle"
+              }
               size="md"
-              animated
-              messageKey="streak"
+              animated={false}
+              message={
+                activityStreaks.dayStreak > 0 || activityStreaks.weekStreak > 0
+                  ? `${activityStreaks.dayStreak} ${activityStreaks.dayStreak === 1 ? "día" : "días"} y ${activityStreaks.weekStreak} ${activityStreaks.weekStreak === 1 ? "semana" : "semanas"} seguidas.`
+                  : undefined
+              }
+              messageKey={
+                activityStreaks.dayStreak === 0 && activityStreaks.weekStreak === 0
+                  ? "streak"
+                  : undefined
+              }
               messageParams={{ streak: streakState.streak }}
             />
-            <p className="text-2xl font-bold text-white tabular-nums mt-3">{streakState.streak}</p>
-            <p className="text-xs text-[#888]">
-              sesiones seguidas según tu plan · próxima: {getNextPlannedDayLabel(routine)}
+            <div className="grid grid-cols-3 gap-2 mt-3">
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{activityStreaks.dayStreak}</p>
+                <p className="text-xs text-[#888]">días seguidos</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{activityStreaks.weekStreak}</p>
+                <p className="text-xs text-[#888]">semanas seguidas</p>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white tabular-nums">{streakState.streak}</p>
+                <p className="text-xs text-[#888]">racha del plan</p>
+              </div>
+            </div>
+            <p className="text-xs text-[#666] mt-2">
+              {activityStreaks.totalTrainingDays} días y {activityStreaks.totalTrainingWeeks} semanas con sesión
+              · próxima: {getNextPlannedDayLabel(routine)}
             </p>
             <p className="text-xs text-[#666] mt-1">
-              Esta semana: {weekSessions.done}/{weekSessions.total} sesiones del plan · 1 día de gracia/semana
+              Esta semana: {weekSessions.done}/{weekSessions.total} (máx. {weekSessions.total}/semana) · 1
+              gracia/semana en el plan
             </p>
           </div>
 
@@ -168,7 +219,7 @@ export default function RoutineProgressSummary({ routine, day, dayId }: Props) {
             </div>
           ) : (
             <div className="pt-3 border-t border-[#3C3C3C]">
-              <HappyCoach variant="encourage" size="md" animated messageKey="progressHint" />
+              <HappyCoach variant="encourage" size="md" animated={false} messageKey="progressHint" />
             </div>
           )}
         </div>
