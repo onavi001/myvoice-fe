@@ -124,6 +124,23 @@ export default function Home() {
           </Card>
         </motion.div>
       </div>
+
+      <motion.p
+        className="mt-10 text-center text-sm text-[#888] max-w-md"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+      >
+        ¿Tienes una idea o necesitas ayuda con la app?{" "}
+        <button
+          type="button"
+          onClick={() => navigate("/tu-opinion")}
+          className="text-[#5DD4F7] font-medium hover:text-[#34C759] underline-offset-2 hover:underline touch-manipulation"
+        >
+          Cuéntanos en Tu opinión
+        </button>
+        — sin compromiso.
+      </motion.p>
     </div>
   );
 }

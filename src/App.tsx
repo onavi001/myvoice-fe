@@ -24,6 +24,7 @@ import CoachesDashboard from "./pages/CoachesDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
 import ClientProfile from "./pages/ClientProfile";
 import EditProfile from "./pages/EditProfile";
+import YourVoice from "./pages/YourVoice";
 import Admin from "./pages/Admin";
 import { RoutineAiOnboardingProvider } from "./contexts/RoutineAiOnboardingContext";
 import { FeaturedMedalProvider } from "./contexts/FeaturedMedalContext";
@@ -189,6 +190,7 @@ const routes: RouteConfig[] = [
   { path: "/coach/*", element: <CoachDashboard />, protected: true },
   { path: "/coach/client/:clientId", element: <ClientProfile />, protected: true },
   { path: "/profile/edit", element: <EditProfile />, protected: true },
+  { path: "/tu-opinion", element: <YourVoice />, protected: true },
 ];
 
 function RouteSeo() {
@@ -219,6 +221,10 @@ function RouteSeo() {
     "/progress": {
       title: "Progreso | My Voice",
       description: "Monitorea tu avance y rendimiento de entrenamiento.",
+    },
+    "/tu-opinion": {
+      title: "Tu opinión | My Voice",
+      description: "Comparte ideas, problemas o sugerencias para mejorar My Voice.",
     },
     "/admin": {
       title: "Admin | My Voice",

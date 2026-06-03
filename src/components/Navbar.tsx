@@ -16,6 +16,7 @@ import {
   SparklesIcon,
   UserCircleIcon,
   ShieldCheckIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/20/solid";
 
 interface NavbarProps {
@@ -168,6 +169,22 @@ const Navbar: React.FC<NavbarProps> = ({
                   className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded-lg transition-colors touch-manipulation min-h-11"
                 >
                   <ChartBarIcon className="w-4 h-4 shrink-0" /> Progreso
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate("/tu-opinion");
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm text-[#5DD4F7] hover:bg-[#4A4A4A] rounded-lg transition-colors touch-manipulation min-h-11"
+                >
+                  <ChatBubbleLeftRightIcon className="w-4 h-4 shrink-0" />
+                  <span>
+                    Tu opinión
+                    <span className="block text-[10px] font-normal text-[#888] mt-0.5">
+                      Ideas y ayuda con la app
+                    </span>
+                  </span>
                 </button>
                 {user?.role === "admin" && (
                   <button
