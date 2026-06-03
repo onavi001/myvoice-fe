@@ -15,7 +15,8 @@ import { IExercise } from "../models/Exercise";
 import { fetchVideos } from "../utils/fetchVideos";
 import { apiClient, ApiError } from "../utils/apiClient";
 import { normalizeApiErrorMessage } from "../utils/apiErrors";
-import { calculateDayProgress } from "../utils/calculateProgress";
+import { calculateDayProgress, isDayFullyComplete } from "../utils/calculateProgress";
+import { useRoutineDayCompleteNotify } from "../contexts/RoutineDayCompleteContext";
 import {
   SESSION_COMPLETE_THRESHOLD,
   updatePlanStreakOnSessionComplete,
@@ -27,6 +28,7 @@ import { showRegenerateVideosInterstitial } from "../services/ads/admob";
 import { isNativeAndroid } from "../services/ads/admobConfig";
 
 export default function useExerciseActions() {
+  const notifyDayComplete = useRoutineDayCompleteNotify();
   const dispatch = useDispatch<AppDispatch>();
   const store = useStore<RootState>();
   const navigate = useNavigate();
@@ -116,6 +118,8 @@ export default function useExerciseActions() {
     if (!currentExercise) return;
 
     const markingComplete = !currentExercise.completed;
+    const totalExercises = day.exercises.length;
+    const completedBefore = day.exercises.filter((e) => e.completed).length;
 
     try {
       await dispatch(
@@ -144,6 +148,12 @@ export default function useExerciseActions() {
 
         const freshRoutine = store.getState().routine.routines.find((r) => r._id.toString() === routineId);
         const freshDay = freshRoutine?.days.find((d) => d._id.toString() === dayId);
+        if (freshDay && isDayFullyComplete(freshDay) && completedBefore === totalExercises - 1) {
+          notifyDayComplete?.({
+            dayName: freshDay.dayName,
+            exerciseCount: totalExercises,
+          });
+        }
         if (freshRoutine && freshDay && calculateDayProgress(freshDay) >= SESSION_COMPLETE_THRESHOLD) {
           updatePlanStreakOnSessionComplete(freshRoutine, dayId);
         }

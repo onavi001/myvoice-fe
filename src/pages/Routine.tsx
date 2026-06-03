@@ -13,6 +13,7 @@ import FreemiumGateModal from "../components/FreemiumGateModal";
 import { canUseFeature, UsageFeature } from "../utils/freemium";
 import WebAdBanner from "../components/ads/WebAdBanner";
 import { isWebPlatform } from "../services/ads/admobConfig";
+import { RoutineDayCompleteProvider } from "../contexts/RoutineDayCompleteContext";
 
 export default function RoutinePage() {
   const [workoutModeOpen, setWorkoutModeOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function RoutinePage() {
   )?.name;
 
   return (
+    <RoutineDayCompleteProvider>
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
       {loadingGenerate && <FuturisticLoader />}
       {generateError && (
@@ -143,5 +145,6 @@ export default function RoutinePage() {
         <FreemiumGateModal feature={freemiumFeature} onClose={() => setFreemiumFeature(null)} />
       )}
     </div>
+    </RoutineDayCompleteProvider>
   );
 }

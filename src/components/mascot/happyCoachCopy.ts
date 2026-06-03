@@ -11,7 +11,7 @@ const copy: Record<HappyCoachMessageKey, string> = {
     "Aún no tienes rutina. Creemos una y empezamos con el pie derecho.",
   todayWorkout: "Hoy toca entrenar. Elige empezar cuando estés listo.",
   streak: "Buen ritmo. La constancia es lo que cuenta.",
-  workoutDayComplete: "Sesión del día lista. Descansa y recupera bien.",
+  workoutDayComplete: "¡Sesión completada! Buen trabajo — compártelo si quieres.",
   timerComplete: "Series completadas. Buen trabajo.",
   progressHint: "Marca ejercicios hechos para registrar tu progreso y la racha.",
 };

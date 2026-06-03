@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import HappyCoach from "../mascot/HappyCoach";
+import { useState } from "react";
 import { XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { RoutineData } from "../../models/Routine";
 import ExerciseWorkoutDetail from "./ExerciseWorkoutDetail";
@@ -18,21 +17,11 @@ export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateEx
   const exercises = day.exercises ?? [];
   const [index, setIndex] = useState(0);
   const [toggling, setToggling] = useState(false);
-  const [showDayComplete, setShowDayComplete] = useState(false);
   const { handleToggleCompleted } = useExerciseActions();
 
   const current = exercises[index];
   const completedCount = exercises.filter((e) => e.completed).length;
   const pct = exercises.length ? Math.round((completedCount / exercises.length) * 100) : 0;
-  const allDone = exercises.length > 0 && completedCount === exercises.length;
-
-  useEffect(() => {
-    if (allDone) {
-      setShowDayComplete(true);
-      return;
-    }
-    setShowDayComplete(false);
-  }, [allDone]);
 
   const goNext = () => setIndex((i) => Math.min(i + 1, exercises.length - 1));
   const goPrev = () => setIndex((i) => Math.max(i - 1, 0));
@@ -79,16 +68,6 @@ export default function WorkoutMode({ routine, day, dayId, onClose, onGenerateEx
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 pb-28">
-        {showDayComplete && (
-          <div className="mb-4 p-3 rounded-xl border border-[#34C759]/50 bg-[#1a2e1f]">
-            <HappyCoach
-              variant="celebrate"
-              size="md"
-              animated={false}
-              messageKey="workoutDayComplete"
-            />
-          </div>
-        )}
         <ExerciseWorkoutDetail
           key={current._id.toString()}
           exercise={current}

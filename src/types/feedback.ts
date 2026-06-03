@@ -9,6 +9,28 @@ export type FeedbackItem = {
   createdAt: string;
 };
 
+export type AdminFeedbackItem = FeedbackItem & {
+  userId: string;
+  username?: string;
+  email?: string;
+  platform?: string;
+  appVersion?: string;
+};
+
+export const CATEGORY_LABEL: Record<FeedbackCategory, string> = {
+  idea: "Idea",
+  bug: "Problema",
+  help: "Ayuda",
+  praise: "Me gusta",
+  other: "Otro",
+};
+
+export const FEEDBACK_STATUS_LABEL: Record<string, string> = {
+  new: "Nuevo",
+  read: "Leído",
+  replied: "Respondido",
+};
+
 export type CreateFeedbackPayload = {
   category: FeedbackCategory;
   message: string;

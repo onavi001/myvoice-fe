@@ -1,5 +1,9 @@
 import { apiClient } from "../utils/apiClient";
-import type { CreateFeedbackPayload, FeedbackItem } from "../types/feedback";
+import type {
+  AdminFeedbackItem,
+  CreateFeedbackPayload,
+  FeedbackItem,
+} from "../types/feedback";
 
 export async function submitFeedback(payload: CreateFeedbackPayload): Promise<{
   id: string;
@@ -13,4 +17,8 @@ export async function submitFeedback(payload: CreateFeedbackPayload): Promise<{
 
 export async function fetchMyFeedback(): Promise<FeedbackItem[]> {
   return apiClient<FeedbackItem[]>("/api/feedback/mine");
+}
+
+export async function fetchAdminFeedback(): Promise<AdminFeedbackItem[]> {
+  return apiClient<AdminFeedbackItem[]>("/api/feedback/admin");
 }

@@ -11,3 +11,8 @@ export function calculateWeekProgress(routine: RoutineData): number {
   const completed = routine.days.reduce((sum, day) => sum + day.exercises.filter((ex) => ex.completed).length, 0);
   return total > 0 ? (completed / total) * 100 : 0;
 }
+
+export function isDayFullyComplete(day: RoutineData["days"][number]): boolean {
+  const total = day.exercises.length;
+  return total > 0 && day.exercises.every((ex) => Boolean(ex.completed));
+}

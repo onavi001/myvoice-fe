@@ -15,18 +15,11 @@ import Textarea from "../components/Textarea";
 import { SmallLoader } from "../components/Loader";
 import { fetchMyFeedback, submitFeedback } from "../services/feedbackApi";
 import {
+  CATEGORY_LABEL,
   FEEDBACK_CATEGORIES,
   type FeedbackCategory,
   type FeedbackItem,
 } from "../types/feedback";
-
-const CATEGORY_LABEL: Record<FeedbackCategory, string> = {
-  idea: "Idea",
-  bug: "Problema",
-  help: "Ayuda",
-  praise: "Me gusta",
-  other: "Otro",
-};
 
 function formatDate(iso: string) {
   try {
@@ -144,7 +137,6 @@ export default function YourVoice() {
           <p className="text-xs text-[#B0B0B0] leading-relaxed">
             <span className="text-[#5DD4F7] font-semibold">Próximamente:</span> ideas que ayuden a
             mejorar la app podrán recibir reconocimientos en la app (medallas, menciones en novedades).
-            Nada de dinero — solo agradecer tu voz.
           </p>
         </div>
 

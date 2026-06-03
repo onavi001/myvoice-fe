@@ -25,6 +25,7 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { ThunkError } from "../store/userManagementSlice";
+import AdminFeedbackSection from "../components/admin/AdminFeedbackSection";
 
 interface UserEditData {
   userName: string;
@@ -59,6 +60,7 @@ const Admin: React.FC = () => {
   }, [token, user, dispatch, navigate]);
 
   const handleBack = () => navigate("/routine");
+  const handleUnauthorized = useCallback(() => navigate("/login"), [navigate]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
@@ -406,6 +408,8 @@ const Admin: React.FC = () => {
               ))}
             </div>
           )}
+
+          <AdminFeedbackSection onUnauthorized={handleUnauthorized} />
 
           {toast && (
             <Toast
