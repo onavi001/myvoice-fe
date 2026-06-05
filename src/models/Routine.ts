@@ -14,6 +14,8 @@ export interface RoutineData {
   _id: string;
   userId: string;
   couchId?: string;
+  coachMessage?: string;
+  assignmentSeenAt?: string;
   name: string;
   days: {
     _id: string;

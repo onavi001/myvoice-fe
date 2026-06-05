@@ -1,4 +1,5 @@
 import RoutineSelector from "../components/routine/RoutineSelector";
+import CoachRoutineMessage from "../components/routine/CoachRoutineMessage";
 import ExerciseList from "../components/routine/ExerciseList";
 import GenerateExerciseModal from "../components/routine/GenerateExerciseModal";
 import Loader, { FuturisticLoader } from "../components/Loader";
@@ -90,6 +91,7 @@ export default function RoutinePage() {
           setSelectedDayId={setSelectedDayId}
           setSelectedDay={setSelectedDay}
         />
+        <CoachRoutineMessage routine={selectedRoutine} />
         <TodayWorkoutBanner
           routine={selectedRoutine}
           onSelectSuggestedDay={(day) => {

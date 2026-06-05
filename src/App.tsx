@@ -23,12 +23,16 @@ import OfflineNotice from "./components/OfflineNotice";
 import CoachesDashboard from "./pages/CoachesDashboard";
 import CoachDashboard from "./pages/CoachDashboard";
 import ClientProfile from "./pages/ClientProfile";
+import MyCoach from "./pages/MyCoach";
+import JoinCoach from "./pages/JoinCoach";
+import BecomeCoach from "./pages/BecomeCoach";
 import EditProfile from "./pages/EditProfile";
 import YourVoice from "./pages/YourVoice";
 import Admin from "./pages/Admin";
 import { RoutineAiOnboardingProvider } from "./contexts/RoutineAiOnboardingContext";
 import { FeaturedMedalProvider } from "./contexts/FeaturedMedalContext";
 import AppUpdateGate from "./components/AppUpdateGate";
+import { useAppDataBootstrap } from "./hooks/useAppDataBootstrap";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -85,15 +89,18 @@ const AppInitializer = memo(function AppInitializer({ children }: AppInitializer
   const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
   const [isRouteChanging, setIsRouteChanging] = useState<boolean>(false);
 
+  useAppDataBootstrap();
+
   useEffect(() => {
     dispatch(verifyUser()).finally(() => setIsInitialLoad(false));
   }, [dispatch]);
 
-  const publicPaths = ["/", "/login", "/forgot-password", "/reset-password", "/auth/forgot-password", "/auth/reset-password"];
+  const publicPaths = ["/", "/login", "/forgot-password", "/reset-password", "/auth/forgot-password", "/auth/reset-password", "/join-coach"];
 
   useEffect(() => {
     if (isInitialLoad) return;
-    const isPublicPath = publicPaths.includes(location.pathname);
+    const isPublicPath =
+      publicPaths.includes(location.pathname) || location.pathname.startsWith("/join-coach/");
     if (!token && !isPublicPath) {
       navigate("/login", { replace: true });
     } else if (token && location.pathname === "/login") {
@@ -186,6 +193,10 @@ const routes: RouteConfig[] = [
     element: <ExerciseVideos />,
     protected: true,
   },
+  { path: "/my-coach", element: <MyCoach />, protected: true },
+  { path: "/join-coach", element: <JoinCoach />, protected: false },
+  { path: "/join-coach/:code", element: <JoinCoach />, protected: false },
+  { path: "/become-coach", element: <BecomeCoach />, protected: true },
   { path: "/coaches/*", element: <CoachesDashboard />, protected: true },
   { path: "/coach/*", element: <CoachDashboard />, protected: true },
   { path: "/coach/client/:clientId", element: <ClientProfile />, protected: true },
@@ -225,6 +236,14 @@ function RouteSeo() {
     "/tu-opinion": {
       title: "Tu opinión | My Voice",
       description: "Comparte ideas, problemas o sugerencias para mejorar My Voice.",
+    },
+    "/my-coach": {
+      title: "Mi coach | My Voice",
+      description: "Tu entrenador asignado y rutinas personalizadas.",
+    },
+    "/become-coach": {
+      title: "Ser coach | My Voice",
+      description: "Solicita convertirte en coach y gestiona clientes en My Voice.",
     },
     "/admin": {
       title: "Admin | My Voice",

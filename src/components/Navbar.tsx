@@ -17,6 +17,7 @@ import {
   UserCircleIcon,
   ShieldCheckIcon,
   ChatBubbleLeftRightIcon,
+  AcademicCapIcon,
 } from "@heroicons/react/20/solid";
 
 interface NavbarProps {
@@ -49,10 +50,13 @@ const Navbar: React.FC<NavbarProps> = ({
   }, [navigate]);
 
   const handleCoachNavigation = () => {
+    setIsMenuOpen(false);
     if (user?.role === "coach") {
       navigate("/coach");
+    } else if (user?.coachId) {
+      navigate("/my-coach");
     } else {
-      navigate("/coaches");
+      navigate("/my-coach");
     }
   };
 
@@ -211,8 +215,31 @@ const Navbar: React.FC<NavbarProps> = ({
                   onClick={handleCoachNavigation}
                   className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm text-[#E0E0E0] hover:bg-[#4A4A4A] rounded-lg transition-colors touch-manipulation min-h-11"
                 >
-                  <UserIcon className="w-4 h-4" /> Coach
+                  <UserIcon className="w-4 h-4" />
+                  {user?.role === "coach"
+                    ? "Mis clientes"
+                    : user?.coachId
+                      ? "Mi coach"
+                      : "Buscar coach"}
                 </button>
+                {user?.role === "user" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate("/become-coach");
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2 text-left px-3 py-2.5 text-sm text-[#5DD4F7] hover:bg-[#4A4A4A] rounded-lg transition-colors touch-manipulation min-h-11"
+                  >
+                    <AcademicCapIcon className="w-4 h-4 shrink-0" />
+                    <span>
+                      Ser coach
+                      <span className="block text-[10px] font-normal text-[#888] mt-0.5">
+                        Solicitud para entrenar a otros
+                      </span>
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={onLogout}

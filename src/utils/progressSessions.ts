@@ -430,3 +430,13 @@ export function countWeeklyPlanSessionsFromLog(
   );
   return { done: doneIds.size, total };
 }
+
+/** Racha del plan inferida solo desde historial (sin localStorage). */
+export function computePlanStreakFromProgress(
+  routine: RoutineData,
+  progress: ProgressData[]
+): number {
+  const scoped = filterProgressForRoutine(progress, routine._id.toString());
+  const inferred = inferSessionEventsFromProgress(scoped, routine);
+  return replayPlanStreakFromLog(routine, inferred).streak;
+}

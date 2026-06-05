@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -10,20 +10,14 @@ import {
   Tooltip,
 } from 'chart.js';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/16/solid';
-import { AppDispatch, RootState } from '../store';
-import { fetchProgress } from '../store/progressSlice';
+import { RootState } from '../store';
 import { ProgressData } from '../models/Progress';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 const WeeklyExerciseChart = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const { progress } = useSelector((state: RootState) => state.progress);
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    dispatch(fetchProgress());
-  }, [dispatch]);
 
   const chartData = useMemo(() => {
     // Obtener la semana actual (lunes a domingo) según la fecha del usuario

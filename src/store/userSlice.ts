@@ -39,7 +39,7 @@ const clearPersistedToken = () => {
 
 let verifyInFlight: Promise<{ user: IUser }> | null = null;
 let lastVerifyStartedAt = 0;
-const VERIFY_DEBOUNCE_MS = 3000;
+const VERIFY_DEBOUNCE_MS = 15_000;
 
 export interface ProfileUpdateData {
   username: string;
@@ -199,6 +199,11 @@ const userSlice = createSlice({
       clearPersistedToken();
       persistUserCache(null);
     },
+    clearUserCoachLink(state) {
+      if (!state.user) return;
+      state.user = { ...state.user, coachId: undefined };
+      persistUserCache(state.user);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -270,5 +275,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { setUser, logout } = userSlice.actions;
+export const { setUser, logout, clearUserCoachLink } = userSlice.actions;
 export default userSlice.reducer;

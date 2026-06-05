@@ -55,7 +55,7 @@ export const fetchUsers = createAsyncThunk<IUser[], void, { rejectValue: ThunkEr
 
 export const updateUser = createAsyncThunk<
   IUser,
-  { userId: string; updatedUser: Partial<IUser> },
+  { userId: string; updatedUser: { name: string; email: string; role: IUser["role"] } },
   { rejectValue: ThunkError }
 >(
   "userManagement/updateUser",

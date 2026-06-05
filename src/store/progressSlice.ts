@@ -33,6 +33,8 @@ const initialState: ProgressState = {
   error: null,
 };
 
+let fetchProgressInFlight: Promise<ProgressData[]> | null = null;
+
 const toThunkError = (error: unknown, fallbackMessage: string): ThunkError => {
   const apiError = error as ApiError;
   return {
@@ -58,16 +60,33 @@ export const addProgress = createAsyncThunk<ProgressData, Omit<ProgressData, "_i
 );
 
 // Obtener el progreso del usuario
-export const fetchProgress = createAsyncThunk<ProgressData[], void, { rejectValue: ThunkError }>(
+export const fetchProgress = createAsyncThunk<
+  ProgressData[],
+  { force?: boolean } | void,
+  { rejectValue: ThunkError; state: import("./index").RootState }
+>(
   "progress/fetchProgress",
   async (_, { rejectWithValue }) => {
+    if (!fetchProgressInFlight) {
+      fetchProgressInFlight = apiClient<ProgressData[]>("/api/progress", { method: "GET" }).finally(() => {
+        fetchProgressInFlight = null;
+      });
+    }
     try {
-      const data = await apiClient<ProgressData[]>("/api/progress", { method: "GET" });
+      const data = await fetchProgressInFlight;
       const entries = Array.isArray(data) ? data : [];
       return entries.map(normalizeProgressEntry);
     } catch (error) {
       return rejectWithValue(toThunkError(error, "Error al obtener progreso"));
     }
+  },
+  {
+    condition: (arg, { getState }) => {
+      if (arg?.force) return !fetchProgressInFlight;
+      const { status, loading } = getState().progress;
+      if (loading || fetchProgressInFlight) return false;
+      return status === "idle";
+    },
   }
 );
 

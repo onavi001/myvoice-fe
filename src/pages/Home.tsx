@@ -19,7 +19,7 @@ export default function Home() {
     if (user?.role === "coach") {
       navigate("/coach");
     } else {
-      navigate("/coaches");
+      navigate("/my-coach");
     }
   };
 
@@ -119,7 +119,8 @@ export default function Home() {
               onClick={handleCoachNavigation}
               className="bg-[#34C759] text-black hover:bg-[#2DAF47] rounded-md py-2 px-6 text-sm font-semibold border border-[#2DAF47] shadow-md focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-all duration-200 flex items-center justify-center gap-2"
             >
-              <UserIcon className="w-5 h-5" /> {user?.role === "coach" ? "Ver Clientes" : "Ver Entrenadores"}
+              <UserIcon className="w-5 h-5" />{" "}
+              {user?.role === "coach" ? "Ver clientes" : user?.coachId ? "Mi coach" : "Buscar coach"}
             </Button>
           </Card>
         </motion.div>

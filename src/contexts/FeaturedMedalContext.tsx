@@ -1,16 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../store";
-import { fetchProgress } from "../store/progressSlice";
-import { fetchRoutines } from "../store/routineSlice";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { useSelector } from "react-redux";
 import {
   selectProgressEntries,
   selectRoutines,
@@ -40,23 +29,9 @@ type FeaturedMedalContextValue = {
 const FeaturedMedalContext = createContext<FeaturedMedalContextValue | null>(null);
 
 export function FeaturedMedalProvider({ children }: { children: ReactNode }) {
-  const dispatch = useDispatch<AppDispatch>();
   const progress = useSelector(selectProgressEntries);
   const routines = useSelector(selectRoutines);
-  const { token } = useSelector((state: RootState) => state.user);
-  const { status: progressStatus } = useSelector((state: RootState) => state.progress);
-  const { status: routineStatus } = useSelector((state: RootState) => state.routine);
   const [featuredRevision, setFeaturedRevision] = useState(0);
-
-  useEffect(() => {
-    if (!token) return;
-    if (routineStatus === "idle" || routineStatus === "failed") {
-      void dispatch(fetchRoutines());
-    }
-    if (progressStatus === "idle" || progressStatus === "failed") {
-      void dispatch(fetchProgress());
-    }
-  }, [token, routineStatus, progressStatus, dispatch]);
 
   const routineId = useMemo(() => {
     const fromProgressPage = localStorage.getItem(PROGRESS_ROUTINE_STORAGE_KEY);

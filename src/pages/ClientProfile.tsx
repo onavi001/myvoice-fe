@@ -2,39 +2,53 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { AppDispatch, RootState } from "../store";
-import { assignRoutine, fetchClientProfile, fetchClientRoutines } from "../store/coachSlice";
-import { fetchRoutines } from "../store/routineSlice";
-import Card from "../components/Card";
+import {
+  assignRoutine,
+  fetchClientProfile,
+  fetchClientProgress,
+  fetchClientRoutines,
+  removeClient,
+  updateClientData,
+} from "../store/coachSlice";
 import Button from "../components/Button";
 import { SmallLoader } from "../components/Loader";
-import { ArrowLeftIcon, PlusIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
+import { ArrowLeftIcon, PlusIcon } from "@heroicons/react/20/solid";
+import AssignRoutineSheet from "../components/coach/AssignRoutineSheet";
+import ClientProgressDashboard from "../components/coach/ClientProgressDashboard";
+import ClientNotesEditor from "../components/coach/ClientNotesEditor";
+import { fetchRoutines } from "../store/routineSlice";
+import { selectCoachTemplates } from "../store/selectors";
 
 export default function ClientProfile() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { clientId } = useParams<{ clientId: string }>();
-  const { selectedClient, clientRoutines, loading } = useSelector((state: RootState) => state.coach);
-  const { routines } = useSelector((state: RootState) => state.routine);
-  const [selectedRoutineId, setSelectedRoutineId] = useState<string>("");
-  const [assigning, setAssigning] = useState<boolean>(false);
+  const { selectedClient, clientRoutines, clientProgress, clientProgressLoading, loading } =
+    useSelector((state: RootState) => state.coach);
+  const coachTemplates = useSelector(selectCoachTemplates);
+  const [assignSheetOpen, setAssignSheetOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     if (!clientId) return;
-
     dispatch(fetchClientProfile(clientId));
     dispatch(fetchClientRoutines(clientId));
-    dispatch(fetchRoutines());
+    dispatch(fetchClientProgress(clientId));
   }, [clientId, dispatch]);
 
-  const handleAssignRoutine = async () => {
-    if (!selectedRoutineId || !clientId) return;
-    const routine = routines.find((r) => r._id === selectedRoutineId);
-    if (!routine) return;
+  useEffect(() => {
+    if (!assignSheetOpen || coachTemplates.length > 0) return;
+    void dispatch(fetchRoutines({ force: true }));
+  }, [assignSheetOpen, coachTemplates.length, dispatch]);
+
+  const handleAssignRoutine = async (routineId: string, message?: string) => {
+    if (!clientId) return;
     setAssigning(true);
     try {
-      await dispatch(assignRoutine({ clientId, routineId: selectedRoutineId })).unwrap();
+      await dispatch(assignRoutine({ clientId, routineId, message })).unwrap();
       await dispatch(fetchClientRoutines(clientId)).unwrap();
-      setSelectedRoutineId("");
     } catch (err: unknown) {
       console.error("Error al asignar la rutina:", err);
     } finally {
@@ -42,133 +56,142 @@ export default function ClientProfile() {
     }
   };
 
+  const handleSaveNotes = async (payload: { goals: string; notes: string }) => {
+    if (!clientId) return;
+    setSavingNotes(true);
+    try {
+      await dispatch(updateClientData({ clientId, ...payload })).unwrap();
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const handleRemoveClient = async () => {
+    if (!clientId || !selectedClient) return;
+    const confirmed = window.confirm(
+      `¿Eliminar a ${selectedClient.username} de tu lista de clientes? El cliente conserva sus rutinas, pero ya no podrás ver su progreso ni asignarle planes.`
+    );
+    if (!confirmed) return;
+
+    setRemoving(true);
+    try {
+      await dispatch(removeClient(clientId)).unwrap();
+      navigate("/coach");
+    } catch (err: unknown) {
+      console.error("Error al eliminar cliente:", err);
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   if (loading || !selectedClient) {
     return (
       <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col items-center justify-center space-y-3">
         <SmallLoader />
-        <p className="text-[#E0E0E0] text-base">Cargando perfil...</p>
+        <p className="text-base">Cargando perfil…</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
-      <div className="p-3 sm:p-6 w-full mx-2 sm:max-w-3xl sm:mx-auto flex-1">
-        <Button
-          variant="secondary"
+      <div className="p-4 max-w-lg mx-auto w-full flex-1 pb-8">
+        <button
+          type="button"
           onClick={() => navigate("/coach")}
-          className="mb-6 bg-[#4A4A4A] text-[#E0E0E0] active:bg-[#5A5A5A]/80 rounded-lg px-5 py-3 text-base font-semibold border border-[#4A4A4A] shadow-md transition-colors flex items-center gap-2 min-h-12"
+          className="mb-4 flex items-center gap-1.5 text-sm text-[#B0B0B0] touch-manipulation min-h-10"
         >
-          <ArrowLeftIcon className="w-6 h-6" /> Volver a Clientes
-        </Button>
-        <h1 className="text-3xl sm:text-4xl font-bold mb-6">Perfil de {selectedClient.username}</h1>
+          <ArrowLeftIcon className="w-5 h-5" /> Clientes
+        </button>
 
-        <Card className="p-2 sm:p-4 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
-          <h2 className="text-base sm:text-lg font-semibold text-[#FFD700] mb-2">Información del Cliente</h2>
-          <div className="space-y-2">
-            <div>
-              <label className="block text-[#E0E0E0] text-base font-medium mb-1">Nombre</label>
-              <p className="text-[#E0E0E0] text-sm">{selectedClient.username}</p>
-            </div>
-            <div>
-              <label className="block text-[#E0E0E0] text-base font-medium mb-1">Objetivos</label>
-              <p className="text-[#E0E0E0] text-sm">
-                {selectedClient.goals?.length ? selectedClient.goals.join(", ") : "Sin objetivos"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-[#E0E0E0] text-base font-medium mb-1">Notas del Cliente</label>
-              <p className="text-[#E0E0E0] text-sm break-words">{selectedClient.notes || "Sin notas"}</p>
-            </div>
-            {selectedClient.trainingProfile ? (
-              <div className="pt-2 border-t border-[#4A4A4A]">
-                <label className="block text-[#E0E0E0] text-base font-medium mb-2">
-                  Perfil de entrenamiento (Rutina IA)
-                </label>
-                <ul className="text-[#E0E0E0] text-sm space-y-1">
-                  <li>
-                    Sexo biológico:{" "}
-                    {selectedClient.trainingProfile.biologicalSex === "femenino"
-                      ? "Femenino"
-                      : "Masculino"}
-                  </li>
-                  <li>Altura: {selectedClient.trainingProfile.heightCm} cm</li>
-                  <li>Peso: {selectedClient.trainingProfile.weightKg} kg</li>
-                  <li>
-                    Tiempo por sesión: {selectedClient.trainingProfile.sessionDurationMin} min
-                  </li>
-                </ul>
-              </div>
-            ) : (
-              <div className="pt-2 border-t border-[#4A4A4A]">
-                <p className="text-[#888] text-sm">Sin perfil de entrenamiento guardado aún.</p>
-              </div>
-            )}
-          </div>
-        </Card>
+        <header className="mb-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#34C759]">Cliente</p>
+          <h1 className="text-xl font-bold truncate">{selectedClient.username}</h1>
+        </header>
 
-        <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#FFD700] mb-4">Asignar Rutina</h2>
-          <div className="flex flex-col gap-3">
-            <div className="relative w-full">
-              <select
-                value={selectedRoutineId}
-                onChange={(e) => setSelectedRoutineId(e.target.value)}
-                className="w-full bg-[#333333] border border-[#4A4A4A] text-[#E0E0E0] rounded-lg p-4 text-base focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors appearance-none"
-              >
-                <option value="">Selecciona una rutina</option>
-                {routines.map((routine) => (
-                  <option key={routine._id} value={routine._id}>
-                    {routine.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDownIcon className="absolute right-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-[#34C759]" />
-            </div>
-            <Button
-              onClick={handleAssignRoutine}
-              disabled={assigning || !selectedRoutineId}
-              className="w-full bg-[#34C759] text-black active:bg-[#4CAF50]/80 rounded-lg py-3 px-5 text-base font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/90 disabled:opacity-80 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
-            >
-              {assigning ? <SmallLoader /> : <><PlusIcon className="w-6 h-6" /> Asignar</>}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => navigate("/routine-form")}
-              className="w-full bg-[#42A5F5] text-black active:bg-[#1E88E5]/80 rounded-lg py-3 px-5 text-base font-semibold border border-[#1E88E5] shadow-md transition-colors flex items-center justify-center gap-2 min-h-12"
-            >
-              <PlusIcon className="w-6 h-6" /> Crear Rutina
-            </Button>
-          </div>
-        </Card>
+        <ClientProgressDashboard
+          progress={clientProgress}
+          routines={clientRoutines}
+          loading={clientProgressLoading}
+        />
 
-        <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#FFD700] mb-4">Rutinas Asignadas</h2>
-          {clientRoutines && clientRoutines.length === 0 ? (
-            <p className="text-[#E0E0E0] text-base">No hay rutinas asignadas.</p>
+        <ClientNotesEditor
+          client={selectedClient}
+          saving={savingNotes}
+          onSave={handleSaveNotes}
+        />
+
+        <div className="flex flex-col gap-2 mb-5">
+          <Button
+            type="button"
+            onClick={() => setAssignSheetOpen(true)}
+            className="w-full min-h-12 rounded-xl font-semibold flex items-center justify-center gap-2"
+          >
+            <PlusIcon className="w-5 h-5" aria-hidden />
+            Asignar rutina
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/routine-form")}
+            className="w-full min-h-11 rounded-xl text-sm"
+          >
+            Crear plantilla nueva
+          </Button>
+        </div>
+
+        <section>
+          <h2 className="text-sm font-semibold text-[#E0E0E0] mb-2">
+            Rutinas asignadas ({clientRoutines?.length ?? 0})
+          </h2>
+          {!clientRoutines?.length ? (
+            <p className="text-sm text-[#888] text-center py-6">Aún no hay rutinas para este cliente.</p>
           ) : (
-            <div className="space-y-3">
-              {clientRoutines.map((routine, index) => (
-                <Card
+            <ul className="space-y-2">
+              {clientRoutines.map((routine) => (
+                <li
                   key={routine._id}
-                  className={`p-3 bg-${index % 2 === 0 ? "[#252525]" : "[#282828]"} border border-[#4A4A4A] rounded-lg shadow-sm transition-shadow duration-300`}
+                  className="rounded-xl border border-[#3A3A3A] bg-[#252525] px-4 py-3 flex items-center justify-between gap-2"
                 >
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-base font-semibold text-[#E0E0E0]">{routine.name}</h3>
-                    <Button
-                      variant="secondary"
-                      onClick={() => navigate(`/routine-edit/${routine._id}`)}
-                      className="bg-[#FFD700] text-black active:bg-[#FFC107]/80 rounded-lg px-4 py-2 text-base font-semibold border border-[#FFC107] shadow-md transition-colors min-h-12"
-                    >
-                      Ver/Editar
-                    </Button>
-                  </div>
-                </Card>
+                  <p className="text-sm font-semibold truncate">{routine.name}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate(`/routine-edit/${routine._id}`)}
+                    className="shrink-0 text-xs min-h-9 px-3 rounded-lg"
+                  >
+                    Editar
+                  </Button>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </Card>
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-[#EF5350]/25 bg-[#252525] p-4">
+          <p className="text-sm font-semibold text-[#E0E0E0] mb-1">Eliminar cliente</p>
+          <p className="text-xs text-[#888] mb-3">
+            El cliente mantiene sus rutinas y progreso. Solo se rompe el vínculo contigo.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleRemoveClient}
+            disabled={removing}
+            className="w-full min-h-11 rounded-xl text-sm text-[#FF8A80] border-[#EF5350]/40 hover:bg-[#EF5350]/10"
+          >
+            {removing ? "Eliminando…" : "Eliminar de mi lista"}
+          </Button>
+        </section>
       </div>
+
+      <AssignRoutineSheet
+        open={assignSheetOpen}
+        onClose={() => setAssignSheetOpen(false)}
+        routines={coachTemplates}
+        assigning={assigning}
+        onAssign={handleAssignRoutine}
+      />
     </div>
   );
 }

@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../store";
-import { fetchRoutineById, fetchRoutines, ThunkError } from "../store/routineSlice";
+import { fetchRoutineById, ThunkError } from "../store/routineSlice";
 import useRoutineData from "./useRoutineData";
 import useExerciseActions from "./useExerciseActions";
 import { IExercise } from "../models/Exercise";
+import { selectPersonalRoutines } from "../store/selectors";
 
 const asId = (value: unknown) => String(value ?? "");
 
@@ -13,11 +14,10 @@ export function useRoutinePageController() {
   const dispatch: AppDispatch = useDispatch();
   const navigate = useNavigate();
   const { token, loading: userLoading } = useSelector((state: RootState) => state.user);
+  const routines = useSelector(selectPersonalRoutines);
   const {
-    routines,
     loading: routinesLoading,
     error: routinesError,
-    status: routineStatus,
   } = useSelector((state: RootState) => state.routine);
   const { loading, error, selectedRoutine, selectedDay, selectedDayId, setSelectedDay, setSelectedDayId } = useRoutineData();
   const { handleNewExercise, handleSelectExercise } = useExerciseActions();
@@ -31,14 +31,8 @@ export function useRoutinePageController() {
   useEffect(() => {
     if (!token) {
       navigate("/login");
-      return;
     }
-    if (routinesLoading) return;
-    // Empty array after success is valid — do not refetch or we loop forever.
-    if (routineStatus === "idle" || routineStatus === "failed") {
-      dispatch(fetchRoutines());
-    }
-  }, [token, routineStatus, routinesLoading, dispatch, navigate]);
+  }, [token, navigate]);
 
   useEffect(() => {
     if (!selectedRoutine || selectedRoutine.days.length === 0) return;
@@ -68,12 +62,13 @@ export function useRoutinePageController() {
       );
     });
 
-    if (!needsHydration) return;
+    if (!needsHydration) {
+      hydratedRoutineIdsRef.current.add(routineId);
+      return;
+    }
 
     hydratedRoutineIdsRef.current.add(routineId);
-    dispatch(fetchRoutineById(routineId)).catch(() => {
-      hydratedRoutineIdsRef.current.delete(routineId);
-    });
+    void dispatch(fetchRoutineById(routineId));
   }, [dispatch, selectedRoutine]);
 
   const onGenerateExercise = async (routineId: string, dayId: string, exerciseId: string) => {

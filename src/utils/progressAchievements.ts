@@ -8,6 +8,7 @@ import {
   countPerfectPlanWeeksGlobal,
   buildGlobalSessionLog,
   filterProgressForRoutine,
+  computePlanStreakFromProgress,
 } from "./progressSessions";
 import { loadPlanStreakState } from "./planStreak";
 
@@ -314,6 +315,37 @@ export function buildAchievementStats(
     maxPlanStreak,
     hasAnyRoutine: totalRoutines >= 1,
     hasAiRoutine: hasAiRoutineCreated(),
+  };
+}
+
+export function buildCoachAchievementStats(
+  allProgress: ProgressData[],
+  routines: RoutineData[] = []
+): AchievementStats {
+  const globalLog = buildGlobalSessionLog(allProgress, routines);
+
+  const dayKeys = new Set<string>();
+  for (const entry of globalLog) {
+    dayKeys.add(localDateKey(new Date(entry.at)));
+  }
+  for (const entry of allProgress) {
+    if (entry.completed) dayKeys.add(localDateKey(new Date(entry.date)));
+  }
+
+  let maxPlanStreak = 0;
+  for (const routine of routines) {
+    const streak = computePlanStreakFromProgress(routine, allProgress);
+    maxPlanStreak = Math.max(maxPlanStreak, streak);
+  }
+
+  return {
+    totalTrainingDays: dayKeys.size,
+    perfectWeeksCount: countPerfectPlanWeeksGlobal(allProgress, routines),
+    maxWeekStreak: computeMaxCalendarWeekStreak(globalLog),
+    maxDayStreak: computeMaxCalendarDayStreak([...dayKeys]),
+    maxPlanStreak,
+    hasAnyRoutine: routines.length >= 1,
+    hasAiRoutine: false,
   };
 }
 

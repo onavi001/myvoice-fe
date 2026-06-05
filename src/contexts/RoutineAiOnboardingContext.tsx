@@ -8,9 +8,8 @@ import {
   type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "../store";
-import { fetchRoutines } from "../store/routineSlice";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
 import {
   isRoutineAiOnboardingDone,
   markRoutineAiOnboardingDone,
@@ -52,11 +51,10 @@ function nextStep(current: RoutineAiOnboardingStep): RoutineAiOnboardingStep | n
 }
 
 export function RoutineAiOnboardingProvider({ children }: { children: ReactNode }) {
-  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, token } = useSelector((state: RootState) => state.user);
-  const { routines, status: routineStatus } = useSelector((state: RootState) => state.routine);
+  const { routines } = useSelector((state: RootState) => state.routine);
   const [step, setStep] = useState<RoutineAiOnboardingStep | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -70,13 +68,6 @@ export function RoutineAiOnboardingProvider({ children }: { children: ReactNode 
     routines.length === 0;
 
   const isActive = eligible && step !== null;
-
-  useEffect(() => {
-    if (!token || !userId || isRoutineAiOnboardingDone(userId)) return;
-    if (routineStatus === "idle" || routineStatus === "failed") {
-      void dispatch(fetchRoutines());
-    }
-  }, [token, userId, routineStatus, dispatch]);
 
   useEffect(() => {
     if (!eligible || step !== null) return;

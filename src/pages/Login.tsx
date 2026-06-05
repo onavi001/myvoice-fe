@@ -8,13 +8,21 @@ import Input from "../components/Input";
 import { motion } from "framer-motion";
 import gymAI from "/gymAI.png";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import InstallPrompt from "../components/InstallPrompt";
 
 export default function Login() {
   const dispatch: AppDispatch = useDispatch();
   const { user, loading } = useSelector((state: RootState) => state.user);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectAfterAuth =
+    typeof location.state === "object" &&
+    location.state &&
+    "from" in location.state &&
+    typeof location.state.from === "string"
+      ? location.state.from
+      : "/home";
 
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({ username: "", email: "", password: "" });
@@ -22,9 +30,9 @@ export default function Login() {
 
   useEffect(() => {
     if (user && !loading) {
-        navigate("/home");
+      navigate(redirectAfterAuth);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, redirectAfterAuth]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,7 +47,7 @@ export default function Login() {
       } else {
         await dispatch(loginUser({ email: formData.email, password: formData.password })).unwrap();
       }
-      navigate("/home");
+      navigate(redirectAfterAuth);
     } catch {
       setFormError("Error al procesar. Verifica tus datos.");
     }

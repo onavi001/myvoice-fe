@@ -4,8 +4,8 @@ import Calendar from 'react-calendar';
 import styled from 'styled-components';
 import 'react-calendar/dist/Calendar.css';
 import { AppDispatch, RootState } from '../store';
-import { fetchRoutines, fetchRoutineById } from '../store/routineSlice';
-import { addProgress, fetchProgress } from '../store/progressSlice';
+import { fetchRoutineById } from '../store/routineSlice';
+import { addProgress } from '../store/progressSlice';
 import { RoutineData } from '../models/Routine';
 import { ProgressData } from '../models/Progress';
 
@@ -72,12 +72,6 @@ const ExerciseCalendar = () => {
   const [newCompleted, setNewCompleted] = useState<boolean>(false);
   const [days, setDays] = useState<RoutineData['days']>([]);
   const [exercises, setExercises] = useState<RoutineData['days'][0]['exercises']>([]);
-
-  // Fetch routines and progress
-  useEffect(() => {
-    dispatch(fetchRoutines());
-    dispatch(fetchProgress());
-  }, [dispatch]);
 
   // Update days when routine changes
   useEffect(() => {

@@ -23,13 +23,18 @@ const initialState: TrainingProfileState = {
 export const fetchTrainingProfile = createAsyncThunk<
   TrainingProfile | null,
   void,
-  { rejectValue: ThunkError }
+  { rejectValue: ThunkError; state: import("./index").RootState }
 >("trainingProfile/fetch", async (_, { rejectWithValue }) => {
   try {
     return await apiClient<TrainingProfile | null>("/api/profile/training");
   } catch (error) {
     return rejectWithValue(mapThunkError(error, "Error al cargar tu perfil de entrenamiento"));
   }
+}, {
+  condition: (_, { getState }) => {
+    const { loaded, loading } = getState().trainingProfile;
+    return !loaded && !loading;
+  },
 });
 
 export const saveTrainingProfile = createAsyncThunk<

@@ -1,9 +1,9 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../store";
 import { selectRoutine } from "../../store/routineSlice";
-import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { RoutineData } from "../../models/Routine";
+import { selectPersonalRoutines } from "../../store/selectors";
 
 const asId = (value: unknown) => String(value ?? "");
 
@@ -17,13 +17,17 @@ export default function RoutineSelector({
   setSelectedDay: (day: RoutineData["days"][number]) => void;
 }) {
   const dispatch = useDispatch<AppDispatch>();
-  const { routines, selectedRoutineId } = useSelector((state: RootState) => state.routine);
+  const routines = useSelector(selectPersonalRoutines);
+  const { selectedRoutineId } = useSelector((state: RootState) => state.routine);
+  const { user } = useSelector((state: RootState) => state.user);
+  const coachId = user?.coachId;
 
   return (
     <>
       <div className="flex overflow-x-auto space-x-2 mb-4 scrollbar-hidden">
         {routines.map((routine) => {
           const routineId = asId(routine._id);
+          const isCoachRoutine = Boolean(coachId && routine.couchId && routine.couchId === coachId);
           return (
           <button
             key={routineId}
@@ -34,13 +38,16 @@ export default function RoutineSelector({
               setSelectedDayId(firstDay ? firstDay._id.toString() : null);
               setSelectedDay(firstDay || { _id: "", dayName: "", exercises: [], musclesWorked: [], warmupOptions: [] });
             }}
-            className={`px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm truncate max-w-[120px] ${
+            className={`px-2 py-1 rounded-full text-xs font-medium transition-colors shadow-sm truncate max-w-[140px] flex items-center gap-1 ${
               asId(selectedRoutineId) === routineId
                 ? "bg-white text-black"
                 : "bg-[#2D2D2D] text-[#B0B0B0] hover:bg-[#4A4A4A]"
             }`}
           >
-            {routine.name}
+            {isCoachRoutine && (
+              <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-[#34C759]" aria-hidden />
+            )}
+            <span className="truncate">{routine.name}</span>
           </button>
           );
         })}

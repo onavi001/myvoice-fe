@@ -1,21 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useMemo, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { ChevronDownIcon, ChevronUpIcon, XMarkIcon } from '@heroicons/react/16/solid';
-import { AppDispatch, RootState } from '../store';
-import { fetchProgress } from '../store/progressSlice';
+import { RootState } from '../store';
 import { ProgressData } from '../models/Progress';
 import { RoutineData } from '../models/Routine';
 
 const WeeklyProgressCalendar = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const { progress } = useSelector((state: RootState) => state.progress);
   const { routines, selectedRoutineId } = useSelector((state: RootState) => state.routine);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
-  useEffect(() => {
-    dispatch(fetchProgress());
-  }, [dispatch]);
 
   const weekData = useMemo(() => {
     // Obtener la semana actual (lunes a domingo)

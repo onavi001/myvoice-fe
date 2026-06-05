@@ -5,6 +5,7 @@ import Chatbot from "../components/Chatbot";
 import { useAdMobBanner } from "../hooks/useAdMobBanner";
 import { AdMobInsetContext } from "../context/AdMobInsetContext";
 import { RootState } from "../store";
+import CoachAssignmentNotifier from "./coach/CoachAssignmentNotifier";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ...(contentPaddingBottom != null ? { paddingBottom: contentPaddingBottom } : {}),
           }}
         >
+          <CoachAssignmentNotifier />
           {children}
         </main>
         <button

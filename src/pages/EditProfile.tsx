@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../store";
 import { ProfileUpdateData, updateProfile } from "../store/userSlice";
-import { createCoachRequest, fetchUserCoachRequest } from "../store/userManagementSlice";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Input from "../components/Input";
@@ -29,14 +28,12 @@ interface FormErrors {
   goals?: string;
   bio?: string;
   notes?: string;
-  coachRequest?: string;
 }
 
 export default function EditProfile() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { user, loading: userLoading, error: userError } = useSelector((state: RootState) => state.user);
-  const { userCoachRequest, loading: managementLoading, error: managementError } = useSelector((state: RootState) => state.userManagement);
   const [formData, setFormData] = useState<FormData>({
     username: "",
     email: "",
@@ -46,10 +43,8 @@ export default function EditProfile() {
     goals: "",
     notes: "",
   });
-  const [coachRequestMessage, setCoachRequestMessage] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState<boolean>(false);
-  const [submittingCoachRequest, setSubmittingCoachRequest] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -62,11 +57,8 @@ export default function EditProfile() {
         goals: user.goals?.join(", ") || "",
         notes: user.notes || "",
       });
-      if (user.role === "user") {
-        dispatch(fetchUserCoachRequest());
-      }
     }
-  }, [user, dispatch]);
+  }, [user]);
 
   if (!user) {
     navigate("/login");
@@ -75,13 +67,8 @@ export default function EditProfile() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    if (name === "coachRequestMessage") {
-      setCoachRequestMessage(value);
-      setFormErrors((prev) => ({ ...prev, coachRequest: undefined }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
   const validateForm = (): boolean => {
@@ -150,17 +137,6 @@ export default function EditProfile() {
     return Object.keys(errors).length === 0;
   };
 
-  const validateCoachRequest = (): boolean => {
-    const errors: FormErrors = {};
-    if (!coachRequestMessage.trim()) {
-      errors.coachRequest = "El mensaje es obligatorio";
-    } else if (coachRequestMessage.length > 500) {
-      errors.coachRequest = "El mensaje no puede exceder 500 caracteres";
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setSaving(true);
@@ -194,23 +170,9 @@ export default function EditProfile() {
     }
   };
 
-  const handleCoachRequest = async () => {
-    if (!validateCoachRequest()) return;
-    setSubmittingCoachRequest(true);
-    try {
-      await dispatch(createCoachRequest({ message: coachRequestMessage })).unwrap();
-      setCoachRequestMessage("");
-    } catch (error: unknown) {
-      const errorMessage = typeof error === "string" ? error : "Error al enviar la solicitud";
-      setFormErrors({ coachRequest: errorMessage });
-    } finally {
-      setSubmittingCoachRequest(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
-      {(userLoading || managementLoading) && <Loader />}
+      {userLoading && <Loader />}
       <div className="p-3 sm:p-6 w-full mx-2 sm:max-w-3xl sm:mx-auto flex-1">
         <Button
           variant="secondary"
@@ -323,45 +285,20 @@ export default function EditProfile() {
           </div>
         </Card>
 
-        {user.role === "user" && (!userCoachRequest || userCoachRequest.status === "rejected") && (
-          <Card className="p-3 sm:p-6 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#FFD700] mb-4">Solicitar Ser Coach</h2>
-            {managementError && (
-              <p className="text-red-500 text-sm mb-4 text-center">{managementError}</p>
-            )}
-            {userCoachRequest && (
-              <p className="text-[#E0E0E0] text-sm mb-4">
-                Estado de la solicitud: {userCoachRequest.status === "pending" ? "Pendiente" : "Rechazada"}
-              </p>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[#E0E0E0] text-base font-medium mb-1">
-                  Mensaje para los Administradores
-                </label>
-                <Textarea
-                  name="coachRequestMessage"
-                  value={coachRequestMessage}
-                  onChange={handleChange}
-                  placeholder="Explica por qué quieres ser coach..."
-                  className="w-full bg-[#2D2D2D] border border-[#4A4A4A] text-[#E0E0E0] placeholder-[#CCCCCC] rounded-lg p-4 text-base focus:ring-2 focus:ring-[#34C759] focus:ring-offset-2 focus:ring-offset-[#1A1A1A] transition-colors h-28 resize-none"
-                />
-                {formErrors.coachRequest && (
-                  <p className="text-red-500 text-sm mt-1">{formErrors.coachRequest}</p>
-                )}
-              </div>
-              <Button
-                onClick={handleCoachRequest}
-                disabled={submittingCoachRequest || (userCoachRequest?.status === "pending")}
-                className="w-full bg-[#66BB6A] text-black active:bg-[#4CAF50]/80 rounded-lg py-3 px-5 text-base font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/90 disabled:opacity-80 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 min-h-12"
-              >
-                {submittingCoachRequest ? (
-                  <SmallLoader />
-                ) : (
-                  <><CheckIcon className="w-6 h-6" /> Enviar Solicitud de Coach</>
-                )}
-              </Button>
-            </div>
+        {user.role === "user" && (
+          <Card className="p-4 bg-[#252525] border-2 border-[#5DD4F7]/25 rounded-lg shadow-md mb-6">
+            <h2 className="text-base font-semibold text-[#5DD4F7] mb-2">Programa coach</h2>
+            <p className="text-sm text-[#B0B0B0] mb-4">
+              ¿Quieres entrenar a otros? Envía tu solicitud y el equipo la revisará.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/become-coach")}
+              className="w-full min-h-11 rounded-xl text-sm"
+            >
+              Solicitar ser coach
+            </Button>
           </Card>
         )}
       </div>

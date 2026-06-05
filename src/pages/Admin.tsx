@@ -78,9 +78,22 @@ const Admin: React.FC = () => {
   );
 
   const handleSaveUser = async (userId: string) => {
+    const user = users.find((u) => u._id === userId);
+    const edits = editData[userId];
+    if (!user || !edits) return;
+
     setSavingUser((prev) => ({ ...prev, [userId]: true }));
     try {
-      await dispatch(updateUser({ userId, updatedUser: editData[userId] })).unwrap();
+      await dispatch(
+        updateUser({
+          userId,
+          updatedUser: {
+            name: edits.userName ?? user.username,
+            email: edits.email ?? user.email,
+            role: edits.role ?? user.role,
+          },
+        })
+      ).unwrap();
       setToast({ message: "Usuario actualizado correctamente", variant: "success" });
       setEditData((prev) => {
         const newData = { ...prev };

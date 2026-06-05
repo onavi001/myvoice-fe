@@ -4,6 +4,8 @@ import { IDay } from "../models/Day";
 import { setAsyncFailed, setAsyncLoading, setAsyncSucceeded } from "./asyncState";
 import { apiClient, ApiError } from "../utils/apiClient";
 import { toThunkError as mapThunkError } from "../utils/apiErrors";
+import { markAssignmentSeen } from "./coachSlice";
+import type { RootState } from "./index";
 
 export interface ThunkError {
   message: string;
@@ -44,6 +46,8 @@ const initialState: RoutineState = {
 const AI_REQUEST_TIMEOUT_MS = 90_000;
 const toId = (value: unknown) => String(value ?? "");
 
+let fetchRoutinesInFlight: Promise<RoutineData[]> | null = null;
+
 const upsertRoutine = (routines: RoutineData[], next: RoutineData) => {
   const index = routines.findIndex((r) => toId(r._id) === toId(next._id));
   if (index === -1) {
@@ -57,14 +61,31 @@ const toThunkError = (error: unknown, fallbackMessage: string, aiLongRunning = f
   mapThunkError(error, fallbackMessage, { aiLongRunning });
 
 // Fetch todas las rutinas del usuario
-export const fetchRoutines = createAsyncThunk<RoutineData[], void, { rejectValue: ThunkError }>(
+export const fetchRoutines = createAsyncThunk<
+  RoutineData[],
+  { force?: boolean } | void,
+  { rejectValue: ThunkError; state: RootState }
+>(
   "routine/fetchRoutines",
   async (_, { rejectWithValue }) => {
+    if (!fetchRoutinesInFlight) {
+      fetchRoutinesInFlight = apiClient<RoutineData[]>("/api/routines", { method: "GET" }).finally(() => {
+        fetchRoutinesInFlight = null;
+      });
+    }
     try {
-      return await apiClient<RoutineData[]>("/api/routines", { method: "GET" });
+      return await fetchRoutinesInFlight;
     } catch (error) {
       return rejectWithValue(toThunkError(error, "Error al obtener rutinas"));
     }
+  },
+  {
+    condition: (arg, { getState }) => {
+      if (arg?.force) return !fetchRoutinesInFlight;
+      const { status, loading } = getState().routine;
+      if (loading || fetchRoutinesInFlight) return false;
+      return status === "idle";
+    },
   }
 );
 
@@ -409,11 +430,23 @@ export const generateRoutineFromImport = createAsyncThunk<
 const routineSlice = createSlice({
   name: "routine",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCoachRoutineMarkers(state, action: PayloadAction<{ coachId: string }>) {
+      const coachId = action.payload.coachId;
+      for (const routine of state.routines) {
+        if (routine.couchId === coachId) {
+          routine.couchId = undefined;
+          routine.coachMessage = undefined;
+          routine.assignmentSeenAt = undefined;
+        }
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Fetch Routine by ID
       .addCase(fetchRoutineById.fulfilled, (state, action: PayloadAction<RoutineData>) => {
+        state.loading = false;
         state.status = "succeeded";
         const index = state.routines.findIndex((r) => toId(r._id) === toId(action.payload._id));
         if (index !== -1) {
@@ -421,14 +454,14 @@ const routineSlice = createSlice({
         } else {
           state.routines.push(action.payload);
         }
-        state.selectedRoutineId = toId(action.payload._id);
-        
-      }
-      )
+        if (!state.selectedRoutineId) {
+          state.selectedRoutineId = toId(action.payload._id);
+        }
+      })
       .addCase(fetchRoutineById.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
-        state.status = "failed";
+        // Detail fetch must not flip list status to "failed" or bootstrap hooks refetch /api/routines in a loop.
+        state.loading = false;
         state.error = action.payload?.message ?? "Error desconocido";
-        //state.loading = false;
       })
       // Reset progress of a day
       .addCase(resetDayProgress.pending, (state) => {
@@ -681,8 +714,15 @@ const routineSlice = createSlice({
       })
       .addCase(generateRoutineFromImport.rejected, (state, action: PayloadAction<ThunkError | undefined>) => {
         setAsyncFailed(state, action.payload?.message ?? "Error al importar rutina");
+      })
+      .addCase(markAssignmentSeen.fulfilled, (state, action: PayloadAction<string>) => {
+        const routine = state.routines.find((r) => toId(r._id) === toId(action.payload));
+        if (routine) {
+          routine.assignmentSeenAt = new Date().toISOString();
+        }
       });
   },
 });
 
+export const { clearCoachRoutineMarkers } = routineSlice.actions;
 export default routineSlice.reducer;

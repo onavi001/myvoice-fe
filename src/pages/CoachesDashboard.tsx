@@ -1,22 +1,45 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { AppDispatch, RootState } from "../store";
-import { fetchCoaches, requestCoach } from "../store/coachSlice";
+import { fetchCoaches } from "../store/coachSlice";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { SmallLoader } from "../components/Loader";
 import { UserPlusIcon } from "@heroicons/react/20/solid";
+import CoachRequestProfileSheet from "../components/coach/CoachRequestProfileSheet";
+import { useSubmitCoachRequest } from "../hooks/useSubmitCoachRequest";
+import { buildCoachRequestProfileForm, emptyCoachRequestProfileForm, type CoachRequestProfileForm } from "../utils/coachRequestProfile";
+import { fetchTrainingProfile } from "../store/trainingProfileSlice";
+
+type PendingCoach = { id: string; username: string };
 
 export default function CoachesDashboard() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { token, user, loading: userLoading } = useSelector((state: RootState) => state.user);
   const { coaches, loading: coachLoading, error } = useSelector((state: RootState) => state.coach);
-  const [requesting, setRequesting] = useState<string | null>(null);
+  const { profile: trainingProfile, loaded: trainingProfileLoaded, loading: trainingProfileLoading } =
+    useSelector((state: RootState) => state.trainingProfile);
+  const [pendingCoach, setPendingCoach] = useState<PendingCoach | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const { submitCoachRequest, submitting } = useSubmitCoachRequest();
   const { role } = user || {};
+
+  const profileInitial = useMemo(
+    () =>
+      user
+        ? buildCoachRequestProfileForm(user, trainingProfile)
+        : emptyCoachRequestProfileForm(),
+    [user, trainingProfile]
+  );
+
+  useEffect(() => {
+    if (pendingCoach && token && !trainingProfileLoaded && !trainingProfileLoading) {
+      void dispatch(fetchTrainingProfile());
+    }
+  }, [pendingCoach, token, trainingProfileLoaded, trainingProfileLoading, dispatch]);
 
   useEffect(() => {
     if (!token) {
@@ -35,18 +58,22 @@ export default function CoachesDashboard() {
     }
   }, [notification]);
 
-  const handleRequestCoach = async (coachId: string) => {
-    setRequesting(coachId);
+  const handleOpenRequest = (coach: { _id: string; username: string }) => {
+    setActionError(null);
+    setPendingCoach({ id: coach._id, username: coach.username });
+  };
+
+  const handleSubmitRequest = async (profile: CoachRequestProfileForm) => {
+    if (!pendingCoach) return;
     setActionError(null);
     try {
-      await dispatch(requestCoach(coachId)).unwrap();
+      await submitCoachRequest({ mode: "id", coachId: pendingCoach.id }, profile);
+      setPendingCoach(null);
       setNotification({ message: "Solicitud enviada. Espera la aprobación del coach.", type: "success" });
     } catch (err) {
       console.error(err);
       setActionError("Error al enviar la solicitud");
-      setNotification({ message: "Error al enviar la solicitud", type: "error" });
-    } finally {
-      setRequesting(null);
+      throw err;
     }
   };
 
@@ -62,7 +89,18 @@ export default function CoachesDashboard() {
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-[#E0E0E0] flex flex-col">
       <div className="p-4 sm:p-6 max-w-3xl mx-auto flex-1">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-8">Coaches Disponibles</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4">Coaches Disponibles</h1>
+        <div className="mb-6 rounded-xl border border-[#3A3A3A] bg-[#252525] p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm text-[#B0B0B0] flex-1">¿Tienes código de invitación de tu coach?</p>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/join-coach")}
+            className="min-h-11 rounded-xl text-sm shrink-0"
+          >
+            Unirme con código
+          </Button>
+        </div>
         {(error || actionError) && (
           <Card className="p-4 bg-[#252525] border-2 border-[#4A4A4A] rounded-lg shadow-md mb-8">
             <p className="text-red-500 text-xs font-medium text-center">{error || actionError}</p>
@@ -99,7 +137,6 @@ export default function CoachesDashboard() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <div>
                     <h2 className="text-lg font-semibold text-[#E0E0E0]">{coach.username}</h2>
-                    <p className="text-sm text-[#E0E0E0]">{coach.email}</p>
                     {coach.specialties && coach.specialties.length > 0 && (
                       <p className="text-sm text-[#CCCCCC] mt-1">
                         Especialidades: {coach.specialties.join(", ")}
@@ -109,17 +146,11 @@ export default function CoachesDashboard() {
                   </div>
                   <Button
                     variant="secondary"
-                    onClick={() => handleRequestCoach(coach._id)}
-                    disabled={requesting === coach._id}
+                    onClick={() => handleOpenRequest(coach)}
+                    disabled={submitting && pendingCoach?.id === coach._id}
                     className="w-full sm:w-auto bg-[#34C759] text-black hover:bg-[#4CAF50] rounded-lg px-4 py-2 text-sm font-semibold border border-[#4CAF50] shadow-md disabled:bg-[#4CAF50]/80 disabled:opacity-75 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                   >
-                    {requesting === coach._id ? (
-                      <SmallLoader />
-                    ) : (
-                      <>
-                        <UserPlusIcon className="w-5 h-5" /> Solicitar Coach
-                      </>
-                    )}
+                    <UserPlusIcon className="w-5 h-5" /> Solicitar Coach
                   </Button>
                 </div>
               </Card>
@@ -127,6 +158,17 @@ export default function CoachesDashboard() {
           </div>
         )}
       </div>
+
+      <CoachRequestProfileSheet
+        open={Boolean(pendingCoach)}
+        onClose={() => setPendingCoach(null)}
+        coachName={pendingCoach?.username}
+        initial={profileInitial}
+        loadingInitial={Boolean(pendingCoach) && !trainingProfileLoaded}
+        submitting={submitting}
+        error={actionError}
+        onSubmit={handleSubmitRequest}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Input from "../Input";
+import TrainingProfileFields from "../training/TrainingProfileFields";
 import SessionPlanPreview from "./SessionPlanPreview";
 
 export type BiologicalSex = "masculino" | "femenino";
@@ -99,46 +100,6 @@ function FormField({
   );
 }
 
-function NumberField({
-  label,
-  name,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  hint,
-}: {
-  label: string;
-  name: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (n: number) => void;
-  hint?: string;
-}) {
-  return (
-    <FormField label={label} htmlFor={name} hint={hint}>
-      <Input
-        name={name}
-        type="number"
-        inputMode="decimal"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => {
-          const n = Number(e.target.value);
-          if (!Number.isFinite(n)) return;
-          onChange(Math.min(max, Math.max(min, n)));
-        }}
-        className={FIELD_CLASS}
-      />
-    </FormField>
-  );
-}
-
 type Props = {
   formData: RoutineAIFormData;
   onChange: (field: keyof RoutineAIFormData, value: string | number) => void;
@@ -150,54 +111,17 @@ export default function RoutineAIFormFields({ formData, onChange }: Props) {
     label: String(d),
   }));
 
-  const durationOptions = [30, 45, 60, 75, 90, 120, 150, 180].map((m) => ({
-    value: String(m),
-    label: `${m} min`,
-  }));
-
   return (
     <div className="space-y-5">
-      <section className="space-y-5 rounded-xl border border-[#34C759]/25 bg-[#34C759]/5 p-4">
-        <h2 className="text-sm font-semibold text-[#34C759]">Tu perfil de entrenamiento</h2>
-
-        <ChipGroup
-          label="Sexo biológico"
-          value={formData.biologicalSex}
-          onChange={(v) => onChange("biologicalSex", v)}
-          options={[
-            { value: "masculino", label: "Masculino" },
-            { value: "femenino", label: "Femenino" },
-          ]}
-          columns={2}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <NumberField
-            label="Altura (cm)"
-            name="heightCm"
-            value={formData.heightCm}
-            min={120}
-            max={230}
-            onChange={(n) => onChange("heightCm", n)}
-          />
-          <NumberField
-            label="Peso (kg)"
-            name="weightKg"
-            value={formData.weightKg}
-            min={30}
-            max={250}
-            step={0.5}
-            onChange={(n) => onChange("weightKg", n)}
-          />
-        </div>
-
-        <ChipGroup
-          label="Tiempo por sesión"
-          value={String(formData.sessionDurationMin)}
-          onChange={(v) => onChange("sessionDurationMin", Number(v))}
-          options={durationOptions}
-        />
-      </section>
+      <TrainingProfileFields
+        value={{
+          biologicalSex: formData.biologicalSex,
+          heightCm: formData.heightCm,
+          weightKg: formData.weightKg,
+          sessionDurationMin: formData.sessionDurationMin,
+        }}
+        onChange={(field, value) => onChange(field, value)}
+      />
 
       <FormField label="Nombre de la rutina" htmlFor="routine-ai-name">
         <Input

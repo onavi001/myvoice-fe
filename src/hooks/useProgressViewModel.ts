@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Papa from "papaparse";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../store";
 import { addProgress, deleteProgress, editProgress } from "../store/progressSlice";
 import { ThunkError } from "../store/routineSlice";
 import { ProgressData } from "../models/Progress";
@@ -55,6 +57,7 @@ function useDebounce(value: string, delay: number) {
 }
 
 export function useProgressViewModel() {
+  const dispatch = useDispatch<AppDispatch>();
   const {
     progress,
     progressLoading,
@@ -64,7 +67,6 @@ export function useProgressViewModel() {
     routineLoading,
     userLoading,
     navigate,
-    dispatch,
   } = useProgressBootstrap();
 
   const [toast, setToast] = useState<ToastState>(null);
