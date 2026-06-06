@@ -81,9 +81,7 @@ const Navbar: React.FC<NavbarProps> = ({
         {user && (
           <>
             <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
-              <div className="max-sm:scale-[0.92] max-sm:origin-center">
-                <NavbarFeaturedMedal />
-              </div>
+              <NavbarFeaturedMedal />
               <Button
                 id="onboarding-navbar-ai"
                 variant="secondary"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import MyVoiceMedal from "../progress/medals/MyVoiceMedal";
 import EmptyNavbarMedalSlot from "./EmptyNavbarMedalSlot";
@@ -10,13 +11,15 @@ export default function NavbarFeaturedMedal() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (portalRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
@@ -45,7 +48,84 @@ export default function NavbarFeaturedMedal() {
     );
   }
 
-  const goToMedals = () => navigateToProgressMedals(navigate);
+  const goToMedals = () => {
+    setOpen(false);
+    navigateToProgressMedals(navigate);
+  };
+
+  const pickerPanel = (
+    <>
+      <p className="text-[10px] uppercase tracking-wide text-[#888] px-2 py-1">
+        Medalla en la barra
+      </p>
+      <ul className="space-y-1">
+        {unlockedAchievements.map((medal) => {
+          const active = medal.id === displayMedal.id;
+          return (
+            <li key={medal.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  setFeaturedMedalId(medal.id);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left touch-manipulation min-h-11 ${
+                  active ? "bg-[#34C759]/15 border border-[#34C759]/40" : "hover:bg-[#4A4A4A]"
+                }`}
+              >
+                <MyVoiceMedal
+                  achievementId={medal.id}
+                  tier={medal.tier}
+                  unlocked
+                  size="xs"
+                />
+                <span className="text-xs text-[#E0E0E0] font-medium truncate flex-1">
+                  {medal.title}
+                </span>
+                {active && (
+                  <span className="text-[10px] text-[#34C759] shrink-0">Activa</span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(false);
+          navigateToProgressMedals(navigate);
+        }}
+        className="w-full mt-2 text-center text-xs text-[#5DD4F7] py-2 touch-manipulation min-h-10"
+      >
+        Ver todas en Progreso
+      </button>
+    </>
+  );
+
+  const mobilePickerPortal =
+    open && canPick && typeof document !== "undefined"
+      ? createPortal(
+          <div ref={portalRef}>
+            <button
+              type="button"
+              className="fixed inset-0 z-[58] bg-black/40 sm:hidden"
+              aria-label="Cerrar selector de medalla"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              role="listbox"
+              aria-label="Elegir medalla para la barra"
+              className="fixed left-3 right-3 top-[calc(3.25rem+env(safe-area-inset-top,0px))] z-[60] max-h-[min(70vh,320px)] overflow-y-auto rounded-xl border border-[#4A4A4A] bg-[#2D2D2D] shadow-xl p-2 sm:hidden"
+            >
+              {pickerPanel}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
     <div ref={rootRef} className="relative flex items-center">
@@ -96,68 +176,15 @@ export default function NavbarFeaturedMedal() {
       </div>
 
       {open && canPick && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-[58] bg-black/40 sm:hidden"
-            aria-label="Cerrar selector de medalla"
-            onClick={() => setOpen(false)}
-          />
-          <div
-            role="listbox"
-            aria-label="Elegir medalla para la barra"
-            className="fixed left-3 right-3 top-[calc(3.25rem+env(safe-area-inset-top,0px))] z-[60] max-h-[min(70vh,320px)] overflow-y-auto rounded-xl border border-[#4A4A4A] bg-[#2D2D2D] shadow-xl p-2 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:max-h-[min(70vh,320px)]"
-          >
-          <p className="text-[10px] uppercase tracking-wide text-[#888] px-2 py-1">
-            Medalla en la barra
-          </p>
-          <ul className="space-y-1">
-            {unlockedAchievements.map((medal) => {
-              const active = medal.id === displayMedal.id;
-              return (
-                <li key={medal.id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={active}
-                    onClick={() => {
-                      setFeaturedMedalId(medal.id);
-                      setOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-2 rounded-lg px-2 py-2 text-left touch-manipulation min-h-11 ${
-                      active ? "bg-[#34C759]/15 border border-[#34C759]/40" : "hover:bg-[#4A4A4A]"
-                    }`}
-                  >
-                    <MyVoiceMedal
-                      achievementId={medal.id}
-                      tier={medal.tier}
-                      unlocked
-                      size="xs"
-                    />
-                    <span className="text-xs text-[#E0E0E0] font-medium truncate flex-1">
-                      {medal.title}
-                    </span>
-                    {active && (
-                      <span className="text-[10px] text-[#34C759] shrink-0">Activa</span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(false);
-              navigateToProgressMedals(navigate);
-            }}
-            className="w-full mt-2 text-center text-xs text-[#5DD4F7] py-2 touch-manipulation min-h-10"
-          >
-            Ver todas en Progreso
-          </button>
+        <div
+          role="listbox"
+          aria-label="Elegir medalla para la barra"
+          className="hidden sm:block absolute right-0 top-full mt-2 z-[60] w-64 max-h-[min(70vh,320px)] overflow-y-auto rounded-xl border border-[#4A4A4A] bg-[#2D2D2D] shadow-xl p-2"
+        >
+          {pickerPanel}
         </div>
-        </>
       )}
+      {mobilePickerPortal}
     </div>
   );
 }
