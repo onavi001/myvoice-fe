@@ -51,6 +51,12 @@ export default function Landing() {
             <a href="#funciones" className="hidden text-[#B0B0B0] hover:text-[#34C759] sm:inline">
               Funciones
             </a>
+            <a href="#sobre" className="hidden text-[#B0B0B0] hover:text-[#34C759] sm:inline">
+              Sobre
+            </a>
+            <a href="/privacy-policy.html" className="hidden text-[#B0B0B0] hover:text-[#34C759] sm:inline">
+              Privacidad
+            </a>
             <Link
               to="/login"
               className="rounded-full border border-[#3A3A3A] px-4 py-2 text-[#E0E0E0] hover:border-[#34C759] hover:text-[#34C759] transition-colors"
@@ -125,6 +131,35 @@ export default function Landing() {
                   <p className="text-sm text-[#B0B0B0]">{text}</p>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="sobre" className="border-t border-[#2D2D2D]/80">
+          <div className="mx-auto max-w-5xl px-5 py-12 md:py-14">
+            <h2 className="mb-4 text-xl font-semibold text-white sm:text-2xl">
+              Qué es My Voice Fit
+            </h2>
+            <div className="space-y-4 text-sm leading-relaxed text-[#B0B0B0] sm:text-base">
+              <p>
+                My Voice Fit es una plataforma de entrenamiento personal que combina planificación de rutinas,
+                seguimiento de progreso y asistencia con inteligencia artificial. Puedes usarla desde el navegador
+                o descargar la app Android en Google Play.
+              </p>
+              <p>
+                Crea rutinas con ejercicios, series y repeticiones; marca lo completado en cada sesión;
+                consulta estadísticas de constancia y exporta tu plan en PDF. La IA te ayuda a generar
+                propuestas según tu objetivo (fuerza, resistencia, etc.) sin sustituir el criterio de un
+                profesional sanitario o deportivo cuando lo necesites.
+              </p>
+              <p>
+                El servicio incluye cuenta de usuario, sincronización con nuestro backend y, en la versión web,
+                espacios publicitarios gestionados por Google AdSense conforme a nuestra{" "}
+                <a href="/privacy-policy.html" className="text-[#34C759] hover:underline">
+                  política de privacidad
+                </a>
+                .
+              </p>
             </div>
           </div>
         </section>

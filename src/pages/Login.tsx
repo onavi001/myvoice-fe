@@ -197,12 +197,17 @@ export default function Login() {
 
         {/* Footer */}
         <motion.footer
-          className="mt-12 text-[#B0B0B0] text-sm"
+          className="mt-12 text-[#B0B0B0] text-sm text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          © {new Date().getFullYear()} My Voice. Todos los derechos reservados.
+          <p>© {new Date().getFullYear()} My Voice Fit. Todos los derechos reservados.</p>
+          <p className="mt-2">
+            <a href="/privacy-policy.html" className="text-[#34C759] hover:underline">
+              Política de privacidad
+            </a>
+          </p>
         </motion.footer>
       </div>
     </>

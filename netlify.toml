@@ -10,6 +10,21 @@
   status = 200
 
 [[redirects]]
+  from = "/app-ads.txt"
+  to = "/app-ads.txt"
+  status = 200
+
+[[redirects]]
+  from = "/privacy-policy.html"
+  to = "/privacy-policy.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy-policy"
+  to = "/privacy-policy.html"
+  status = 301
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
