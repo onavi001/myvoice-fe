@@ -7,7 +7,7 @@ VITE_ADSENSE_CLIENT=ca-pub-9321092696086358
 VITE_ADSENSE_SLOT=4111146727
 ```
 
-Do **not** put the AdSense script in `index.html`. It loads on login/loader screens and triggers policy violations. Use `WebAdBanner` only on content pages (`Routine`, `Progress`, `RoutineAI`).
+Do **not** disable the AdSense script in `index.html` — Google needs it in `<head>` to verify site ownership. Actual ad units still load only via `WebAdBanner` on content pages when `VITE_ADSENSE_ENABLED=true`.
 
 During review set `VITE_ADSENSE_ENABLED=false` in Netlify until the site status is **Listo**.
 
