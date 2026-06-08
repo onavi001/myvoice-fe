@@ -43,11 +43,11 @@ export default function ClientProfile() {
     void dispatch(fetchRoutines({ force: true }));
   }, [assignSheetOpen, coachTemplates.length, dispatch]);
 
-  const handleAssignRoutine = async (routineId: string, message?: string) => {
+  const handleAssignRoutine = async (routineId: string, name: string, message?: string) => {
     if (!clientId) return;
     setAssigning(true);
     try {
-      await dispatch(assignRoutine({ clientId, routineId, message })).unwrap();
+      await dispatch(assignRoutine({ clientId, routineId, name, message })).unwrap();
       await dispatch(fetchClientRoutines(clientId)).unwrap();
     } catch (err: unknown) {
       console.error("Error al asignar la rutina:", err);

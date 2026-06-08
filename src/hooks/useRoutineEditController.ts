@@ -37,7 +37,13 @@ export function useRoutineEditController() {
   const deleteInFlightRef = useRef(false);
   const isDeletingRef = useRef(false);
 
-  const isCoachRestricted: boolean = (initialRoutine?.couchId && initialRoutine.couchId !== user?._id) || false;
+  const isCoachRestricted: boolean =
+    Boolean(
+      initialRoutine?.couchId &&
+        user?._id &&
+        String(initialRoutine.userId) === String(user._id) &&
+        user.role !== "coach"
+    );
 
   useEffect(() => {
     if (!token) {
@@ -50,7 +56,7 @@ export function useRoutineEditController() {
       dispatch(fetchRoutineById(routineId))
         .unwrap()
         .then(() => setHasFetched(true))
-        .catch(() => undefined)
+        .catch(() => setHasFetched(true))
         .finally(() => setFetchingRoutine(false));
     }
 
@@ -71,10 +77,10 @@ export function useRoutineEditController() {
   }, [token, initialRoutine, routineId, routinesLoading, fetchingRoutine, hasFetched, dispatch, navigate]);
 
   useEffect(() => {
-    if (!initialRoutine && !routinesLoading && !fetchingRoutine && routinesError && hasFetched) {
-      navigate("/routine");
+    if (!initialRoutine && !routinesLoading && !fetchingRoutine && hasFetched) {
+      navigate(user?.role === "coach" ? "/coach" : "/routine", { replace: true });
     }
-  }, [initialRoutine, routinesLoading, fetchingRoutine, routinesError, hasFetched, navigate]);
+  }, [initialRoutine, routinesLoading, fetchingRoutine, hasFetched, navigate, user?.role]);
 
   const handleAddDay = useCallback(() => {
     if (isCoachRestricted) return;

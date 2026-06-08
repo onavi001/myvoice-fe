@@ -11,7 +11,7 @@ type Props = {
   onClose: () => void;
   routines: RoutineData[];
   assigning: boolean;
-  onAssign: (routineId: string, message?: string) => Promise<void>;
+  onAssign: (routineId: string, name: string, message?: string) => Promise<void>;
 };
 
 export default function AssignRoutineSheet({
@@ -23,20 +23,32 @@ export default function AssignRoutineSheet({
 }: Props) {
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [routineName, setRoutineName] = useState("");
   const [message, setMessage] = useState("");
 
   const coachTemplates = routines.filter((r) => !r.couchId);
+  const selectedTemplate = coachTemplates.find((r) => r._id === selectedId);
+
+  const handleSelectTemplate = (routineId: string, templateName: string) => {
+    setSelectedId(routineId);
+    setRoutineName(templateName);
+  };
 
   const handleAssign = async () => {
-    if (!selectedId) return;
-    await onAssign(selectedId, message.trim() || undefined);
+    if (!selectedId || !routineName.trim()) return;
+    await onAssign(selectedId, routineName.trim(), message.trim() || undefined);
+    handleClose();
+  };
+
+  const handleClose = () => {
     setSelectedId(null);
+    setRoutineName("");
     setMessage("");
     onClose();
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Asignar rutina al cliente">
+    <BottomSheet open={open} onClose={handleClose} title="Asignar rutina al cliente">
       {coachTemplates.length === 0 ? (
         <div className="text-center py-4 space-y-3">
           <p className="text-sm text-[#B0B0B0]">
@@ -45,7 +57,7 @@ export default function AssignRoutineSheet({
           <Button
             type="button"
             onClick={() => {
-              onClose();
+              handleClose();
               navigate("/routine-form");
             }}
             className="w-full min-h-11 rounded-xl"
@@ -66,7 +78,7 @@ export default function AssignRoutineSheet({
                     type="button"
                     role="option"
                     aria-selected={selected}
-                    onClick={() => setSelectedId(routine._id)}
+                    onClick={() => handleSelectTemplate(routine._id, routine.name)}
                     className={`w-full text-left rounded-xl border px-4 py-3 touch-manipulation min-h-12 transition-colors ${
                       selected
                         ? "border-[#34C759] bg-[#34C759]/10"
@@ -83,6 +95,21 @@ export default function AssignRoutineSheet({
               );
             })}
           </ul>
+          {selectedTemplate && (
+            <label className="block">
+              <span className="text-xs text-[#888]">Nombre de la rutina para el cliente</span>
+              <input
+                type="text"
+                value={routineName}
+                onChange={(e) => setRoutineName(e.target.value.slice(0, 80))}
+                placeholder="Ej. Rutina pierna — semana 1"
+                className="mt-1 w-full px-3 py-2 rounded-xl bg-[#1A1A1A] border border-[#3A3A3A] text-sm text-[#E0E0E0] min-h-11"
+              />
+              <span className="text-[10px] text-[#666]">
+                Plantilla: {selectedTemplate.name}
+              </span>
+            </label>
+          )}
           <label className="block">
             <span className="text-xs text-[#888]">Mensaje para el cliente (opcional)</span>
             <textarea
@@ -97,7 +124,7 @@ export default function AssignRoutineSheet({
           <Button
             type="button"
             onClick={() => void handleAssign()}
-            disabled={!selectedId || assigning}
+            disabled={!selectedId || !routineName.trim() || assigning}
             className="w-full min-h-12 rounded-xl font-semibold disabled:opacity-50"
           >
             {assigning ? <SmallLoader /> : "Asignar rutina"}

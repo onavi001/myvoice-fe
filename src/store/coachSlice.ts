@@ -137,13 +137,13 @@ export const fetchClientProgress = createAsyncThunk<ProgressData[], string, { re
 
 export const assignRoutine = createAsyncThunk<
   RoutineData,
-  { clientId: string; routineId: string; message?: string },
+  { clientId: string; routineId: string; name: string; message?: string },
   { rejectValue: ThunkError }
->("coach/assignRoutine", async ({ clientId, routineId, message }, { rejectWithValue }) => {
+>("coach/assignRoutine", async ({ clientId, routineId, name, message }, { rejectWithValue }) => {
   try {
     return await apiClient<RoutineData>(`/api/clients/${clientId}/routines`, {
       method: "POST",
-      body: JSON.stringify({ routineId, message }),
+      body: JSON.stringify({ routineId, name, message }),
     });
   } catch (error) {
     return rejectWithValue(toThunkError(error, "Error assigning routine"));
